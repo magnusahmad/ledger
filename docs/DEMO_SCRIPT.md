@@ -32,7 +32,7 @@ Total time about 8 minutes. The founder drives Harbourline on the laptop, shared
 
 **8. File, register, confirm (1 min).** Record the e-Registry reference (the Companies Registry has no filing API; staff submit on e-Registry). Approve the register update and show **Officers and controllers**, which is effective-dated: set "Register as at" to the day before the effective date to show the register reproduced as at any date. Approve the completion email. The task is **done**.
 
-**9. Close (30 s).** Open **Time saved** and **Playbooks**: 42 playbooks across Hong Kong, Mainland China, Macau and Taiwan; official CR forms mapped and version-checked; batch start for the annual cycle.
+**9. Close (30 s).** Open **Time saved** and **Playbooks**: 43 configured playbooks across Hong Kong, Mainland China, Macau and Taiwan; supported official CR forms mapped and version-checked; batch start for the annual cycle. Approval timing is partial. Explain the modelled coordination saving and supported workflow limits in `REVIEW_LOG.md`; do not present it as measured whole-task productivity or verified execution of every playbook.
 
 ## Fallbacks
 

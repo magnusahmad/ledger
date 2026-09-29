@@ -62,6 +62,7 @@ export type RegisterEffect =
   | { kind: "record_cdd_review" }
   | { kind: "activate_client" }
   | { kind: "deregister" }
+  | { kind: "set_operating_status"; status: "dormant" | "operating" }
   | { kind: "set_jurisdiction_field"; field: string; param: string }
   | { kind: "change_capital" };
 

@@ -321,7 +321,7 @@
       "sc": "获配发人、股份数目及类别，以及每股支付的款项"
     },
     "kind": "data",
-    "extractionHint": "Who receives new shares, how many, which class, consideration per share and whether fully paid."
+    "extractionHint": "Who receives new shares, each allottee address and individual/corporate status, number and class, currency, cash or non-cash consideration, price per share and total consideration, any unpaid amount on the new shares and any existing unpaid share capital. Ask for missing facts; do not assume cash or fully paid."
   },
   "transferDetails": {
     "label": {
@@ -610,5 +610,77 @@
     },
     "kind": "data",
     "extractionHint": "Which body approved and the date."
+  },
+  "resignationNoticeBasis": {
+    "kind": "data",
+    "label": {
+      "en": "ND4 notice declaration: notice_given, notice_copy or not_required",
+      "tc": "ND4通知聲明：notice_given、notice_copy或not_required",
+      "sc": "ND4通知声明：notice_given、notice_copy或not_required"
+    },
+    "extractionHint": "Return exactly notice_given if required notice was given according to the articles/agreement, notice_copy if notice was delivered but not according to the required procedure, or not_required if no notice was required. Do not infer."
+  },
+  "resigningSignatory": {
+    "kind": "data",
+    "label": {
+      "en": "Name of the resigning secretary or authorised corporate signatory",
+      "tc": "辭任秘書或獲授權法人簽署人的姓名",
+      "sc": "辞任秘书或获授权法人签署人的姓名"
+    },
+    "extractionHint": "Name of the individual who will sign the ND4 for the resigning secretary; do not infer authorisation."
+  },
+  "meetingDate": {
+    "label": {
+      "en": "Actual meeting date",
+      "tc": "實際會議日期",
+      "sc": "实际会议日期"
+    },
+    "kind": "data",
+    "extractionHint": "Actual date of the meeting in ISO YYYY-MM-DD format; never infer from today or the effective date."
+  },
+  "meetingTime": {
+    "label": {
+      "en": "Actual meeting time",
+      "tc": "實際會議時間",
+      "sc": "实际会议时间"
+    },
+    "kind": "data",
+    "extractionHint": "Actual start time of the meeting in 24-hour HH:mm format."
+  },
+  "meetingPlace": {
+    "label": {
+      "en": "Meeting place or remote venue",
+      "tc": "會議地點或遙距方式",
+      "sc": "会议地点或远程方式"
+    },
+    "kind": "data",
+    "extractionHint": "Place or remote meeting venue as supplied by the client."
+  },
+  "meetingChair": {
+    "label": {
+      "en": "Meeting chair",
+      "tc": "會議主席",
+      "sc": "会议主席"
+    },
+    "kind": "data",
+    "extractionHint": "Name of the actual meeting chair; do not infer from the register."
+  },
+  "meetingAttendees": {
+    "label": {
+      "en": "Actual meeting attendees",
+      "tc": "實際出席人士",
+      "sc": "实际出席人士"
+    },
+    "kind": "data",
+    "extractionHint": "Full actual attendance list supplied by the client; never assume all directors or members attended."
+  },
+  "meetingDecisions": {
+    "label": {
+      "en": "Recorded decisions and proceedings",
+      "tc": "議事及決定紀錄",
+      "sc": "议事及决定记录"
+    },
+    "kind": "data",
+    "extractionHint": "Actual proceedings, decisions and voting outcomes as supplied by the client, including dissent or deferrals; do not invent quorum, unanimity or approval."
   }
 }

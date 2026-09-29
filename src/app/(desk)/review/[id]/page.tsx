@@ -36,7 +36,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     </div>
   );
   if (decided) {
-    const recent = p.decidedAt && Date.now() - p.decidedAt.getTime() < 15_000;
+    const recent = p.decidedAt && ctx.clock.now().getTime() - p.decidedAt.getTime() < 15_000;
     return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>{p.status === "approved" ? "Done" : "Dismissed"}{p.decidedAt ? ` ${ago(p.decidedAt)}` : ""}. {recent ? "Taking you back to Today…" : <Link href="/">Back to Today</Link>}</div>{recent && <AutoRedirect to="/" />}</>;
   }
 
@@ -135,6 +135,10 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         <div className="grid2">
           <div className="fld"><label className="f" htmlFor="reference">Filing reference</label><input id="reference" type="text" name="reference" placeholder="e.g. e-Registry submission number" required /></div>
           <div className="fld" style={{ marginTop: 0 }}><label className="f" htmlFor="filedOn">Filed on</label><input id="filedOn" type="date" name="filedOn" defaultValue={ctx.clock.today()} /></div>
+          {task?.playbookId === "hk.incorporation" && <>
+            <div className="fld"><label className="f" htmlFor="companyNumber">Company number on certificate</label><input id="companyNumber" name="companyNumber" type="text" required /></div>
+            <div className="fld"><label className="f" htmlFor="incorporatedOn">Incorporation date on certificate</label><input id="incorporatedOn" name="incorporatedOn" type="date" required /></div>
+          </>}
         </div>
       </ReviewForm>
     </div></>);

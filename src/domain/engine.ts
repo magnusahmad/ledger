@@ -1,15 +1,16 @@
 // The task engine: deterministic step progression over playbook data.
 // Understanding what the client means is the agent layer's job (src/agent); this module
 // only decides what happens next given the task's state.
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import {
   businessRegistration, cddRecord, client as clientT, invoice, person as personT, request as requestT,
-  task as taskT, taskEvent, type ChecklistEntry,
+  task as taskT, taskEvent, proposal, signEnvelope, type ChecklistEntry,
 } from "@/db/schema";
 import type { PlaybookDef, StepDef, StepKind } from "./playbook-types";
 import { getPlaybook } from "./playbooks";
 import { addDays, addMonths, isIsoDate } from "./dates";
+import { financialYearEnds } from "./fye-periods";
 
 export type Task = typeof taskT.$inferSelect & { checklist: (ChecklistEntry & { optional?: boolean })[]; _steps?: StepDef[] };
 export type Extracted = Record<string, { value: string; source?: string | null; confidence?: number | null; documentId?: string | null }>;
@@ -109,10 +110,13 @@ export async function setChecklist(ctx: Ctx, taskId: string, checklist: Task["ch
   await ctx.db.update(taskT).set({ checklist }).where(eq(taskT.id, taskId));
   const changes = checklist.filter((e) => {
     const b = before.checklist.find((x) => x.key === e.key && (x.personId ?? null) === (e.personId ?? null));
-    return !b || b.status !== e.status || b.value !== e.value;
+    return !b || b.status !== e.status || b.value !== e.value || b.documentId !== e.documentId || b.optional !== e.optional;
   }).map((e) => `${e.key}: ${e.status}`);
   const removed = before.checklist.filter((b) => !checklist.some((e) => e.key === b.key && (e.personId ?? null) === (b.personId ?? null))).map((b) => `${b.key}: removed`);
-  if (changes.length || removed.length) await logEvent(ctx, taskId, "checklist.updated", reason, { changes: [...changes, ...removed] }, actor);
+  if (changes.length || removed.length) {
+    await logEvent(ctx, taskId, "checklist.updated", reason, { changes: [...changes, ...removed] }, actor);
+    await invalidatePreparation(ctx, taskId, reason);
+  }
 }
 
 // ---------- Tasks ----------
@@ -133,14 +137,15 @@ async function withSteps(ctx: Ctx, t: Task): Promise<Task & { _steps: StepDef[] 
   return Object.assign(t, { _steps: pb.steps });
 }
 
-export async function computeDueDate(ctx: Ctx, pb: PlaybookDef, clientId: string, effectiveDate: string | null, periodYear?: number): Promise<string | null> {
+export async function computeDueDate(ctx: Ctx, pb: PlaybookDef, clientId: string, effectiveDate: string | null, periodYear?: number, periodKey?: string | null): Promise<string | null> {
   const d = pb.deadline;
   if (d.kind === "event") return effectiveDate ? addDays(effectiveDate, d.days) : null;
   const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) });
   const year = periodYear ?? Number(ctx.clock.today().slice(0, 4));
   if (d.kind === "anniversary" && cl?.incorporatedOn) return addDays(`${year}${cl.incorporatedOn.slice(4)}`, d.days);
   if (d.kind === "fye" && cl?.fyeMonth && cl?.fyeDay) {
-    const fye = `${year - 1}-${String(cl.fyeMonth).padStart(2, "0")}-${String(cl.fyeDay).padStart(2, "0")}`;
+    const fye = periodKey?.match(/^AGM:(\d{4}-\d{2}-\d{2})$/)?.[1] ?? financialYearEnds(cl, periodYear ?? year - 1).at(-1);
+    if (!fye) throw new Error("No accounting period ends in the selected year after the year-end change");
     return addMonths(fye, d.months);
   }
   if (d.kind === "br_expiry") {
@@ -171,7 +176,7 @@ export async function startTask(ctx: Ctx, t: {
     title: t.title ?? (personName ? `${pb.name.en}: ${personName}` : pb.name.en),
     personId: t.personId ?? null, assigneeId: t.assigneeId ?? cl.staffId ?? ctx.userId,
     checklist, extracted, params: t.params ?? {}, effectiveDate,
-    dueDate: await computeDueDate(ctx, pb, t.clientId, effectiveDate, t.periodYear),
+    dueDate: await computeDueDate(ctx, pb, t.clientId, effectiveDate, t.periodYear, t.periodKey),
     onCredit: cl.paymentTermsDays > 0, periodKey: t.periodKey ?? null, createdAt: ctx.clock.now(),
   }).returning();
   await logEvent(ctx, row.id, "task.created", `Opened from playbook "${pb.name.en}"`, { playbookId: pb.id, version: pb.version });
@@ -240,7 +245,40 @@ async function runEnterHooks(ctx: Ctx, t: Task, pb: PlaybookDef, idx: number) {
   for (const h of enterHooks.get(step.kind) ?? []) await h(ctx, await getTask(ctx, t.id), step, idx, pb);
 }
 
-const REOPENABLE: StepKind[] = ["kyc", "screen", "generate", "sign"];
+const REOPENABLE: StepKind[] = ["kyc", "screen", "generate", "sign", "file", "register"];
+
+/** Rebuild prepared work whenever its inputs change, including complete-to-complete edits.
+ * Filed records and signed PDFs remain in history; neither counts as approval for new facts. */
+export async function invalidatePreparation(ctx: Ctx, taskId: string, reason: string) {
+  const t = await getTask(ctx, taskId);
+  const collectIdx = t._steps.findIndex(s => s.kind === "collect");
+  if (t.status !== "open" || collectIdx < 0 || t.stepIndex <= collectIdx || !REOPENABLE.includes(t._steps[t.stepIndex]?.kind)) return;
+  const stepState = Object.fromEntries(Object.entries(t.stepState).filter(([k]) => Number(k) < collectIdx));
+  // Structured share instructions are derived from the checklist too.
+  const params = { ...t.params };
+  delete params.structured;
+  await ctx.db.update(taskT).set({ stepIndex: collectIdx, stepState, params }).where(eq(taskT.id, taskId));
+  await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(
+    eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending"),
+    inArray(proposal.kind, ["record_filing", "register_change", "send_signing", "screening_review"]),
+  ));
+  await ctx.db.update(signEnvelope).set({ status: "voided" }).where(and(eq(signEnvelope.firmId, ctx.firmId), eq(signEnvelope.taskId, taskId)));
+  await logEvent(ctx, taskId, "step.reopened", `Back to collection: ${reason}`);
+}
+
+export async function taskBlockers(ctx: Ctx, taskId: string) {
+  return ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending"), inArray(proposal.kind, ["conflict", "cancel_task", "change_request"])));
+}
+
+/** Every human approval rechecks the authoritative task, not the browser's old card. */
+export async function assertTaskReady(ctx: Ctx, taskId: string, kind: StepKind) {
+  const t = await getTask(ctx, taskId);
+  if (t.status !== "open") throw new Error("This task is no longer open");
+  if (currentStep(t)?.kind !== kind) throw new Error(`This task is no longer at the ${kind} step`);
+  if (outstanding(t).length) throw new Error("Required information is still outstanding");
+  if ((await taskBlockers(ctx, taskId)).length) throw new Error("Resolve the pending conflict, change or cancellation before continuing");
+  return t;
+}
 
 /** Moves the task forward through every step whose completion condition holds. */
 export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps: StepDef[] }> {
@@ -254,9 +292,7 @@ export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps
     const collectIdx = pb.steps.findIndex((s) => s.kind === "collect");
     const cur = pb.steps[t.stepIndex];
     if (collectIdx >= 0 && t.stepIndex > collectIdx && cur && REOPENABLE.includes(cur.kind) && outstanding(t).length > 0) {
-      const stepState = Object.fromEntries(Object.entries(t.stepState).filter(([k]) => Number(k) < collectIdx || !REOPENABLE.includes(pb.steps[Number(k)]?.kind)));
-      await ctx.db.update(taskT).set({ stepIndex: collectIdx, stepState }).where(eq(taskT.id, taskId));
-      await logEvent(ctx, taskId, "step.reopened", `Back to "${pb.steps[collectIdx].label}": ${outstanding(t).map((e) => e.key).join(", ")} now needed`);
+      await invalidatePreparation(ctx, taskId, `${outstanding(t).map((e) => e.key).join(", ")} now needed`);
       continue;
     }
 
@@ -265,6 +301,7 @@ export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps
       await logEvent(ctx, taskId, "task.done", "Task completed");
       continue;
     }
+    if ((cur.kind === "collect" || REOPENABLE.includes(cur.kind)) && (await taskBlockers(ctx, taskId)).length) return t;
     const c = await stepCompletion(ctx, t, cur, t.stepIndex, pb);
     if (!c.done) return t;
     await logEvent(ctx, taskId, c.skipped ? "step.skipped" : "step.completed", c.skipped ?? `Done: ${cur.label}`, { step: t.stepIndex, kind: cur.kind });
@@ -280,6 +317,8 @@ export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps
 
 export async function cancelTask(ctx: Ctx, taskId: string, reason: string, actor = ctx.userId) {
   await ctx.db.update(taskT).set({ status: "cancelled", completedAt: ctx.clock.now() }).where(eq(taskT.id, taskId));
+  await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending")));
+  await ctx.db.update(signEnvelope).set({ status: "voided" }).where(and(eq(signEnvelope.firmId, ctx.firmId), eq(signEnvelope.taskId, taskId)));
   await logEvent(ctx, taskId, "task.cancelled", reason, {}, actor);
 }
 

@@ -675,37 +675,43 @@
       "name": "CHAN Tai Man",
       "zh": "陳大文",
       "kyc": true,
-      "role": "Director, shareholder"
+      "role": "Director, shareholder",
+      "correspondenceAddress": "Unit 1, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     },
     "p2": {
       "name": "LEE Siu Ling",
       "zh": "李小玲",
       "kyc": true,
-      "role": "Shareholder"
+      "role": "Shareholder",
+      "correspondenceAddress": "Unit 2, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     },
     "p3": {
       "name": "HO Wing Yan",
       "zh": "何詠欣",
       "kyc": true,
-      "role": "Director, shareholder"
+      "role": "Director, shareholder",
+      "correspondenceAddress": "Unit 3, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     },
     "p4": {
       "name": "LAM Kwok Keung",
       "zh": "林國強",
       "kyc": true,
-      "role": "Director, shareholder"
+      "role": "Director, shareholder",
+      "correspondenceAddress": "Unit 4, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     },
     "p5": {
       "name": "LAM Mei Ling",
       "zh": "林美玲",
       "kyc": true,
-      "role": "Director"
+      "role": "Director",
+      "correspondenceAddress": "Unit 5, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     },
     "p6": {
       "name": "LEUNG Chi Wai",
       "zh": "梁志偉",
       "kyc": true,
-      "role": "Director, shareholder"
+      "role": "Director, shareholder",
+      "correspondenceAddress": "Unit 6, 10 Fictional Harbour Road, Kowloon, Hong Kong"
     }
   },
   "users": {
@@ -724,5 +730,8 @@
       "ini": "DH",
       "title": "Assistant Company Secretary"
     }
+  },
+  "corporateAddresses": {
+    "Brightwater Ventures Limited (BVI)": "Unit 7, Fictional Corporate Centre, Road Town, British Virgin Islands"
   }
 }

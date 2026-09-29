@@ -64,13 +64,15 @@ test("an unknown sender's request goes from email to a completed, filed and regi
     if (await upload.count()) {
       const form = upload.locator("xpath=ancestor::form[1]");
       await form.locator('input[type="file"]').setInputFiles({ name: "doc.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
-      await upload.click();
+      await Promise.all([page.waitForResponse(r => r.request().method() === "POST").then(r => r.finished()), upload.click()]);
     } else if (await save.count()) {
       const form = save.locator("xpath=ancestor::form[1]");
       await form.locator('input[type="text"]').fill("Sam LEE 100%; salary and savings; Blue Harbour Trading Limited 3345678");
-      await save.click();
+      await Promise.all([page.waitForResponse(r => r.request().method() === "POST").then(r => r.finished()), save.click()]);
     } else break;
-    await page.waitForTimeout(800);
+    // Upload completion can prepare a full signing pack; do not cancel its UI
+    // transition by reloading after an arbitrary short delay.
+    await expect(page.getByRole("button", { name: "Working…" })).toHaveCount(0);
     await page.reload();
   }
   await expect(page.getByRole("button", { name: /Upload|Save/ })).toHaveCount(0);
@@ -117,7 +119,9 @@ for (const width of [375, 768, 1280, 1440]) {
       await page.goto(path);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow, `${path} overflows by ${overflow}px at ${width}px`).toBeLessThanOrEqual(1);
-      if (width === 375 || width === 1440) await page.screenshot({ path: `storage/e2e/shots/${width}${path.replace(/[/?=&]/g, "_") || "_today"}.png`, fullPage: true });
+      // Hiding carets mutates every input's inline style while React may still
+      // be hydrating the streamed playbook editors, causing a test-only mismatch.
+      if (width === 375 || width === 1440) await page.screenshot({ path: `storage/e2e/shots/${width}${path.replace(/[/?=&]/g, "_") || "_today"}.png`, fullPage: true, caret: "initial" });
     }
     expect(errors).toEqual([]);
   });

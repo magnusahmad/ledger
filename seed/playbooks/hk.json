@@ -2370,7 +2370,7 @@
   },
   {
     "id": "hk.dormant",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -2442,7 +2442,12 @@
         "signers": "members"
       }
     ],
-    "registerEffects": [],
+    "registerEffects": [
+      {
+        "kind": "set_operating_status",
+        "status": "dormant"
+      }
+    ],
     "feeCents": 150000,
     "complianceNotes": [
       "A dormant company is exempt from preparing audited accounts and holding AGMs, but must still file annual returns."
@@ -2557,6 +2562,113 @@
     "feeCents": 100000,
     "complianceNotes": [
       "Staff review the planned checklist and fee before anything is sent."
+    ],
+    "verifyNote": "Statutory rule summarised from Companies Registry guidance; verify with the firm's company secretary before relying on it."
+  },
+  {
+    "id": "hk.resignSecretary",
+    "version": 1,
+    "jurisdiction": "HK",
+    "category": "Company secretary",
+    "name": {
+      "en": "Secretary resignation (ND4)",
+      "tc": "公司秘書辭任（ND4）",
+      "sc": "公司秘书辞任（ND4）"
+    },
+    "phrase": {
+      "en": "the secretary’s resignation",
+      "tc": "公司秘書辭任",
+      "sc": "公司秘书辞任"
+    },
+    "description": "Self-notification of a company secretary resignation using ND4, subject to staff verification of the notice requirement.",
+    "whenToUse": "The resigning company secretary needs to notify the Registry directly by ND4 because there is reason to believe the company will not notify it. For appointment of a replacement, also use changeSecretary.",
+    "startedBy": "client request",
+    "personSelection": "existing_officer",
+    "forms": "ND4",
+    "deadline": {
+      "kind": "none",
+      "rule": "Staff must verify the applicable notice and filing obligations before submission."
+    },
+    "requirements": [
+      {
+        "key": "resignLetter"
+      },
+      {
+        "key": "lastDay"
+      },
+      {
+        "key": "resignationNoticeBasis"
+      },
+      {
+        "key": "resigningSignatory"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect resignation letter"
+      },
+      {
+        "kind": "task",
+        "label": "Verify the resignation notice and ND4 route",
+        "human": true,
+        "instructions": "Check the notice declaration, authority of the signatory, and whether the company will file its own notification. Confirm replacement arrangements."
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare ND4"
+      },
+      {
+        "kind": "task",
+        "label": "Obtain signed ND4",
+        "human": true,
+        "instructions": "Have the resigning secretary or authorised corporate signatory sign the ND4; upload the signed copy for filing."
+      },
+      {
+        "kind": "file",
+        "label": "File signed ND4 with the Companies Registry",
+        "human": true,
+        "authority": "Companies Registry e-Registry"
+      },
+      {
+        "kind": "register",
+        "label": "Update register of secretaries",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm the resignation to the client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "cr:ND4",
+        "name": "Form ND4: resignation of company secretary",
+        "signers": "none",
+        "wetInk": true
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "cease_officer",
+        "role": "secretary"
+      }
+    ],
+    "feeCents": 150000,
+    "complianceNotes": [
+      "Use ND4 only after checking the resigning secretary’s direct notification obligation.",
+      "Confirm the notice declaration and obtain the resigning secretary’s signature before filing.",
+      "Arrange a replacement secretary where required; this task does not appoint one."
     ],
     "verifyNote": "Statutory rule summarised from Companies Registry guidance; verify with the firm's company secretary before relying on it."
   }

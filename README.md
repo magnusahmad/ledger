@@ -17,6 +17,9 @@ npm run dev                  # web app on http://localhost:3000 plus the backgro
 - `/demo`: the demo panel (deliver a test email, simulate a client payment, reset).
 - `docs/DEMO_SCRIPT.md`: the investor demo, step by step.
 - `docs/SETUP_INTEGRATIONS.md`: Gmail, AgentMail, Airwallex sandbox, Xero and OpenSanctions.
+- `docs/REVIEW_LOG.md`: independent review, fixes, supported transaction shapes and evidence limits. Playbook configuration is not proof that every jurisdiction workflow has run end to end.
+
+This remains a fictional-data demo. Authentication and database row-level security are deferred under decision #24; do not use real client data or add a second firm yet. Real mailbox, bank, accounting and screening accounts still require a credentialed smoke test.
 
 ## Test it
 

@@ -108,9 +108,10 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           <div className="card">
             <h2>Time saved</h2>
             <div className="grid2">
-              <div className="stat"><b>{Math.round(saved.baselineMinutes)} min</b><span>typical staff time for this work so far</span></div>
-              <div className="stat"><b>{saved.staffMinutes} min</b><span>your time on {saved.approvals} approval(s)</span></div>
+              <div className="stat"><b>{Math.round(saved.baselineMinutes)} min</b><span>modelled manual work (estimate)</span></div>
+              <div className="stat"><b>{saved.hasMeasurements ? `${saved.staffMinutes} min` : "Not measured"}</b><span>recorded time on {saved.approvals} approval(s)</span></div>
             </div>
+            <p className="small muted">Approval time is partial. Work outside approval screens is not captured; this is not a measured productivity improvement.</p>
             {saved.items.length > 0 && <details className="more" style={{ marginTop: 10 }}><summary>What Harbourline did</summary><ul className="small">{saved.items.map((x, i) => <li key={i}>{x.label} <span className="muted">({x.minutes} min)</span></li>)}</ul></details>}
           </div>
           <div className="card">

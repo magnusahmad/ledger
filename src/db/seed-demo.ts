@@ -49,7 +49,7 @@ export async function seedDemo(ctx: Ctx, opts: { demoEmail?: string | null } = {
   await ensureFirm(ctx);
   await loadPlaybookLibrary(ctx);
   const data = JSON.parse(readFileSync(path.join(process.cwd(), "seed/demo-clients.json"), "utf8")) as {
-    clients: DemoClient[]; people: Record<string, { name: string; zh: string; kyc: boolean; role: string }>;
+    clients: DemoClient[]; people: Record<string, { name: string; zh: string; kyc: boolean; role: string; correspondenceAddress: string }>; corporateAddresses: Record<string, string>;
   };
 
   const firmSecretary = await createPerson(ctx, { id: "per_firm", kind: "corporate", nameEn: "Caine Road Corporate Services Limited", nameZh: "堅道企業服務有限公司", correspondenceAddress: "18/F, 88 Caine Road, Mid-Levels, Hong Kong", email: "desk@caineroad.example" });
@@ -60,14 +60,14 @@ export async function seedDemo(ctx: Ctx, opts: { demoEmail?: string | null } = {
     const email = pid === "p1" && opts.demoEmail ? opts.demoEmail : part.email;
     const row = await createPerson(ctx, {
       id: `per_${pid}`, nameEn: p.name, nameZh: p.zh, idType: "HKID", idNumber: part.id, idCountry: "Hong Kong",
-      residentialAddress: part.res, correspondenceAddress: null, email, phone: part.phone, dateOfBirth: part.dob, nationality: "Chinese",
+      residentialAddress: part.res, correspondenceAddress: p.correspondenceAddress, email, phone: part.phone, dateOfBirth: part.dob, nationality: "Chinese",
     });
     personIds[p.name] = row.id;
   }
   const corporates: Record<string, string> = {};
   async function personFor(name: string) {
     if (personIds[name]) return personIds[name];
-    if (!corporates[name]) corporates[name] = (await createPerson(ctx, { kind: "corporate", nameEn: name })).id;
+    if (!corporates[name]) corporates[name] = (await createPerson(ctx, { kind: "corporate", nameEn: name, correspondenceAddress: data.corporateAddresses[name] })).id;
     return corporates[name];
   }
 

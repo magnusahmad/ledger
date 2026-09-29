@@ -10,7 +10,7 @@ import { stampDuty } from "@/domain/stamp-duty";
 import { upcomingDeadlines } from "@/domain/deadlines";
 import { batchStart } from "@/domain/batch";
 import { logMailItem } from "@/domain/mail-items";
-import { filing, invoice, significantController, mailItem, shareMovement } from "@/db/schema";
+import { filing, invoice, significantController, mailItem, shareMovement, document } from "@/db/schema";
 import { updateClient } from "@/domain/records";
 import "@/domain/inbound";
 
@@ -37,11 +37,16 @@ async function toRegister(playbookId: string, extracted: Record<string, { value:
 
 describe("Share movements from client instructions", () => {
   it("an allotment updates the members register and share capital as at the allotment date, and adds a new significant controller", async () => {
-    ctx.llm.on("structure", { items: [{ kind: "allotment", fromPersonId: null, fromName: null, toPersonId: null, toName: "MA Siu Fung", toNameZh: "馬少峰", className: "Ordinary", quantity: 10000, pricePerShareCents: 100, considerationCents: 1000000 }] });
-    const t = await toRegister("hk.allotShares", { allotmentDetails: { value: "10,000 ordinary shares to MA Siu Fung at HK$1 each, fully paid" }, effDate: { value: "2026-10-20" } });
+    ctx.llm.on("structure", { items: [{ kind: "allotment", fromPersonId: null, fromName: null, toPersonId: null, toName: "MA Siu Fung", toNameZh: "馬少峰", className: "Ordinary", quantity: 10000, pricePerShareCents: 100, considerationCents: 1000000, considerationType: "cash", currency: "HKD", unpaidCents: 0, existingUnpaidCents: 0, allotteeAddress: "Unit 9, 9 Test Road, Hong Kong", allotteeKind: "individual" }] });
+    const t = await toRegister("hk.allotShares", { allotmentDetails: { value: "10,000 ordinary shares to MA Siu Fung (individual), Unit 9, 9 Test Road, Hong Kong, at HK$1 each in cash, fully paid. Existing capital is fully paid; no unpaid amounts" }, effDate: { value: "2026-10-20" } });
     const [reg] = await pendingProposals(ctx, { taskId: t.id, kind: "register_change" });
     expect(reg.summary).toMatch(/Allot 10,000 Ordinary shares to MA Siu Fung on 2026-10-20/);
     expect(reg.summary).toMatch(/significant controller/i);
+    const generated = await ctx.db.select().from(document).where(eq(document.taskId, t.id));
+    const form = generated.find(d => d.kind === "form")!;
+    const { readFormValues } = await import("@/documents/cr-forms");
+    expect(await readFormValues(await ctx.storage.get(form.storageKey!))).toMatchObject({ "fill_10_P.1": "10,000", "fill_4_P.3": "20,000", "fill_5_P.7": "MA", "fill_13_P.7": "10,000" });
+    expect(generated.find(d => d.kind === "certificate")?.extractedText).toContain("MA Siu Fung");
     await approveProposal(ctx, reg.id);
     const before = await membersAsAt(ctx, "cli_c1", "2026-10-19");
     const after = await membersAsAt(ctx, "cli_c1", "2026-10-20");

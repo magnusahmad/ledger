@@ -9,7 +9,7 @@ import { callAgent } from "./call";
 import { ReviewZ, type Review } from "./schemas";
 import { REVIEW_SYSTEM } from "./prompts";
 import { playbookCatalogue } from "./context";
-import { buildChecklist, computeDueDate, getTask, logEvent, setChecklist, type Task } from "@/domain/engine";
+import { buildChecklist, computeDueDate, invalidatePreparation, getTask, logEvent, setChecklist, type Task } from "@/domain/engine";
 import { getPlaybook } from "@/domain/playbooks";
 import { itemLabel, PROTECTED_KEYS } from "@/domain/labels";
 import { createProposal, pendingProposals } from "@/domain/proposals";
@@ -82,6 +82,7 @@ export async function applyReview(ctx: Ctx, taskId: string, r: Review, opts: { c
   // 3. Effective date.
   if (r.effectiveDate && isIsoDate(r.effectiveDate) && r.effectiveDate !== t.effectiveDate) {
     await ctx.db.update(taskT).set({ effectiveDate: r.effectiveDate, dueDate: await computeDueDate(ctx, pb, opts.clientId, r.effectiveDate) }).where(eq(taskT.id, taskId));
+    await invalidatePreparation(ctx, taskId, "Effective date changed");
     await logEvent(ctx, taskId, "task.effective_date", `Effective date now ${r.effectiveDate}`, {}, opts.actor ?? "agent");
   }
 
