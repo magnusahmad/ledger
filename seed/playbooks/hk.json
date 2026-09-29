@@ -841,7 +841,7 @@
   },
   {
     "id": "hk.transferIn",
-    "version": 3,
+    "version": 4,
     "jurisdiction": "HK",
     "category": "New client onboarding",
     "name": {
@@ -857,7 +857,7 @@
     "description": "Take over company secretarial services for an existing company: CDD, engagement, secretary and registered office changes.",
     "whenToUse": "A company that is not yet our client wants us to become its company secretary or provide its registered office, or asks us for services and is not yet onboarded. Use for any new client that already has a company.",
     "startedBy": "client request",
-    "personSelection": "none",
+    "personSelection": "existing_officer",
     "forms": "ND2A, NR1",
     "deadline": {
       "kind": "none"
@@ -964,6 +964,17 @@
       }
     ],
     "registerEffects": [
+      {
+        "kind": "appoint_officer",
+        "role": "secretary"
+      },
+      {
+        "kind": "cease_officer",
+        "role": "secretary"
+      },
+      {
+        "kind": "change_registered_office"
+      },
       {
         "kind": "activate_client"
       }

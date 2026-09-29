@@ -5613,12 +5613,21 @@ async function processInbound(ctx, messageId) {
         });
     }
     if (cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s)=>ONBOARDING.has(s.pbId))) {
+        const sender = await ctx.db.query.contact.findFirst({
+            where: (x, { and, eq })=>and(eq(x.clientId, clientId), eq(x.isInstructing, true))
+        });
         validStarts.unshift({
             a: {
                 type: "start_request",
                 taskId: null,
                 playbookId: "hk.transferIn",
-                person: null,
+                person: sender?.personId ? {
+                    mode: "existing",
+                    personId: sender.personId,
+                    nameEn: sender.name,
+                    nameZh: null,
+                    email: sender.email
+                } : null,
                 fields: [],
                 attachments: [],
                 effectiveDate: null,
@@ -5946,7 +5955,7 @@ const PERSON_FIELD = {
             patch[field] = v;
             continue;
         }
-        const norm = (s)=>s.toLowerCase().replace(/[^a-z0-9\u3400-\u9fff]/g, "");
+        const norm = (s)=>s.toLowerCase().replace(/[^a-z0-9\u3400-\u9fff\s]/g, " ").split(/\s+/).filter(Boolean).sort().join("");
         if (norm(onFile) !== norm(v)) {
             conflicts.push(key);
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$proposals$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createProposal"])(ctx, {
@@ -7582,10 +7591,11 @@ async function planRegisterChanges(ctx, taskId) {
         switch(e.kind){
             case "appoint_officer":
                 {
-                    const pid = e.role === "secretary" && [
+                    const firmPerson = e.role === "secretary" && [
                         "hk.changeSecretary",
                         "hk.transferIn"
-                    ].includes(pb.id) ? "per_firm" : person?.id;
+                    ].includes(pb.id) ? await ensureFirmPerson(ctx) : null;
+                    const pid = firmPerson ?? person?.id;
                     if (!pid) break;
                     const name = pid === "per_firm" ? "Caine Road Corporate Services Limited" : person.nameEn;
                     out.push({
@@ -7607,6 +7617,7 @@ async function planRegisterChanges(ctx, taskId) {
                 {
                     const current = await ctx.db.select().from(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["appointment"]).where((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$expressions$2f$conditions$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["and"])((0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$expressions$2f$conditions$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["eq"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["appointment"].clientId, t.clientId), (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$expressions$2f$conditions$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["eq"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["appointment"].role, e.role), (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$expressions$2f$conditions$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["isNull"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["appointment"].toDate)));
                     const targets = e.role === "secretary" ? current.filter((a)=>a.personId !== "per_firm") : current.filter((a)=>a.personId === person?.id);
+                    if (e.role === "secretary" && pb.id === "hk.transferIn" && !targets.length) break;
                     const date = v.lastDay ?? eff;
                     for (const a of targets)out.push({
                         effect: e.kind,
@@ -7782,6 +7793,22 @@ async function applyRegisterChanges(ctx, taskId) {
     const changes = await planRegisterChanges(ctx, taskId);
     for (const c of changes)await c.apply();
     return changes.map((c)=>c.description);
+}
+/** The firm itself, as corporate secretary. */ async function ensureFirmPerson(ctx) {
+    const existing = await ctx.db.query.person.findFirst({
+        where: (p, { eq })=>eq(p.id, "per_firm")
+    });
+    if (existing) return existing.id;
+    const { createPerson } = await __turbopack_context__.A("[project]/src/domain/records.ts [app-rsc] (ecmascript, async loader)");
+    const firm = await (await __turbopack_context__.A("[project]/src/domain/firm.ts [app-rsc] (ecmascript, async loader)")).getFirm(ctx);
+    return (await createPerson(ctx, {
+        id: "per_firm",
+        kind: "corporate",
+        nameEn: firm.legalName,
+        nameZh: firm.legalNameZh,
+        correspondenceAddress: firm.address,
+        email: firm.email
+    })).id;
 }
 }),
 "[project]/src/domain/screening.ts [app-rsc] (ecmascript)", ((__turbopack_context__) => {
@@ -8232,14 +8259,35 @@ class SigningError extends Error {
 }
 const OTP_TTL_MS = 10 * 60_000;
 const MAX_ATTEMPTS = 5;
+async function instructingSigner(ctx, clientId, role) {
+    const c = await ctx.db.query.contact.findFirst({
+        where: (x, { and, eq })=>and(eq(x.clientId, clientId), eq(x.isInstructing, true))
+    });
+    if (!c?.personId) return [];
+    const p = await ctx.db.query.person.findFirst({
+        where: (x, { eq })=>eq(x.id, c.personId)
+    });
+    return p ? [
+        {
+            personId: p.id,
+            name: p.nameEn,
+            email: p.email ?? c.email,
+            role
+        }
+    ] : [];
+}
 async function signersFor(ctx, clientId, personId, kind) {
     const today = ctx.clock.today();
-    if (kind === "directors") return (await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$records$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["officersAsAt"])(ctx, clientId, today, "director")).map((o)=>({
-            personId: o.personId,
-            name: o.person.nameEn,
-            email: o.person.email,
-            role: "Director"
-        }));
+    if (kind === "directors") {
+        const ds = (await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$records$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["officersAsAt"])(ctx, clientId, today, "director")).map((o)=>({
+                personId: o.personId,
+                name: o.person.nameEn,
+                email: o.person.email,
+                role: "Director"
+            }));
+        // A new client's directors aren't on file yet: the instructing director signs.
+        return ds.length ? ds : instructingSigner(ctx, clientId, "Director (as instructed)");
+    }
     if (kind === "person" && personId) {
         const p = await ctx.db.query.person.findFirst({
             where: (x, { eq })=>eq(x.id, personId)
@@ -8255,6 +8303,7 @@ async function signersFor(ctx, clientId, personId, kind) {
     }
     if (kind === "members") {
         const ms = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$shares$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["membersAsAt"])(ctx, clientId, today);
+        if (!ms.length) return instructingSigner(ctx, clientId, "Member (as instructed)");
         const people = await Promise.all([
             ...new Set(ms.map((m)=>m.personId))
         ].map((id)=>ctx.db.query.person.findFirst({

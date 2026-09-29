@@ -1548,6 +1548,7 @@ __turbopack_context__.s([
 // The client's secure upload link (/u/<token>): shows what is still needed per task in the
 // client's language, accepts files and typed details, and ticks the checklist.
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$expressions$2f$conditions$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/drizzle-orm/sql/expressions/conditions.js [app-rsc] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$names$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/domain/names.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/db/schema.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$crypto$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/crypto.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$engine$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/domain/engine.ts [app-rsc] (ecmascript)");
@@ -1557,6 +1558,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$records$2e$
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$proposals$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/domain/proposals.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$agent$2f$extract$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/agent/extract.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$agent$2f$call$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/agent/call.ts [app-rsc] (ecmascript)");
+;
 ;
 ;
 ;
@@ -1693,14 +1695,13 @@ async function portalUpload(ctx, token, u) {
 async function applyExtraction(ctx, taskId, personId, fields, source) {
     const person = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$records$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getPersonProtected"])(ctx, personId);
     const t = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$engine$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getTask"])(ctx, taskId);
-    const norm = (s)=>s.toLowerCase().replace(/[^a-z0-9㐀-鿿]/g, "");
     const patch = {};
     let next = t.checklist;
     for (const f of fields){
         const field = PERSON_FIELD[f.key];
         if (!field || !f.value) continue;
         const onFile = person[field];
-        if (onFile && norm(onFile) !== norm(f.value)) {
+        if (onFile && !(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$names$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["sameValue"])(onFile, f.value)) {
             await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$proposals$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createProposal"])(ctx, {
                 kind: "conflict",
                 title: `Conflicting ${(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$labels$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["itemLabel"])(f.key)} for ${person.nameEn}`,

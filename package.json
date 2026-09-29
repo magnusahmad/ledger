@@ -20,7 +20,8 @@
     "eval:llm": "tsx --env-file-if-exists=.env scripts/eval-llm.ts",
     "forms:check": "tsx --env-file-if-exists=.env scripts/forms-check.ts",
     "screening:update": "tsx --env-file-if-exists=.env scripts/screening-update.ts",
-    "demo:pay": "tsx --env-file-if-exists=.env scripts/demo-pay.ts"
+    "demo:pay": "tsx --env-file-if-exists=.env scripts/demo-pay.ts",
+    "demo:rehearse": "tsx --env-file-if-exists=.env scripts/rehearse.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
