@@ -19,3 +19,6 @@ storage/
 test-results/
 playwright-report/
 .next-e2e/
+.next/
+.next-build/
+*.tsbuildinfo
