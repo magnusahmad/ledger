@@ -28,9 +28,10 @@ export function jurisdictionDeadlines(c: typeof client.$inferSelect, today: stri
   if (c.jurisdiction === "MO" && c.fyeMonth && c.fyeDay) {
     // Approval of annual accounts by the quota holders (firm default: within 3 months of year end; verify).
     const pad = (x: number) => String(x).padStart(2, "0");
+    const lastAgm = (c.jurisdictionData as { lastAgm?: string }).lastAgm ?? "";
     for (const y of [Y - 1, Y]) {
       const fye = `${y}-${pad(c.fyeMonth)}-${pad(c.fyeDay)}`;
-      if (fye >= today) continue;
+      if (fye >= today || lastAgm >= fye) continue;
       out.push({ key: "MOACC", label: `Approve accounts for year ended ${fye}`, dueDate: addMonths(fye, jd.fyeApprovalMonths ?? 3), playbookId: "mo.approveAccounts", periodKey: `MOACC:${y}`, periodYear: y });
     }
   }

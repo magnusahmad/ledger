@@ -6,7 +6,7 @@ import { getProposal } from "@/domain/proposals";
 import { getTask, tasksForRequest } from "@/domain/engine";
 import { itemLabel, money } from "@/domain/labels";
 import { attachment, client, document, invoice, invoiceLine, message, request as requestT } from "@/db/schema";
-import { ReviewForm, RedraftButtons, InlineEdit } from "./client";
+import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
 import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
 import { ActionButton } from "@/components/ActionForm";
 import { Pill, ago, fmt } from "@/components/ui";
@@ -35,7 +35,10 @@ export default async function Review({ params }: { params: Promise<{ id: string 
       {!decided && <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>}
     </div>
   );
-  if (decided) return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>This was {p.status}{p.decidedAt ? ` ${ago(p.decidedAt)}` : ""}.</div></>;
+  if (decided) {
+    const recent = p.decidedAt && Date.now() - p.decidedAt.getTime() < 15_000;
+    return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>{p.status === "approved" ? "Done" : "Dismissed"}{p.decidedAt ? ` ${ago(p.decidedAt)}` : ""}. {recent ? "Taking you back to Today…" : <Link href="/">Back to Today</Link>}</div>{recent && <AutoRedirect to="/" />}</>;
+  }
 
   if (p.kind === "send_message") {
     const draft = (await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }))!;

@@ -13,7 +13,8 @@ export default async function Demo() {
   const invs = await ctx.db.select({ i: invoice, c: client }).from(invoice).innerJoin(client, eq(client.id, invoice.clientId)).where(inArray(invoice.status, ["sent", "part_paid"])).orderBy(desc(invoice.createdAt));
   const lastOut = await ctx.db.select({ m: message, v: conversation }).from(message).innerJoin(conversation, eq(conversation.id, message.conversationId)).where(eq(message.status, "sent")).orderBy(desc(message.at)).limit(1);
   const fake = ctx.config.mailProvider === "fake";
-  const demoEmail = ctx.config.DEMO_EXISTING_CLIENT_EMAIL ?? "director@kbtrading.example";
+  const chan = await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, "per_p1") });
+  const demoEmail = chan?.email ?? ctx.config.DEMO_EXISTING_CLIENT_EMAIL ?? "";
   return (
     <>
       <div className="top"><div><h1>Demo panel</h1><p className="sub">Controls for rehearsing and running the investor demo. Not part of the product navigation.</p></div><div className="row"><LiveRefresh /><ActionButton action={workerTickAction}>Run worker tick</ActionButton></div></div>
@@ -23,10 +24,10 @@ export default async function Demo() {
           {fake ? (
             <ActionForm action={simulateEmailAction} submit="Deliver email" resetOnSuccess>
               <div className="grid2"><div className="fld"><label className="f" htmlFor="from">From</label><input id="from" type="email" name="from" defaultValue={demoEmail} required /></div><div className="fld" style={{ marginTop: 0 }}><label className="f" htmlFor="fromName">Name</label><input id="fromName" type="text" name="fromName" defaultValue="CHAN Tai Man" /></div></div>
-              <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue={lastOut[0] ? lastOut[0].m.subject ?? "" : "New director"} /></div>
+              <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue="New director" /></div>
               <div className="fld"><label className="f" htmlFor="text">Body</label><textarea id="text" name="text" defaultValue="Hi Karen, we'd like to add my business partner Wong Ka Man as a director from 15 October. Thanks, Tai Man" /></div>
               <div className="fld"><label className="f" htmlFor="files">Attachments</label><input id="files" type="file" name="files" multiple /></div>
-              {lastOut[0]?.m.rfcMessageId && <label className="small row" style={{ marginTop: 8 }}><input type="checkbox" name="inReplyTo" value={lastOut[0].m.rfcMessageId} defaultChecked /> Reply in the thread “{lastOut[0].m.subject}”</label>}
+              {lastOut[0]?.m.rfcMessageId && <label className="small row" style={{ marginTop: 8 }}><input type="checkbox" name="inReplyTo" value={lastOut[0].m.rfcMessageId} /> Reply in the thread “{lastOut[0].m.subject}”</label>}
             </ActionForm>
           ) : <p className="small">Ask the investor to email <b>{ctx.mail.address || "the connected mailbox"}</b>. It appears on Today within about 20 seconds. Test sender recognised as an existing client: <b>{demoEmail}</b>.</p>}
         </div>

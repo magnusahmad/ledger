@@ -685,7 +685,7 @@
   },
   {
     "id": "hk.incorporation",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "New client onboarding",
     "name": {
@@ -742,9 +742,6 @@
         "key": "selfie",
         "scope": "person",
         "condition": "personLacksCurrentCdd"
-      },
-      {
-        "key": "engagement"
       }
     ],
     "steps": [
@@ -798,6 +795,11 @@
     ],
     "documents": [
       {
+        "template": "tpl:engagement-letter",
+        "name": "Engagement letter",
+        "signers": "directors"
+      },
+      {
         "template": "cr:NNC1",
         "name": "Form NNC1: incorporation form",
         "signers": "none"
@@ -839,7 +841,7 @@
   },
   {
     "id": "hk.transferIn",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "New client onboarding",
     "name": {
@@ -863,9 +865,6 @@
     "requirements": [
       {
         "key": "companyNumber"
-      },
-      {
-        "key": "engagement"
       },
       {
         "key": "scList"

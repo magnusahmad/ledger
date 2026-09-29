@@ -61,3 +61,9 @@ export function InlineEdit({ action, name, value, label, prefix }: { action: Act
     </form>
   );
 }
+
+export function AutoRedirect({ to, ms = 900 }: { to: string; ms?: number }) {
+  const router = useRouter();
+  useEffect(() => { const t = setTimeout(() => router.push(to), ms); return () => clearTimeout(t); }, [router, to, ms]);
+  return null;
+}

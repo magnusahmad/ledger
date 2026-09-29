@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Ctx } from "@/lib/ctx";
 import { ensureFirm } from "@/domain/firm";
-import { addContact, appoint, createClient, createPerson } from "@/domain/records";
+import { addContact, appoint, createClient, createPerson, updateClient } from "@/domain/records";
 import { allot, createShareClass, transfer } from "@/domain/shares";
 import { loadPlaybookLibrary } from "@/domain/playbooks";
 import {
@@ -17,7 +17,7 @@ import { Crypto } from "@/lib/crypto";
 
 type DemoClient = {
   id: string; name: Record<Lang, string>; cr: string; inc: string; fye: [number, number]; br: string; risk: string; kyc: string;
-  contactName: string; lang: Lang; office: string; officeZh: string; directors: string[]; people: string[]; status: string;
+  contactName: string; contact: Record<Lang, string>; lang: Lang; office: string; officeZh: string; directors: string[]; people: string[]; status: string;
   terms?: number; staff: string; type: string; op: string; group: string; listedSub: boolean; biz: { en: string; zh: string };
   docLang: string; brNo: string; brTerm: number; branches: string[]; accTo: string; lastAGM: string; lastAR: string; auditor: string;
   banks: [string, string, string][]; shares: [string, string, number, number, string][]; members: [string, string, number][];
@@ -121,7 +121,7 @@ export async function seedDemo(ctx: Ctx, opts: { demoEmail?: string | null } = {
       await addContact(ctx, {
         clientId: cl.id, personId: pid ?? null, name: ct.name, role: ct.role, email,
         channel: ct.ch.startsWith("WeChat") ? "wechat" : "email", language: ct.lang, isBilling: !!ct.billing,
-        isInstructing: /instruction/i.test(ct.role) || /Director/.test(ct.role), salutation: ct.sal ?? null,
+        isInstructing: /instruction/i.test(ct.role) || /Director/.test(ct.role), salutation: ct.sal ?? (ct.name === c.contactName ? c.contact : null),
       });
     }
     // CDD on file for directors and controllers whose KYC is recorded.
@@ -191,6 +191,11 @@ async function seedOtherJurisdictions(ctx: Ctx) {
   const twCap = await createShareClass(ctx, { clientId: tw.id, name: "Capital contribution", nameZh: "出資額", currency: "TWD", unit: "capital" });
   await allot(ctx, { clientId: tw.id, shareClassId: twCap.id, date: "2019-08-01", toPersonId: lin.id, quantity: 5000000, amountPaidCents: 500000000 });
   await addContact(ctx, { clientId: tw.id, personId: lin.id, name: "LIN Chih-Hao", role: "Responsible person, gives instructions", email: lin.email, channel: "email", language: "tc", isInstructing: true, isBilling: true });
+  await ctx.db.insert(filing).values([
+    { id: ctx.ids.next("fil"), firmId: ctx.firmId, clientId: cn.id, form: "Annual report", description: "Annual report for 2025", filedOn: "2026-04-18", periodKey: "CNAR:2025", reference: "GSXT-2025-0418" },
+    { id: ctx.ids.next("fil"), firmId: ctx.firmId, clientId: tw.id, form: "Article 22-1", description: "Article 22-1 annual declaration 2026", filedOn: "2026-03-12", periodKey: "TW221:2026", reference: "TDCC-2026-0312" },
+  ]);
+  await updateClient(ctx, mo.id, { jurisdictionData: { ...mo.jurisdictionData, lastAgm: "2026-03-20" } }, "Seed");
   for (const pid of ["per_cn_liu", "per_cn_wang", "per_mo_b", "per_tw_lin"]) await ctx.db.insert(cddRecord).values({ id: ctx.ids.next("cdd"), firmId: ctx.firmId, personId: pid, riskRating: "low", verifiedOn: "2025-06-01", reviewDueOn: "2028-06-01" });
 }
 
