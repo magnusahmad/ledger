@@ -5,7 +5,7 @@ import { message, person as personT, task as taskT } from "@/db/schema";
 import { onApprove, onReject, editDistance, type Proposal } from "./proposals";
 import { sendMessage, invoiceForRequest } from "./outbound";
 import { advance, cancelTask, getTask, logEvent, markStepState, setChecklist, startTask, tasksForRequest } from "./engine";
-import { markInvoiceSent, voidInvoice, recalcTotal } from "./invoices";
+import { markInvoiceSent, voidInvoice, recalcTotal, applyRevision, type RevisionLine } from "./invoices";
 import { updatePerson } from "./records";
 import { renderInvoicePdf } from "@/documents/invoice-pdf";
 import { enqueue } from "./jobs";
@@ -104,3 +104,12 @@ onApprove("change_request", async (ctx, p) => {
 
 export type { Proposal };
 void personT; void invoice;
+
+onApprove("revise_invoice", async (ctx, p, opts) => {
+  const { invoiceId, reason, lines } = p.payload as { invoiceId: string; reason: string; lines?: RevisionLine[] };
+  const edits = opts.edits as { lines?: RevisionLine[] } | undefined;
+  const use = edits?.lines ?? lines;
+  if (!use?.length) throw new Error("A revision needs its new lines");
+  const nw = await applyRevision(ctx, invoiceId, { reason, lines: use });
+  if (nw.status === "sent") await enqueue(ctx, "xero.sync_invoice", { invoiceId: nw.id }, `xero.invoice:${nw.id}`);
+});

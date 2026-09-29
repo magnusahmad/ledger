@@ -23,6 +23,8 @@ import { getFirm } from "./firm";
 import { itemLabel, money, PROTECTED_KEYS } from "./labels";
 import { fmtDate } from "./dates";
 import "./handlers";
+import "./payments";
+import "./accounting-sync";
 
 const MIN_CONFIDENCE = 0.7;
 const ONBOARDING = new Set(["hk.transferIn", "hk.incorporation"]);
