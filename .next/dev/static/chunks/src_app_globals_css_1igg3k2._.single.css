@@ -190,6 +190,11 @@ main {
   padding: 32px 44px 72px;
 }
 
+.top > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .top {
   flex-wrap: wrap;
   justify-content: space-between;
@@ -294,6 +299,17 @@ main {
   background: var(--surface);
   color: var(--red);
   border-color: var(--line2);
+}
+
+.btn {
+  max-width: 100%;
+}
+
+@media (max-width: 560px) {
+  .btn {
+    white-space: normal;
+    text-align: center;
+  }
 }
 
 .btn.sm {

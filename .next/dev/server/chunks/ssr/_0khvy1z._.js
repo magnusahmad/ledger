@@ -2003,13 +2003,11 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$portal$2e$t
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$signing$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/domain/signing.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/db/schema.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$domain$2f$demo$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/domain/demo.ts [app-rsc] (ecmascript)");
-var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$integrations$2f$mail$2f$fake$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/integrations/mail/fake.ts [app-rsc] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/build/webpack/loaders/next-flight-loader/action-validate.js [app-rsc] (ecmascript)");
 var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
     __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$server$2f$ctx$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__
 ]);
 [__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$server$2f$ctx$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__] = __turbopack_async_dependencies__.then ? (await __turbopack_async_dependencies__)() : __turbopack_async_dependencies__;
-;
 ;
 ;
 ;
@@ -2267,9 +2265,10 @@ async function simulatePaymentAction(_prev, form) {
 async function simulateEmailAction(_prev, form) {
     const ctx = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$server$2f$ctx$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getCtx"])();
     try {
-        if (!(ctx.mail instanceof __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$integrations$2f$mail$2f$fake$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["FakeMail"])) throw new Error("A real mailbox is connected: send a real email to it instead");
+        const fake = ctx.mail;
+        if (typeof fake.deliver !== "function") throw new Error("A real mailbox is connected: send a real email to it instead");
         const files = form.getAll("files").filter((f)=>f instanceof File && f.size > 0);
-        ctx.mail.deliver({
+        fake.deliver({
             from: {
                 email: String(form.get("from")),
                 name: String(form.get("fromName") || "") || null

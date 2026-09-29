@@ -134,9 +134,10 @@ export async function simulatePaymentAction(_prev: ActionResult | null, form: Fo
 export async function simulateEmailAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   const ctx = getCtx();
   try {
-    if (!(ctx.mail instanceof FakeMail)) throw new Error("A real mailbox is connected: send a real email to it instead");
+    const fake = ctx.mail as FakeMail;
+    if (typeof (fake as Partial<FakeMail>).deliver !== "function") throw new Error("A real mailbox is connected: send a real email to it instead");
     const files = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-    ctx.mail.deliver({
+    fake.deliver({
       from: { email: String(form.get("from")), name: String(form.get("fromName") || "") || null }, subject: String(form.get("subject") || "(no subject)"), text: String(form.get("text") || ""),
       inReplyTo: String(form.get("inReplyTo") || "") || null,
       attachments: await Promise.all(files.map(async (f) => ({ filename: f.name, mime: f.type || "application/octet-stream", content: Buffer.from(await f.arrayBuffer()) }))),

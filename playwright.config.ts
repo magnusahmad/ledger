@@ -13,8 +13,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
-  globalSetup: "./e2e/global-setup.ts",
   use: { baseURL: "http://localhost:3100", trace: "retain-on-failure", screenshot: "only-on-failure" },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: { command: "npx next dev -p 3100", url: "http://localhost:3100/api/live", reuseExistingServer: false, timeout: 180_000, env },
+  webServer: { command: "rm -rf storage/e2e && mkdir -p storage/e2e/shots && npx tsx --env-file-if-exists=.env scripts/seed.ts && npx next dev -p 3100", url: "http://localhost:3100/api/live", reuseExistingServer: false, timeout: 180_000, env },
 });
