@@ -16,6 +16,8 @@ import { FakeScreening } from "@/integrations/screening/fake";
 import { FileList } from "@/integrations/json-store";
 import { AirwallexBank } from "@/integrations/bank/airwallex";
 import { XeroMcpAccounting } from "@/integrations/accounting/xero-mcp";
+import { OpenSanctionsApi } from "@/integrations/screening/opensanctions-api";
+import { LocalOpenSanctions } from "@/integrations/screening/opensanctions-local";
 import { LazyMail } from "@/integrations/mail/lazy";
 import { GmailMail, gmailOAuthClient } from "@/integrations/mail/gmail";
 import { AgentMailMail } from "@/integrations/mail/agentmail";
@@ -80,4 +82,8 @@ function makeAccounting(config: Config): AccountingProvider {
   }
   return new FakeAccounting();
 }
-function makeScreening(_config: Config): ScreeningProvider { return new FakeScreening(); }
+function makeScreening(config: Config): ScreeningProvider {
+  if (config.screeningProvider === "opensanctions-api") return new OpenSanctionsApi(config.OPENSANCTIONS_API_KEY!);
+  if (config.screeningProvider === "opensanctions-local") return new LocalOpenSanctions(path.join(STORAGE_ROOT, "opensanctions/targets.simple.csv"));
+  return new FakeScreening();
+}

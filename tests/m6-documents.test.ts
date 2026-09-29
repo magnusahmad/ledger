@@ -91,10 +91,8 @@ describe("Generate, file, register and confirm steps", () => {
     const { tickItem } = await import("@/domain/step-hooks");
     await markStepState(ctx, t.id, "send", { sent: true });
     for (const k of ["idCopy", "addrProof", "selfie"]) await tickItem(ctx, t.id, k, null);
-    let cur = await getTask(ctx, t.id);
-    expect(cur._steps[cur.stepIndex].kind).toBe("screen");
-    await markStepState(ctx, t.id, "screen", { cleared: true });
-    cur = await advance(ctx, t.id);
+    // No screening hits (fake provider), so screening clears on its own and documents are generated.
+    const cur = await getTask(ctx, t.id);
     expect(cur._steps[cur.stepIndex].kind).toBe("sign");
     const docs = await ctx.db.select().from(document).where(eq(document.taskId, t.id));
     expect(docs.map((d) => d.title).sort()).toEqual(["Board written resolution: appointment of director", "Consent to act as director", "Form ND2A: appointment"]);

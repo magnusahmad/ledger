@@ -26,8 +26,6 @@ async function atSignStep() {
   const { tickItem } = await import("@/domain/step-hooks");
   await markStepState(ctx, t.id, "send", { sent: true });
   for (const k of ["idCopy", "addrProof", "selfie"]) await tickItem(ctx, t.id, k, null);
-  await markStepState(ctx, t.id, "screen", { cleared: true });
-  await advance(ctx, t.id);
   return { t, person: p };
 }
 
