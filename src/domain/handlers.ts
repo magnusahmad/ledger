@@ -21,6 +21,10 @@ onApprove("send_message", async (ctx, p, opts) => {
   const inv = await invoiceForRequest(ctx, (p.payload.requestId as string | null) ?? null);
   const attachInvoice = inv && inv.status === "draft" && (m.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
   const attachments = attachInvoice ? [{ filename: `${inv!.number}.pdf`, mime: "application/pdf", content: await renderInvoicePdf(ctx, inv!.id) }] : [];
+  for (const docId of (p.payload.attachDocumentIds as string[] | undefined) ?? []) {
+    const d = await ctx.db.query.document.findFirst({ where: (x, { eq }) => eq(x.id, docId) });
+    if (d?.storageKey) attachments.push({ filename: d.title.endsWith(".pdf") ? d.title : `${d.title}.pdf`, mime: d.mime ?? "application/pdf", content: await ctx.storage.get(d.storageKey) });
+  }
   await sendMessage(ctx, messageId, { edits, attachments, approvedBy: ctx.userId });
   if (attachInvoice) {
     await markInvoiceSent(ctx, inv!.id);
