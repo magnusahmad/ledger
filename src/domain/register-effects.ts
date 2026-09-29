@@ -23,7 +23,8 @@ export async function planRegisterChanges(ctx: Ctx, taskId: string): Promise<Cha
   for (const e of pb.registerEffects) {
     switch (e.kind) {
       case "appoint_officer": {
-        const pid = e.role === "secretary" && ["hk.changeSecretary", "hk.transferIn"].includes(pb.id) ? "per_firm" : person?.id;
+        const firmPerson = e.role === "secretary" && ["hk.changeSecretary", "hk.transferIn"].includes(pb.id) ? await ensureFirmPerson(ctx) : null;
+        const pid = firmPerson ?? person?.id;
         if (!pid) break;
         const name = pid === "per_firm" ? "Caine Road Corporate Services Limited" : person!.nameEn;
         out.push({ effect: e.kind, description: `Appoint ${name} as ${e.role.replace("_", " ")} with effect from ${eff}`, apply: async () => { await appoint(ctx, { clientId: t.clientId, personId: pid, role: e.role as never, fromDate: eff, sourceTaskId: t.id }); } });
@@ -32,6 +33,7 @@ export async function planRegisterChanges(ctx: Ctx, taskId: string): Promise<Cha
       case "cease_officer": {
         const current = await ctx.db.select().from(appointment).where(and(eq(appointment.clientId, t.clientId), eq(appointment.role, e.role as never), isNull(appointment.toDate)));
         const targets = e.role === "secretary" ? current.filter((a) => a.personId !== "per_firm") : current.filter((a) => a.personId === person?.id);
+        if (e.role === "secretary" && pb.id === "hk.transferIn" && !targets.length) break;
         const date = v.lastDay ?? eff;
         for (const a of targets) out.push({ effect: e.kind, description: `End ${e.role} appointment (${a.personId === person?.id ? person?.nameEn : a.personId}) on ${date}`, apply: async () => { await ceaseAppointment(ctx, a.id, date, t.id); } });
         break;
@@ -90,4 +92,13 @@ export async function applyRegisterChanges(ctx: Ctx, taskId: string) {
   const changes = await planRegisterChanges(ctx, taskId);
   for (const c of changes) await c.apply();
   return changes.map((c) => c.description);
+}
+
+/** The firm itself, as corporate secretary. */
+async function ensureFirmPerson(ctx: Ctx) {
+  const existing = await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, "per_firm") });
+  if (existing) return existing.id;
+  const { createPerson } = await import("./records");
+  const firm = await (await import("./firm")).getFirm(ctx);
+  return (await createPerson(ctx, { id: "per_firm", kind: "corporate", nameEn: firm.legalName, nameZh: firm.legalNameZh, correspondenceAddress: firm.address, email: firm.email })).id;
 }

@@ -22,12 +22,24 @@ const MAX_ATTEMPTS = 5;
 type SigField = { field: string; page: number; x: number; y: number; w: number; h: number };
 type GenDoc = { id: string; signers?: string; fields: SigField[] };
 
+async function instructingSigner(ctx: Ctx, clientId: string, role: string) {
+  const c = await ctx.db.query.contact.findFirst({ where: (x, { and, eq }) => and(eq(x.clientId, clientId), eq(x.isInstructing, true)) });
+  if (!c?.personId) return [];
+  const p = await ctx.db.query.person.findFirst({ where: (x, { eq }) => eq(x.id, c.personId!) });
+  return p ? [{ personId: p.id, name: p.nameEn, email: p.email ?? c.email, role }] : [];
+}
+
 async function signersFor(ctx: Ctx, clientId: string, personId: string | null, kind: string | undefined) {
   const today = ctx.clock.today();
-  if (kind === "directors") return (await officersAsAt(ctx, clientId, today, "director")).map((o) => ({ personId: o.personId, name: o.person.nameEn, email: o.person.email, role: "Director" }));
+  if (kind === "directors") {
+    const ds = (await officersAsAt(ctx, clientId, today, "director")).map((o) => ({ personId: o.personId, name: o.person.nameEn, email: o.person.email, role: "Director" }));
+    // A new client's directors aren't on file yet: the instructing director signs.
+    return ds.length ? ds : instructingSigner(ctx, clientId, "Director (as instructed)");
+  }
   if (kind === "person" && personId) { const p = await ctx.db.query.person.findFirst({ where: (x, { eq }) => eq(x.id, personId) }); return p ? [{ personId: p.id, name: p.nameEn, email: p.email, role: "Appointee" }] : []; }
   if (kind === "members") {
     const ms = await membersAsAt(ctx, clientId, today);
+    if (!ms.length) return instructingSigner(ctx, clientId, "Member (as instructed)");
     const people = await Promise.all([...new Set(ms.map((m) => m.personId))].map((id) => ctx.db.query.person.findFirst({ where: (x, { eq }) => eq(x.id, id) })));
     return people.filter(Boolean).map((p) => ({ personId: p!.id, name: p!.nameEn, email: p!.email, role: "Member" }));
   }

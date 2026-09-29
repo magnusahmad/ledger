@@ -2,6 +2,7 @@
 // client's language, accepts files and typed details, and ticks the checklist.
 import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
+import { sameValue } from "./names";
 import { client as clientT, document, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
 import { advance, getTask, logEvent, outstanding, setChecklist, tasksForRequest } from "./engine";
@@ -80,14 +81,13 @@ export async function portalUpload(ctx: Ctx, token: string, u: { taskId: string;
 async function applyExtraction(ctx: Ctx, taskId: string, personId: string, fields: { key: string; value: string; quote: string | null }[], source: string) {
   const person = await getPersonProtected(ctx, personId);
   const t = await getTask(ctx, taskId);
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9㐀-鿿]/g, "");
   const patch: Record<string, string> = {};
   let next = t.checklist;
   for (const f of fields) {
     const field = PERSON_FIELD[f.key];
     if (!field || !f.value) continue;
     const onFile = (person as Record<string, unknown>)[field] as string | null;
-    if (onFile && norm(onFile) !== norm(f.value)) {
+    if (onFile && !sameValue(onFile, f.value)) {
       await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(f.key)} for ${person.nameEn}`, summary: `Our records and ${source} differ.`, clientId: t.clientId, taskId, payload: { taskId, key: f.key, onFile: ["idNo", "resAddr"].includes(f.key) ? "(protected value on file)" : onFile, incoming: f.value, personId, question: `Please confirm your ${itemLabel(f.key).toLowerCase()}.` } });
       continue;
     }

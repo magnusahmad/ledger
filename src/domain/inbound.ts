@@ -3,6 +3,7 @@
 // as a proposal), and draft one reply for approval.
 import { and, asc, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
+import { sameValue } from "./names";
 import type { InboundMail } from "@/integrations/types";
 import { attachment, client as clientT, conversation, document, message, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
@@ -133,7 +134,8 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
     else unsupported.push({ ...a, type: "unsupported_request", description: a.description ?? `Request for ${a.playbookId}` });
   }
   if (cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s) => ONBOARDING.has(s.pbId))) {
-    validStarts.unshift({ a: { type: "start_request", taskId: null, playbookId: "hk.transferIn", person: null, fields: [], attachments: [], effectiveDate: null, description: "Onboarding as a new client", confidence: 1, evidence: null }, pbId: "hk.transferIn" });
+    const sender = await ctx.db.query.contact.findFirst({ where: (x, { and, eq }) => and(eq(x.clientId, clientId!), eq(x.isInstructing, true)) });
+    validStarts.unshift({ a: { type: "start_request", taskId: null, playbookId: "hk.transferIn", person: sender?.personId ? { mode: "existing", personId: sender.personId, nameEn: sender.name, nameZh: null, email: sender.email } : null, fields: [], attachments: [], effectiveDate: null, description: "Onboarding as a new client", confidence: 1, evidence: null }, pbId: "hk.transferIn" });
   }
 
   let requestId: string | null = null;
@@ -308,8 +310,7 @@ async function writePersonParticulars(ctx: Ctx, personId: string, ex: Extracted,
     if (!v) continue;
     const onFile = (p as Record<string, unknown>)[field] as string | null;
     if (!onFile) { patch[field] = v; continue; }
-    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9\u3400-\u9fff]/g, "");
-    if (norm(onFile) !== norm(v)) {
+    if (!sameValue(onFile, v)) {
       conflicts.push(key);
       await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(key)} for ${p.nameEn}`, summary: `On file: ${PROTECTED_KEYS.has(key) ? "(protected)" : onFile}. Client now says: ${v}.`, clientId, taskId: taskId ?? null, payload: { taskId: taskId ?? null, key, onFile: PROTECTED_KEYS.has(key) ? "(protected value on file)" : onFile, incoming: v, personId, question: `Could you please confirm your ${itemLabel(key).toLowerCase()}? It differs from our records.` } });
     }

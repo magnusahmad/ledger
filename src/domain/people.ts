@@ -1,10 +1,9 @@
 // Resolving the person an instruction is about, without creating duplicates.
 import { and, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
+import { sameValue } from "./names";
 import { appointment, contact, person, shareMovement } from "@/db/schema";
 import { createPerson } from "./records";
-
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9㐀-鿿]/g, "");
 
 export async function peopleLinkedToClient(ctx: Ctx, clientId: string) {
   const ids = new Set<string>();
@@ -22,11 +21,11 @@ export async function resolvePerson(ctx: Ctx, clientId: string, p: { personId?: 
     if (row) return row;
   }
   const linked = await peopleLinkedToClient(ctx, clientId);
-  const byName = linked.find((x) => (p.nameEn && norm(x.nameEn) === norm(p.nameEn)) || (p.nameZh && x.nameZh && norm(x.nameZh) === norm(p.nameZh)));
+  const byName = linked.find((x) => (p.nameEn && sameValue(x.nameEn, p.nameEn)) || (p.nameZh && x.nameZh && sameValue(x.nameZh, p.nameZh)));
   if (byName) return byName;
   if (p.email) {
     const byEmail = await ctx.db.query.person.findFirst({ where: and(eq(person.firmId, ctx.firmId), sql`lower(${person.email}) = ${p.email.toLowerCase()}`) });
-    if (byEmail && (!p.nameEn || norm(byEmail.nameEn) === norm(p.nameEn))) return byEmail;
+    if (byEmail && (!p.nameEn || sameValue(byEmail.nameEn, p.nameEn))) return byEmail;
   }
   return createPerson(ctx, { nameEn: p.nameEn || p.nameZh || "Unnamed person", nameZh: p.nameZh ?? null, email: p.email ?? null });
 }
