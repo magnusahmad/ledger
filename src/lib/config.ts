@@ -10,9 +10,11 @@ const Env = z.object({
   or_api_key: z.string().optional(),
   LLM_MODEL: z.string().default("google/gemini-3.8-flash"),
   LLM_MODE: z.enum(["live", "fixture"]).optional(),
+  LLM_REASONING: z.enum(["none", "low", "medium", "high"]).default("low"),
   MAIL_PROVIDER: z.enum(["gmail", "agentmail", "fake"]).optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GMAIL_ADDRESS: z.string().optional(),
   AGENTMAIL_API_KEY: z.string().optional(),
   AGENTMAIL_INBOX: z.string().optional(),
   AIRWALLEX_CLIENT_ID: z.string().optional(),
@@ -40,7 +42,7 @@ export type Config = z.infer<typeof Env> & {
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
   const e = Env.parse(env);
   const gmailReady = !!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET);
-  const agentmailReady = !!e.AGENTMAIL_API_KEY;
+  const agentmailReady = !!(e.AGENTMAIL_API_KEY && e.AGENTMAIL_INBOX);
   const mailProvider =
     e.MAIL_PROVIDER ?? (gmailReady ? "gmail" : agentmailReady ? "agentmail" : "fake");
   return {

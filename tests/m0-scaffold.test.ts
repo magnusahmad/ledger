@@ -10,7 +10,7 @@ describe("M0 scaffold", () => {
 
   it("config picks Gmail when OAuth client keys are present, and AgentMail as the fallback", () => {
     expect(loadConfig({ GOOGLE_CLIENT_ID: "a", GOOGLE_CLIENT_SECRET: "b", AGENTMAIL_API_KEY: "c" }).mailProvider).toBe("gmail");
-    expect(loadConfig({ AGENTMAIL_API_KEY: "c" }).mailProvider).toBe("agentmail");
+    expect(loadConfig({ AGENTMAIL_API_KEY: "c", AGENTMAIL_INBOX: "desk@agentmail.to" }).mailProvider).toBe("agentmail");
   });
 
   it("bank and accounting stay fake until their credentials are supplied", () => {

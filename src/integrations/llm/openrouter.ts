@@ -3,13 +3,14 @@ import type { LlmProvider, LlmRequest, LlmResponse } from "../types";
 
 export class OpenRouterLlm implements LlmProvider {
   readonly name = "openrouter";
-  constructor(private apiKey: string, private model: string, private appUrl = "http://localhost:3000") {}
+  constructor(private apiKey: string, private model: string, private appUrl = "http://localhost:3000", private reasoning: "none" | "low" | "medium" | "high" = "low") {}
 
   async complete(req: LlmRequest): Promise<LlmResponse> {
     const body = {
       model: this.model,
       messages: req.messages,
       temperature: req.temperature ?? 0.2,
+      ...(this.reasoning === "none" ? { reasoning: { enabled: false } } : { reasoning: { effort: this.reasoning } }),
       response_format: {
         type: "json_schema",
         json_schema: { name: req.schemaName, strict: true, schema: req.schema },
