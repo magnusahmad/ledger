@@ -1,9 +1,31 @@
 // Product LLM via OpenRouter (DECISIONS.md #22). Only the running product uses this.
 import type { LlmProvider, LlmRequest, LlmResponse } from "../types";
+import { getDefaultAutoSelectFamilyAttemptTimeout, setDefaultAutoSelectFamilyAttemptTimeout } from "node:net";
+
+function connectionCodes(error: unknown, depth = 0): string[] {
+  if (!error || typeof error !== "object" || depth > 5) return [];
+  const e = error as { code?: unknown; cause?: unknown; errors?: unknown[] };
+  return [...(typeof e.code === "string" && /^[A-Z][A-Z0-9_]{1,60}$/.test(e.code) ? [e.code] : []), ...connectionCodes(e.cause, depth + 1), ...(Array.isArray(e.errors) ? e.errors.flatMap(x => connectionCodes(x, depth + 1)) : [])];
+}
+
+function reportableError(error: unknown, apiKey: string) {
+  const original = error instanceof Error ? error.message : String(error);
+  const codes = [...new Set(connectionCodes(error))];
+  const message = original === "fetch failed"
+    ? `OpenRouter connection failed${codes.length ? ` (${codes.join(", ")})` : ""}. Check connectivity to openrouter.ai, DNS and any configured proxy.`
+    : original;
+  // Provider error bodies occasionally echo request values. Never persist the key.
+  return Object.assign(new Error(apiKey ? message.replaceAll(apiKey, "[redacted]") : message), { fatal: !!(error as { fatal?: boolean } | null)?.fatal });
+}
 
 export class OpenRouterLlm implements LlmProvider {
   readonly name = "openrouter";
-  constructor(private apiKey: string, private model: string, private appUrl = "http://localhost:3000", private reasoning: "none" | "low" | "medium" | "high" = "low") {}
+  constructor(private apiKey: string, private model: string, private appUrl = "http://localhost:3000", private reasoning: "none" | "low" | "medium" | "high" = "low") {
+    // Node 22's 250ms address-attempt default caused intermittent ETIMEDOUT on
+    // this deployment. This process-wide floor keeps dual-stack selection and
+    // TLS verification enabled, and preserves any longer operator setting.
+    if (getDefaultAutoSelectFamilyAttemptTimeout() < 2000) setDefaultAutoSelectFamilyAttemptTimeout(2000);
+  }
 
   async complete(req: LlmRequest): Promise<LlmResponse> {
     const body = {
@@ -45,9 +67,9 @@ export class OpenRouterLlm implements LlmProvider {
           model: data.model ?? this.model,
         };
       } catch (e) {
-        lastErr = e;
+        lastErr = reportableError(e, this.apiKey);
         if ((e as { fatal?: boolean }).fatal) break;
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
       }
     }
     throw lastErr;
