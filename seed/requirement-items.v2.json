@@ -1,0 +1,614 @@
+{
+  "fullName": {
+    "label": {
+      "en": "Full name as shown on ID",
+      "tc": "全名（與身份證明文件相同）",
+      "sc": "全名（与身份证明文件相同）"
+    },
+    "kind": "data",
+    "extractionHint": "Full legal name exactly as on the ID document, surname first in capitals if given that way."
+  },
+  "chiName": {
+    "label": {
+      "en": "Chinese name (if any)",
+      "tc": "中文姓名（如有）",
+      "sc": "中文姓名（如有）"
+    },
+    "kind": "data",
+    "extractionHint": "Chinese name in characters, if the person has one."
+  },
+  "idNo": {
+    "label": {
+      "en": "HKID or passport number, with issuing country",
+      "tc": "香港身份證或護照號碼及簽發國家／地區",
+      "sc": "香港身份证或护照号码及签发国家／地区"
+    },
+    "kind": "data",
+    "extractionHint": "ID document type, number and issuing country, e.g. \"HKID K987654(3), Hong Kong\"."
+  },
+  "resAddr": {
+    "label": {
+      "en": "Residential address",
+      "tc": "住址",
+      "sc": "住址"
+    },
+    "kind": "data",
+    "extractionHint": "Full residential address. Protected information."
+  },
+  "corrAddr": {
+    "label": {
+      "en": "Correspondence address (shown on the public register)",
+      "tc": "通訊地址（會載於公眾紀錄）",
+      "sc": "通讯地址（会载于公众记录）"
+    },
+    "kind": "data",
+    "extractionHint": "Correspondence address for the public register. May be \"same as registered office\"."
+  },
+  "contactInfo": {
+    "label": {
+      "en": "Email and mobile number",
+      "tc": "電郵及手提電話號碼",
+      "sc": "电邮及手机号码"
+    },
+    "kind": "data",
+    "extractionHint": "Email and mobile number."
+  },
+  "effDate": {
+    "label": {
+      "en": "Effective date",
+      "tc": "生效日期",
+      "sc": "生效日期"
+    },
+    "kind": "data",
+    "extractionHint": "The date the change takes effect, as an ISO date."
+  },
+  "idCopy": {
+    "label": {
+      "en": "Copy of HKID or passport",
+      "tc": "香港身份證或護照副本",
+      "sc": "香港身份证或护照副本"
+    },
+    "kind": "file",
+    "extractionHint": "Copy of HKID or passport"
+  },
+  "addrProof": {
+    "label": {
+      "en": "Address proof dated within the last 3 months",
+      "tc": "最近三個月內的住址證明",
+      "sc": "最近三个月内的住址证明"
+    },
+    "kind": "file",
+    "extractionHint": "Address proof dated within the last 3 months"
+  },
+  "selfie": {
+    "label": {
+      "en": "Identity check with selfie (through the secure link)",
+      "tc": "自拍身份核實（經安全連結完成）",
+      "sc": "自拍身份核实（经安全链接完成）"
+    },
+    "kind": "file",
+    "extractionHint": "Identity check with selfie (through the secure link)"
+  },
+  "resignLetter": {
+    "label": {
+      "en": "Signed resignation letter",
+      "tc": "已簽署的辭職信",
+      "sc": "已签署的辞职信"
+    },
+    "kind": "file",
+    "extractionHint": "Signed resignation letter"
+  },
+  "lastDay": {
+    "label": {
+      "en": "Last day in office",
+      "tc": "最後任職日期",
+      "sc": "最后任职日期"
+    },
+    "kind": "data",
+    "extractionHint": "Last day in office, as an ISO date."
+  },
+  "replacement": {
+    "label": {
+      "en": "Replacement director, if no individual director would remain",
+      "tc": "接任董事人選（如辭任後再無個人董事）",
+      "sc": "接任董事人选（如辞任后再无个人董事）"
+    },
+    "kind": "data",
+    "extractionHint": "Replacement director, if no individual director would remain"
+  },
+  "changeDetail": {
+    "label": {
+      "en": "What has changed (old and new details)",
+      "tc": "變更內容（新舊資料）",
+      "sc": "变更内容（新旧资料）"
+    },
+    "kind": "data",
+    "extractionHint": "What has changed (old and new details)"
+  },
+  "supportDoc": {
+    "label": {
+      "en": "Supporting document for the change",
+      "tc": "變更的證明文件",
+      "sc": "变更的证明文件"
+    },
+    "kind": "file",
+    "extractionHint": "Supporting document for the change"
+  },
+  "secDetails": {
+    "label": {
+      "en": "New secretary: name, Hong Kong address and ID or company number",
+      "tc": "新公司秘書：姓名、香港地址及身份證明或公司編號",
+      "sc": "新公司秘书：姓名、香港地址及身份证明或公司编号"
+    },
+    "kind": "data",
+    "extractionHint": "New secretary: name, Hong Kong address and ID or company number"
+  },
+  "newAddr": {
+    "label": {
+      "en": "New registered office address in Hong Kong",
+      "tc": "新的香港註冊辦事處地址",
+      "sc": "新的香港注册办事处地址"
+    },
+    "kind": "data",
+    "extractionHint": "New Hong Kong registered office address, English and Chinese if given. Not a PO box."
+  },
+  "premises": {
+    "label": {
+      "en": "Tenancy agreement or landlord consent for the new address",
+      "tc": "新地址的租約或業主同意書",
+      "sc": "新地址的租约或业主同意书"
+    },
+    "kind": "file",
+    "extractionHint": "Tenancy agreement or landlord consent for the new address"
+  },
+  "newName": {
+    "label": {
+      "en": "Proposed new name (English and/or Chinese), with a backup",
+      "tc": "擬用新名稱（英文及／或中文）及後備名稱",
+      "sc": "拟用新名称（英文及／或中文）及备选名称"
+    },
+    "kind": "data",
+    "extractionHint": "Proposed new English and/or Chinese company name, plus a backup."
+  },
+  "approvalRoute": {
+    "label": {
+      "en": "Members to sign a written resolution, or hold a general meeting",
+      "tc": "股東簽署書面決議，或召開股東大會",
+      "sc": "股东签署书面决议，或召开股东大会"
+    },
+    "kind": "data",
+    "extractionHint": "Members to sign a written resolution, or hold a general meeting"
+  },
+  "propName": {
+    "label": {
+      "en": "Proposed company name (English and/or Chinese), with two backups",
+      "tc": "擬用公司名稱（英文及／或中文）及兩個後備名稱",
+      "sc": "拟用公司名称（英文及／或中文）及两个备选名称"
+    },
+    "kind": "data",
+    "extractionHint": "Proposed company name (English and/or Chinese), with two backups"
+  },
+  "business": {
+    "label": {
+      "en": "Nature of business",
+      "tc": "業務性質",
+      "sc": "业务性质"
+    },
+    "kind": "data",
+    "extractionHint": "Nature of business"
+  },
+  "founders": {
+    "label": {
+      "en": "Founder members and number of shares each",
+      "tc": "創辦成員及各自認購股數",
+      "sc": "创办成员及各自认购股数"
+    },
+    "kind": "data",
+    "extractionHint": "Founder members and number of shares each"
+  },
+  "capital": {
+    "label": {
+      "en": "Share capital to be paid up",
+      "tc": "擬繳足股本",
+      "sc": "拟缴足股本"
+    },
+    "kind": "data",
+    "extractionHint": "Share capital to be paid up"
+  },
+  "directorsList": {
+    "label": {
+      "en": "Directors (at least one individual)",
+      "tc": "董事（最少一名為個人）",
+      "sc": "董事（最少一名为个人）"
+    },
+    "kind": "data",
+    "extractionHint": "Directors (at least one individual)"
+  },
+  "scList": {
+    "label": {
+      "en": "Significant controllers (holding over 25%)",
+      "tc": "重要控制人（持有超過25%）",
+      "sc": "重要控制人（持有超过25%）"
+    },
+    "kind": "data",
+    "extractionHint": "Significant controllers (holding over 25%)"
+  },
+  "funds": {
+    "label": {
+      "en": "Source of funds and source of wealth",
+      "tc": "資金及財富來源",
+      "sc": "资金及财富来源"
+    },
+    "kind": "data",
+    "extractionHint": "Source of funds and source of wealth"
+  },
+  "engagement": {
+    "label": {
+      "en": "Signed engagement letter",
+      "tc": "已簽署的委聘書",
+      "sc": "已签署的委聘书"
+    },
+    "kind": "file",
+    "extractionHint": "Signed engagement letter"
+  },
+  "prevRecords": {
+    "label": {
+      "en": "Statutory records from your previous secretary (registers, minutes, share certificates)",
+      "tc": "前任公司秘書移交的法定紀錄（登記冊、會議紀錄、股票）",
+      "sc": "前任公司秘书移交的法定记录（登记册、会议记录、股票）"
+    },
+    "kind": "file",
+    "extractionHint": "Statutory records from your previous secretary (registers, minutes, share certificates)"
+  },
+  "changesSince": {
+    "label": {
+      "en": "Any changes in shareholders, directors or addresses since the last return",
+      "tc": "自上次申報以來股東、董事或地址有否變更",
+      "sc": "自上次申报以来股东、董事或地址有否变更"
+    },
+    "kind": "data",
+    "extractionHint": "Whether anything changed since the last annual return; \"no changes\" is a valid answer."
+  },
+  "accounts": {
+    "label": {
+      "en": "Audited financial statements",
+      "tc": "經審計的財務報表",
+      "sc": "经审计的财务报表"
+    },
+    "kind": "file",
+    "extractionHint": "Audited financial statements"
+  },
+  "auditor": {
+    "label": {
+      "en": "Auditor to be reappointed, and fee arrangement",
+      "tc": "續聘的核數師及收費安排",
+      "sc": "续聘的审计师及收费安排"
+    },
+    "kind": "data",
+    "extractionHint": "Auditor to be reappointed, and fee arrangement"
+  },
+  "brTerm": {
+    "label": {
+      "en": "Renew for 1 year or 3 years",
+      "tc": "續期一年或三年",
+      "sc": "续期一年或三年"
+    },
+    "kind": "data",
+    "extractionHint": "1 or 3 years."
+  },
+  "scConfirm": {
+    "label": {
+      "en": "Confirmation that significant controllers are unchanged",
+      "tc": "確認重要控制人沒有變更",
+      "sc": "确认重要控制人没有变更"
+    },
+    "kind": "data",
+    "extractionHint": "Confirmation that significant controllers are unchanged"
+  },
+  "kycUpdate": {
+    "label": {
+      "en": "Updated ID or address proof where ours has expired",
+      "tc": "更新已過期的身份或住址證明",
+      "sc": "更新已过期的身份或住址证明"
+    },
+    "kind": "file",
+    "extractionHint": "Updated ID or address proof where ours has expired"
+  },
+  "allotmentDetails": {
+    "label": {
+      "en": "Allottees, number and class of shares, and the price paid per share",
+      "tc": "獲配發人、股份數目及類別，以及每股支付的款項",
+      "sc": "获配发人、股份数目及类别，以及每股支付的款项"
+    },
+    "kind": "data",
+    "extractionHint": "Who receives new shares, how many, which class, consideration per share and whether fully paid."
+  },
+  "transferDetails": {
+    "label": {
+      "en": "Transferor, transferee, number of shares and the price",
+      "tc": "轉讓人、承讓人、股份數目及價格",
+      "sc": "转让人、承让人、股份数目及价格"
+    },
+    "kind": "data",
+    "extractionHint": "Who is selling, who is buying, how many shares of which class, and the consideration."
+  },
+  "shareValuation": {
+    "label": {
+      "en": "Latest accounts or management accounts (to value the shares for stamp duty)",
+      "tc": "最近期的賬目或管理賬目（用作印花稅估值）",
+      "sc": "最近期的账目或管理账目（用作印花税估值）"
+    },
+    "kind": "file",
+    "extractionHint": "Financial statements used to work out net asset value per share."
+  },
+  "controllerDetails": {
+    "label": {
+      "en": "New significant controller: name, address, ID and nature of control",
+      "tc": "新重要控制人：姓名、地址、身份證明及控制性質",
+      "sc": "新重要控制人：姓名、地址、身份证明及控制性质"
+    },
+    "kind": "data",
+    "extractionHint": "Details of the person who became or ceased to be a significant controller and the date."
+  },
+  "deregConditions": {
+    "label": {
+      "en": "Confirmation that all members agree, the company has ceased business for 3 months, has no assets, liabilities, property in Hong Kong or legal proceedings, and is not a subsidiary with a parent that objects",
+      "tc": "確認全體成員同意，公司已停業三個月，並無資產、負債、香港不動產或法律程序",
+      "sc": "确认全体成员同意，公司已停业三个月，并无资产、负债、香港不动产或法律程序"
+    },
+    "kind": "data",
+    "extractionHint": "Explicit confirmation of each statutory deregistration condition."
+  },
+  "irdNoObjection": {
+    "label": {
+      "en": "Notice of No Objection from the Inland Revenue Department",
+      "tc": "稅務局發出的不反對撤銷註冊通知書",
+      "sc": "税务局发出的不反对撤销注册通知书"
+    },
+    "kind": "file",
+    "extractionHint": "The IRD letter confirming no objection to deregistration."
+  },
+  "newFye": {
+    "label": {
+      "en": "New financial year end date and the first shortened or extended period",
+      "tc": "新財政年度結算日期及首個縮短或延長的期間",
+      "sc": "新财政年度结算日期及首个缩短或延长的期间"
+    },
+    "kind": "data",
+    "extractionHint": "New year-end day and month, and the period it applies from."
+  },
+  "reserveNominee": {
+    "label": {
+      "en": "Reserve director: name, ID, address and consent (single-member, single-director companies only)",
+      "tc": "後備董事：姓名、身份證明、地址及同意書（只適用於單一成員兼單一董事公司）",
+      "sc": "后备董事：姓名、身份证明、地址及同意书（只适用于单一成员兼单一董事公司）"
+    },
+    "kind": "data",
+    "extractionHint": "Nominee details; must be 18 or over."
+  },
+  "newAuditor": {
+    "label": {
+      "en": "Incoming auditor firm and practising certificate number",
+      "tc": "新核數師事務所及執業證書編號",
+      "sc": "新审计师事务所及执业证书编号"
+    },
+    "kind": "data",
+    "extractionHint": "Name of the incoming CPA firm."
+  },
+  "auditorConsent": {
+    "label": {
+      "en": "Incoming auditor’s consent to act",
+      "tc": "新核數師的同意出任書",
+      "sc": "新审计师的同意出任书"
+    },
+    "kind": "file",
+    "extractionHint": "Signed consent letter."
+  },
+  "auditorResignation": {
+    "label": {
+      "en": "Outgoing auditor’s resignation letter with statement of circumstances",
+      "tc": "現任核數師的辭任信及情況陳述",
+      "sc": "现任审计师的辞任信及情况陈述"
+    },
+    "kind": "file",
+    "extractionHint": "Resignation letter."
+  },
+  "articlesChange": {
+    "label": {
+      "en": "What should change in the articles of association",
+      "tc": "需要修改的組織章程細則內容",
+      "sc": "需要修改的组织章程细则内容"
+    },
+    "kind": "data",
+    "extractionHint": "Description of the amendment or the new articles text."
+  },
+  "bankMandate": {
+    "label": {
+      "en": "Bank, account and new signing arrangements",
+      "tc": "銀行、賬戶及新的簽署安排",
+      "sc": "银行、账户及新的签署安排"
+    },
+    "kind": "data",
+    "extractionHint": "Bank name, account, who signs and signing rules."
+  },
+  "buybackDetails": {
+    "label": {
+      "en": "Member selling back, number of shares, price and funding source (profits or capital)",
+      "tc": "回購股份的成員、股份數目、價格及資金來源",
+      "sc": "回购股份的成员、股份数目、价格及资金来源"
+    },
+    "kind": "data",
+    "extractionHint": "Buy-back terms."
+  },
+  "solvencyStatement": {
+    "label": {
+      "en": "Directors’ solvency statement (if paid out of capital)",
+      "tc": "董事償付能力陳述（如以資本支付）",
+      "sc": "董事偿付能力陈述（如以资本支付）"
+    },
+    "kind": "file",
+    "extractionHint": "Solvency statement signed by all directors."
+  },
+  "dormantConfirm": {
+    "label": {
+      "en": "Confirmation that the company has had no accounting transactions",
+      "tc": "確認公司並無會計交易",
+      "sc": "确认公司并无会计交易"
+    },
+    "kind": "data",
+    "extractionHint": "Explicit confirmation of dormancy."
+  },
+  "taskScope": {
+    "label": {
+      "en": "What exactly the client wants done, and by when",
+      "tc": "客戶具體需要辦理的事項及期限",
+      "sc": "客户具体需要办理的事项及期限"
+    },
+    "kind": "data",
+    "extractionHint": "Scope for a one-off request."
+  },
+  "companyNumber": {
+    "label": {
+      "en": "Company name and Companies Registry number",
+      "tc": "公司名稱及公司註冊編號",
+      "sc": "公司名称及公司注册编号"
+    },
+    "kind": "data",
+    "extractionHint": "Existing company name and CR number (7 digits in Hong Kong)."
+  },
+  "mailInstructions": {
+    "label": {
+      "en": "How the client wants mail handled (scan, forward, collect)",
+      "tc": "客戶希望如何處理郵件（掃描、轉寄、自取）",
+      "sc": "客户希望如何处理邮件（扫描、转寄、自取）"
+    },
+    "kind": "data",
+    "extractionHint": "Instruction for registered office mail."
+  },
+  "cnLegalRepDetails": {
+    "label": {
+      "en": "New legal representative: name, ID, and the director or manager position held",
+      "tc": "新法定代表人：姓名、身份證明及所任董事或經理職位",
+      "sc": "新法定代表人：姓名、身份证明及所任董事或经理职位"
+    },
+    "kind": "data",
+    "extractionHint": "Must be a director or manager executing company affairs (2024 Company Law art. 10)."
+  },
+  "cnDecision": {
+    "label": {
+      "en": "Shareholder decision or board resolution approving the change",
+      "tc": "股東決定或董事會決議",
+      "sc": "股东决定或董事会决议"
+    },
+    "kind": "data",
+    "extractionHint": "Which body approved and the date."
+  },
+  "cnNewAddress": {
+    "label": {
+      "en": "New registered address and the lease or property certificate",
+      "tc": "新住所及租賃合同或產權證明",
+      "sc": "新住所及租赁合同或产权证明"
+    },
+    "kind": "data",
+    "extractionHint": "Address in the PRC."
+  },
+  "cnCapitalChange": {
+    "label": {
+      "en": "New registered capital, subscription amounts and contribution deadlines per shareholder",
+      "tc": "新註冊資本、各股東認繳出資額及出資期限",
+      "sc": "新注册资本、各股东认缴出资额及出资期限"
+    },
+    "kind": "data",
+    "extractionHint": "Contribution deadlines must fall within 5 years of establishment (2024 Company Law art. 47)."
+  },
+  "cnEquityTransfer": {
+    "label": {
+      "en": "Transferor, transferee, equity percentage and price; other shareholders’ waiver of pre-emption where needed",
+      "tc": "轉讓方、受讓方、股權比例及價格；其他股東放棄優先購買權（如需要）",
+      "sc": "转让方、受让方、股权比例及价格；其他股东放弃优先购买权（如需要）"
+    },
+    "kind": "data",
+    "extractionHint": "Equity transfer terms."
+  },
+  "cnAnnualData": {
+    "label": {
+      "en": "Annual report data: assets, revenue, profit, tax, employees, social insurance",
+      "tc": "年度報告資料：資產、營業收入、利潤、納稅、從業人數、社保",
+      "sc": "年度报告资料：资产、营业收入、利润、纳税、从业人数、社保"
+    },
+    "kind": "data",
+    "extractionHint": "Figures for the National Enterprise Credit Information Publicity System annual report."
+  },
+  "cnBeneficialOwners": {
+    "label": {
+      "en": "Beneficial owners: name, ID, nationality, ownership or control basis and date",
+      "tc": "受益所有人：姓名、身份證明、國籍、持股或控制依據及日期",
+      "sc": "受益所有人：姓名、身份证明、国籍、持股或控制依据及日期"
+    },
+    "kind": "data",
+    "extractionHint": "Per PBOC/SAMR beneficial ownership rules (effective 1 November 2024)."
+  },
+  "moAdminDetails": {
+    "label": {
+      "en": "New administrator: name, ID, address and acceptance",
+      "tc": "新行政管理機關成員：姓名、身份證明、地址及接受任職",
+      "sc": "新行政管理机关成员：姓名、身份证明、地址及接受任职"
+    },
+    "kind": "data",
+    "extractionHint": "Macau administrator (administrador)."
+  },
+  "moQuotaTransfer": {
+    "label": {
+      "en": "Quota transfer: transferor, transferee, quota value and price; company consent",
+      "tc": "股的轉讓：轉讓人、承讓人、股價值及價格；公司同意",
+      "sc": "股的转让：转让人、承让人、股价值及价格；公司同意"
+    },
+    "kind": "data",
+    "extractionHint": "Macau quota (quota) transfer; requires notarised or authenticated signatures."
+  },
+  "moResolution": {
+    "label": {
+      "en": "Partners’ or shareholders’ resolution (acta) approving the change",
+      "tc": "股東會決議（會議錄）",
+      "sc": "股东会决议（会议录）"
+    },
+    "kind": "data",
+    "extractionHint": "Which body approved and the date."
+  },
+  "twDirectorDetails": {
+    "label": {
+      "en": "New director or supervisor: name, ID, address and shareholding",
+      "tc": "新董事或監察人：姓名、身份證明、地址及持股",
+      "sc": "新董事或监察人：姓名、身份证明、地址及持股"
+    },
+    "kind": "data",
+    "extractionHint": "Taiwan director or supervisor."
+  },
+  "tw221Data": {
+    "label": {
+      "en": "Directors, supervisors, managers, shareholders over 10% and beneficial owners, with shareholdings",
+      "tc": "董事、監察人、經理人、持股超過10%股東及實質受益人資料及持股",
+      "sc": "董事、监察人、经理人、持股超过10%股东及实质受益人资料及持股"
+    },
+    "kind": "data",
+    "extractionHint": "Data for the Company Act Article 22-1 declaration."
+  },
+  "twCapitalIncrease": {
+    "label": {
+      "en": "Amount of the capital increase, subscribers and CPA capital verification",
+      "tc": "增資金額、認股人及會計師資本查核",
+      "sc": "增资金额、认股人及会计师资本查核"
+    },
+    "kind": "data",
+    "extractionHint": "Taiwan capital increase."
+  },
+  "twResolution": {
+    "label": {
+      "en": "Board or shareholders’ resolution approving the change",
+      "tc": "董事會或股東會決議",
+      "sc": "董事会或股东会决议"
+    },
+    "kind": "data",
+    "extractionHint": "Which body approved and the date."
+  }
+}
