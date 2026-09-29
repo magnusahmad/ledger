@@ -302,6 +302,7 @@ export type ChecklistEntry = {
   source?: string | null;  // quote or "portal" / "on file"
   reason?: string | null;
   confidence?: number | null;
+  optional?: boolean;
 };
 
 export const task = pgTable("task", {
