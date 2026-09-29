@@ -11,6 +11,7 @@ export async function resetDemoData(ctx: Ctx) {
     .filter((t) => typeof t === "object" && t !== null && Symbol.for("drizzle:Name") in (t as object))
     .map((t) => `"${(t as unknown as Record<symbol, string>)[Symbol.for("drizzle:Name")]}"`);
   await ctx.db.execute(sql.raw(`TRUNCATE ${tables.join(", ")} RESTART IDENTITY CASCADE`));
-  for (const f of ["inbox.json", "outbox.json", "deposits.json"]) rmSync(path.join(process.cwd(), "storage/fake", f), { force: true });
+  const { STORAGE_ROOT } = await import("@/lib/runtime");
+  for (const f of ["inbox.json", "outbox.json", "deposits.json"]) rmSync(path.join(STORAGE_ROOT, "fake", f), { force: true });
   await seedDemo(ctx, { demoEmail: ctx.config.DEMO_EXISTING_CLIENT_EMAIL ?? null });
 }

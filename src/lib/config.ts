@@ -9,7 +9,9 @@ const Env = z.object({
   FIRM_ID: z.string().default("firm_crcs"),
   or_api_key: z.string().optional(),
   LLM_MODEL: z.string().default("google/gemini-3.8-flash"),
-  LLM_MODE: z.enum(["live", "fixture"]).optional(),
+  LLM_MODE: z.enum(["live", "fixture", "e2e"]).optional(),
+  STORAGE_DIR: z.string().optional(),
+  SCREENING_PROVIDER: z.enum(["opensanctions-api", "opensanctions-local", "fake"]).optional(),
   LLM_REASONING: z.enum(["none", "low", "medium", "high"]).default("low"),
   MAIL_PROVIDER: z.enum(["gmail", "agentmail", "fake"]).optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -32,7 +34,7 @@ const Env = z.object({
 });
 
 export type Config = z.infer<typeof Env> & {
-  llmMode: "live" | "fixture";
+  llmMode: "live" | "fixture" | "e2e";
   mailProvider: "gmail" | "agentmail" | "fake";
   bankProvider: "airwallex" | "fake";
   accountingProvider: "xero" | "fake";
@@ -52,6 +54,6 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     bankProvider: e.AIRWALLEX_CLIENT_ID && e.AIRWALLEX_API_KEY ? "airwallex" : "fake",
     accountingProvider:
       (e.XERO_CLIENT_ID && e.XERO_CLIENT_SECRET) || e.XERO_CLIENT_BEARER_TOKEN ? "xero" : "fake",
-    screeningProvider: e.OPENSANCTIONS_API_KEY ? "opensanctions-api" : "opensanctions-local",
+    screeningProvider: e.SCREENING_PROVIDER ?? (e.OPENSANCTIONS_API_KEY ? "opensanctions-api" : "opensanctions-local"),
   };
 }

@@ -1359,11 +1359,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$seed$2d$demo$2e
 async function resetDemoData(ctx) {
     const tables = Object.values(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$schema$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__).filter((t)=>typeof t === "object" && t !== null && Symbol.for("drizzle:Name") in t).map((t)=>`"${t[Symbol.for("drizzle:Name")]}"`);
     await ctx.db.execute(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$drizzle$2d$orm$2f$sql$2f$sql$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["sql"].raw(`TRUNCATE ${tables.join(", ")} RESTART IDENTITY CASCADE`));
+    const { STORAGE_ROOT } = await __turbopack_context__.A("[project]/src/lib/runtime.ts [app-rsc] (ecmascript, async loader)");
     for (const f of [
         "inbox.json",
         "outbox.json",
         "deposits.json"
-    ])(0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$fs__$5b$external$5d$__$28$node$3a$fs$2c$__cjs$29$__["rmSync"])(__TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$path__$5b$external$5d$__$28$node$3a$path$2c$__cjs$29$__["default"].join(process.cwd(), "storage/fake", f), {
+    ])(0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$fs__$5b$external$5d$__$28$node$3a$fs$2c$__cjs$29$__["rmSync"])(__TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$path__$5b$external$5d$__$28$node$3a$path$2c$__cjs$29$__["default"].join(STORAGE_ROOT, "fake", f), {
         force: true
     });
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$db$2f$seed$2d$demo$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["seedDemo"])(ctx, {

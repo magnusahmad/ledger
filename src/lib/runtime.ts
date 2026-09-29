@@ -8,6 +8,7 @@ import { Crypto } from "./crypto";
 import type { Ctx } from "./ctx";
 import { OpenRouterLlm } from "@/integrations/llm/openrouter";
 import { ScriptedLlm } from "@/integrations/llm/scripted";
+import { E2eLlm } from "@/integrations/llm/e2e";
 import { DiskStorage } from "@/integrations/storage";
 import { FakeMail } from "@/integrations/mail/fake";
 import { FakeBank } from "@/integrations/bank/fake";
@@ -27,7 +28,7 @@ import type { AccountingProvider, BankProvider, MailProvider, ScreeningProvider 
 
 const g = globalThis as unknown as { __hlAdapters?: Record<string, unknown> };
 
-export const STORAGE_ROOT = path.join(process.cwd(), "storage");
+export const STORAGE_ROOT = process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.join(process.cwd(), "storage");
 
 export function makeRuntimeCtx(overrides: Partial<Config> = {}): Ctx {
   const config = { ...loadConfig(), ...overrides };
@@ -35,7 +36,7 @@ export function makeRuntimeCtx(overrides: Partial<Config> = {}): Ctx {
   const cache = g.__hlAdapters;
   const once = <T>(k: string, f: () => T): T => (cache[k] ??= f()) as T;
   const storage = new DiskStorage(STORAGE_ROOT);
-  const llm = config.llmMode === "live" && config.or_api_key ? new OpenRouterLlm(config.or_api_key, config.LLM_MODEL, config.APP_URL, config.LLM_REASONING) : new ScriptedLlm();
+  const llm = config.llmMode === "e2e" ? new E2eLlm() : config.llmMode === "live" && config.or_api_key ? new OpenRouterLlm(config.or_api_key, config.LLM_MODEL, config.APP_URL, config.LLM_REASONING) : new ScriptedLlm();
   return {
     db: getDb(config.DATABASE_URL),
     firmId: config.FIRM_ID,
