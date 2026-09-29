@@ -1,0 +1,68 @@
+{
+  "NAR1": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NAR1_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "3a0a9028ed1e4b7110f31844c3fc36add7aeea75afde5cd34e7c382d6f633b0f",
+    "specification": "Specification No. 2/2025 (May 2025)"
+  },
+  "ND2A": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/ND2A_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "801409acedd5aa821c93a9fe1322aa11125f5244330806cbd5b808844d936543",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "ND2B": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/ND2B_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "1c9d0e5e09cfc4a1f7528aaca81486b5b2a1de0e9ad21e43a27f215b7f8737df",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "ND4": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/ND4_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "00f5147bd7a995e0507597d265b1a92beb57628e114653a127d736de3192a7a0",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "ND5": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/ND5_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "f161511f6a68858b2c9498857c24943b6436a5afae81f773ce5f306bf4ebf290",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NDR1": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NDR1_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "71f765e2cd15d39c0d3e8aa624728b65322172bbe1692a52c692bba06541d8ab",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NNC1": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NNC1_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "f1adf9366e7258c680cfdbc24bf0da94e346b233bd979719c8f82b54e09126ef",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NNC2": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NNC2_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "99fd9711848814077ada605f880b1290dda7293f4aee523fea2b2005af1f0415",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NR1": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NR1_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "deed1ef2b3a1ed6e25845f059a1589c8ce1a4e67be027ad696d8ad063cea0eb3",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NSC1": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NSC1_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "a85431c37c53fe0b68df83fda76fc836779716dd9fc70c6626ecfab47c87f857",
+    "specification": "Specification No. 1/2023 (December 2023)"
+  },
+  "NSC2": {
+    "url": "https://www.cr.gov.hk/en/companies_ordinance/docs/NSC2_fillable.pdf",
+    "downloadedOn": "2026-09-29",
+    "sha256": "c1020523f4adb1ed9229c12acd14b17911fb3bd5208a4c64099422db0374bd63",
+    "specification": "Specification No. 1/2025 (February 2025)"
+  }
+}

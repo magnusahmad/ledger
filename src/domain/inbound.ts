@@ -25,6 +25,7 @@ import { fmtDate } from "./dates";
 import "./handlers";
 import "./payments";
 import "./accounting-sync";
+import "./step-hooks";
 
 const MIN_CONFIDENCE = 0.7;
 const ONBOARDING = new Set(["hk.transferIn", "hk.incorporation"]);
