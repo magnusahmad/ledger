@@ -36,8 +36,28 @@ export async function planRegisterChanges(ctx: Ctx, taskId: string): Promise<Cha
         for (const a of targets) out.push({ effect: e.kind, description: `End ${e.role} appointment (${a.personId === person?.id ? person?.nameEn : a.personId}) on ${date}`, apply: async () => { await ceaseAppointment(ctx, a.id, date, t.id); } });
         break;
       }
+      case "replace_officer": {
+        if (!person) break;
+        const current = await ctx.db.select().from(appointment).where(and(eq(appointment.clientId, t.clientId), eq(appointment.role, e.role as never), isNull(appointment.toDate)));
+        let warning = "";
+        if (e.role === "legal_representative") {
+          const officers = await ctx.db.select().from(appointment).where(and(eq(appointment.clientId, t.clientId), eq(appointment.personId, person.id), isNull(appointment.toDate)));
+          if (!officers.some((a) => a.role === "director" || a.role === "manager")) warning = ` Blocked: under the 2024 Company Law (art. 10) the legal representative must be a director or manager who executes company affairs; appoint ${person.nameEn} as director or manager first.`;
+        }
+        out.push({ effect: e.kind, description: `${person.nameEn} becomes ${e.role.replace(/_/g, " ")} from ${eff}${current.length ? `, replacing ${current.map((a) => a.personId).join(", ")}` : ""}.${warning}`, apply: async () => {
+          if (warning) throw new Error(warning.trim());
+          for (const a of current) if (a.personId !== person.id) await ceaseAppointment(ctx, a.id, eff, t.id);
+          if (!current.some((a) => a.personId === person.id)) await appoint(ctx, { clientId: t.clientId, personId: person.id, role: e.role as never, fromDate: eff, sourceTaskId: t.id });
+        } });
+        break;
+      }
+      case "change_capital": {
+        const text = v.cnCapitalChange ?? v.twCapitalIncrease;
+        if (text) out.push({ effect: e.kind, description: `Registered capital: ${text}`, apply: async () => { await updateClient(ctx, cl.id, { jurisdictionData: { ...cl.jurisdictionData, capitalChange: { text, on: eff } } }, `Task ${t.id}`); } });
+        break;
+      }
       case "change_registered_office": {
-        const addr = pb.id === "hk.transferIn" ? "18/F, 88 Caine Road, Mid-Levels, Hong Kong" : v.newAddr;
+        const addr = pb.id === "hk.transferIn" ? "18/F, 88 Caine Road, Mid-Levels, Hong Kong" : v.newAddr ?? v.cnNewAddress;
         if (addr) out.push({ effect: e.kind, description: `Registered office: ${cl.regOfficeEn ?? "—"} → ${addr}`, apply: async () => { await updateClient(ctx, cl.id, { regOfficeEn: addr }, `Task ${t.id}`); } });
         break;
       }

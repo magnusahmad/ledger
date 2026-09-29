@@ -46,6 +46,7 @@ export type RequirementDef = {
 export type RegisterEffect =
   | { kind: "appoint_officer"; role: string; personParam?: string }
   | { kind: "cease_officer"; role: string; personParam?: string }
+  | { kind: "replace_officer"; role: string }
   | { kind: "update_person_particulars" }
   | { kind: "change_registered_office" }
   | { kind: "change_name" }

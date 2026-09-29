@@ -17,7 +17,7 @@ const n = (x: number) => x.toLocaleString("en-US");
 async function movementsFor(ctx: Ctx, t: Task, v: Record<string, string>): Promise<Movements> {
   const cached = (t.params.structured as Movements | undefined);
   if (cached) return cached;
-  const instruction = v.allotmentDetails ?? v.transferDetails ?? v.buybackDetails ?? "";
+  const instruction = v.allotmentDetails ?? v.transferDetails ?? v.buybackDetails ?? v.cnEquityTransfer ?? v.moQuotaTransfer ?? "";
   const members = (await membersAsAt(ctx, t.clientId, ctx.clock.today())).map((m) => ({ personId: m.personId, name: m.name, className: m.className, quantity: m.quantity }));
   const classes = (await ctx.db.select().from(shareClass).where(eq(shareClass.clientId, t.clientId))).map((c) => c.name);
   const m = instruction ? await structureMovements(ctx, { taskId: t.id, instruction, members, classes }) : { items: [] };
@@ -45,11 +45,11 @@ export async function planStructured(ctx: Ctx, t: Task, e: RegisterEffect, v: Re
     }
     if (it.kind === "transfer" && e.kind === "transfer_shares") {
       const consideration = it.considerationCents ?? (it.pricePerShareCents ?? 0) * it.quantity;
-      const duty = stampDuty({ considerationCents: consideration });
-      out.push({ effect: e.kind, description: `Transfer ${n(it.quantity)} ${it.className} shares from ${it.fromName} to ${it.toName} on ${eff} (stamp duty HK$${n(duty.totalCents / 100)})`, apply: async () => {
+      const duty = t.playbookId.startsWith("hk.") ? stampDuty({ considerationCents: consideration }) : { totalCents: 0 };
+      out.push({ effect: e.kind, description: `Transfer ${n(it.quantity)} ${it.className} shares from ${it.fromName} to ${it.toName} on ${eff}${duty.totalCents ? ` (stamp duty HK$${n(duty.totalCents / 100)})` : ""}`, apply: async () => {
         const from = await resolvePerson(ctx, t.clientId, { personId: it.fromPersonId, nameEn: it.fromName });
         const to = await resolvePerson(ctx, t.clientId, { personId: it.toPersonId, nameEn: it.toName, nameZh: it.toNameZh });
-        await transfer(ctx, { clientId: t.clientId, shareClassId: await classId(ctx, t.clientId, it.className), date: eff, fromPersonId: from.id, toPersonId: to.id, quantity: it.quantity, considerationCents: consideration, stampDutyCents: duty.totalCents, sourceTaskId: t.id, note: v.transferDetails });
+        await transfer(ctx, { clientId: t.clientId, shareClassId: await classId(ctx, t.clientId, it.className), date: eff, fromPersonId: from.id, toPersonId: to.id, quantity: it.quantity, considerationCents: consideration, stampDutyCents: duty.totalCents || undefined, sourceTaskId: t.id, note: v.transferDetails ?? v.cnEquityTransfer ?? v.moQuotaTransfer });
       } });
     }
     if (it.kind === "buyback" && e.kind === "buyback_shares") {

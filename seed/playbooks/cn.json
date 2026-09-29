@@ -1,0 +1,643 @@
+[
+  {
+    "id": "cn.changeLegalRep",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Change legal representative (PRC)",
+      "tc": "更換法定代表人（中國內地）",
+      "sc": "更换法定代表人（中国内地）"
+    },
+    "phrase": {
+      "en": "the change of legal representative",
+      "tc": "更換法定代表人",
+      "sc": "更换法定代表人"
+    },
+    "description": "Change the legal representative of a PRC company and register it with the market regulator.",
+    "whenToUse": "A company incorporated in Mainland China (WFOE, LLC) wants a new legal representative (法定代表人).",
+    "startedBy": "client request",
+    "personSelection": "any",
+    "forms": "Change registration application (变更登记申请书)",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Apply for change registration within 30 days after the decision (Market Entity Registration Regulations art. 24)"
+    },
+    "requirements": [
+      {
+        "key": "cnLegalRepDetails"
+      },
+      {
+        "key": "cnDecision"
+      },
+      {
+        "key": "idCopy",
+        "scope": "person",
+        "condition": "personLacksCurrentCdd"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect decision and new legal representative details"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the new legal representative"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare shareholder decision and filing pack"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect e-signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the market regulator (SAMR/AMR) portal",
+        "human": true,
+        "authority": "State Administration for Market Regulation (local AMR)"
+      },
+      {
+        "kind": "register",
+        "label": "Update officers and legal representative",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, reminding them to update the company chop, bank and tax records",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:cn-resolution",
+        "name": "Shareholder decision: change of legal representative",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "replace_officer",
+        "role": "legal_representative"
+      }
+    ],
+    "feeCents": 680000,
+    "complianceNotes": [
+      "Under the 2024 Company Law (art. 10), the legal representative must be a director or manager who executes company affairs.",
+      "If the legal representative resigns, a new one must be appointed within 30 days.",
+      "Apply for change registration within 30 days after the decision; the business licence is re-issued."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "cn.changeOfficers",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Change directors, supervisors or managers (PRC)",
+      "tc": "更換董事、監事或經理（中國內地）",
+      "sc": "更换董事、监事或经理（中国内地）"
+    },
+    "phrase": {
+      "en": "the change of officers",
+      "tc": "更換董事、監事或經理",
+      "sc": "更换董事、监事或经理"
+    },
+    "description": "Change directors, supervisors or the general manager of a PRC company and file the change.",
+    "whenToUse": "A Mainland China company changes a director (执行董事/董事), supervisor (监事) or general manager (经理).",
+    "startedBy": "client request",
+    "personSelection": "new",
+    "forms": "Filing (备案)",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "File within 30 days after the change"
+    },
+    "requirements": [
+      {
+        "key": "cnDecision"
+      },
+      {
+        "key": "fullName",
+        "scope": "person"
+      },
+      {
+        "key": "idCopy",
+        "scope": "person",
+        "condition": "personLacksCurrentCdd"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect decision and appointee details"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the appointee"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare shareholder decision"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect e-signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the market regulator (SAMR/AMR) portal",
+        "human": true,
+        "authority": "State Administration for Market Regulation (local AMR)"
+      },
+      {
+        "kind": "register",
+        "label": "Update officers",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:cn-resolution",
+        "name": "Shareholder decision: change of officers",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "appoint_officer",
+        "role": "director"
+      }
+    ],
+    "feeCents": 480000,
+    "complianceNotes": [
+      "A company with fewer shareholders may have one director and one supervisor, or an audit committee instead of supervisors (2024 Company Law arts. 75, 83)."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "cn.changeAddress",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Change registered address (PRC)",
+      "tc": "更改住所（中國內地）",
+      "sc": "更改住所（中国内地）"
+    },
+    "phrase": {
+      "en": "the change of registered address",
+      "tc": "更改住所",
+      "sc": "更改住所"
+    },
+    "description": "Change the registered address (住所) of a PRC company.",
+    "whenToUse": "A Mainland China company is moving its registered address.",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Change registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Apply within 30 days after the decision"
+    },
+    "requirements": [
+      {
+        "key": "cnNewAddress"
+      },
+      {
+        "key": "cnDecision"
+      },
+      {
+        "key": "premises"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the new address and lease"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare shareholder decision"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect e-signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the market regulator (SAMR/AMR) portal",
+        "human": true,
+        "authority": "State Administration for Market Regulation (local AMR)"
+      },
+      {
+        "kind": "register",
+        "label": "Update the registered address",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, reminding them to update tax registration",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:cn-resolution",
+        "name": "Shareholder decision: change of registered address",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "change_registered_office"
+      }
+    ],
+    "feeCents": 480000,
+    "complianceNotes": [
+      "Moving across districts may need the new district regulator’s acceptance first."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "cn.changeCapital",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Change registered capital (PRC)",
+      "tc": "變更註冊資本（中國內地）",
+      "sc": "变更注册资本（中国内地）"
+    },
+    "phrase": {
+      "en": "the change of registered capital",
+      "tc": "變更註冊資本",
+      "sc": "变更注册资本"
+    },
+    "description": "Increase or reduce registered capital, or adjust subscription deadlines to meet the 2024 Company Law five-year rule.",
+    "whenToUse": "A Mainland China company wants to increase or reduce registered capital, or must shorten capital contribution deadlines.",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Change registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Apply within 30 days after the decision; a reduction also needs a public notice to creditors"
+    },
+    "requirements": [
+      {
+        "key": "cnCapitalChange"
+      },
+      {
+        "key": "cnDecision"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the new capital plan"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare shareholder decision and amended articles"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect e-signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the market regulator (SAMR/AMR) portal",
+        "human": true,
+        "authority": "State Administration for Market Regulation (local AMR)"
+      },
+      {
+        "kind": "register",
+        "label": "Update registered capital",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:cn-resolution",
+        "name": "Shareholder decision: change of registered capital",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "change_capital"
+      }
+    ],
+    "feeCents": 680000,
+    "complianceNotes": [
+      "LLC shareholders must pay subscribed capital within 5 years of establishment (2024 Company Law art. 47).",
+      "Companies established before 1 July 2024 with longer contribution periods must adjust them during the transition period ending 30 June 2027 so that capital is paid by 30 June 2032."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "cn.equityTransfer",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Equity transfer (PRC)",
+      "tc": "股權轉讓（中國內地）",
+      "sc": "股权转让（中国内地）"
+    },
+    "phrase": {
+      "en": "the equity transfer",
+      "tc": "股權轉讓",
+      "sc": "股权转让"
+    },
+    "description": "Transfer equity in a PRC LLC and register the change of shareholder.",
+    "whenToUse": "A shareholder of a Mainland China company is transferring some or all of its equity.",
+    "startedBy": "client request",
+    "personSelection": "any",
+    "forms": "Change registration application; equity transfer agreement",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Apply within 30 days after the transfer"
+    },
+    "requirements": [
+      {
+        "key": "cnEquityTransfer"
+      },
+      {
+        "key": "cnDecision"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect transfer terms and waivers"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the transferee"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare transfer agreement and shareholder decision"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect e-signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the market regulator (SAMR/AMR) portal",
+        "human": true,
+        "authority": "State Administration for Market Regulation (local AMR)"
+      },
+      {
+        "kind": "register",
+        "label": "Update shareholders",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, noting tax filings on the transfer",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:cn-resolution",
+        "name": "Shareholder decision: equity transfer",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "transfer_shares"
+      },
+      {
+        "kind": "update_controllers"
+      }
+    ],
+    "feeCents": 880000,
+    "complianceNotes": [
+      "Other shareholders have a pre-emption right on transfers to third parties unless the articles say otherwise (2024 Company Law art. 84).",
+      "Transfer of equity by a non-resident may trigger PRC withholding tax; involve the tax adviser."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "cn.annualReport",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Annual report (PRC)",
+      "tc": "年度報告（中國內地）",
+      "sc": "年度报告（中国内地）"
+    },
+    "phrase": {
+      "en": "the annual report",
+      "tc": "年度報告",
+      "sc": "年度报告"
+    },
+    "description": "File the annual report on the National Enterprise Credit Information Publicity System.",
+    "whenToUse": "The annual report of a Mainland China company is due, or the client asks about it.",
+    "startedBy": "firm calendar",
+    "personSelection": "none",
+    "forms": "Annual report (年度报告)",
+    "deadline": {
+      "kind": "fixed_annual",
+      "month": 6,
+      "day": 30,
+      "rule": "1 January to 30 June each year, for the previous year"
+    },
+    "requirements": [
+      {
+        "key": "cnAnnualData"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the annual figures"
+      },
+      {
+        "kind": "file",
+        "label": "Submit on the National Enterprise Credit Information Publicity System",
+        "human": true,
+        "authority": "National Enterprise Credit Information Publicity System"
+      },
+      {
+        "kind": "register",
+        "label": "Record the annual report",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [
+      {
+        "kind": "record_annual_return"
+      }
+    ],
+    "feeCents": 280000,
+    "complianceNotes": [
+      "Late or missing annual reports lead to listing in the abnormal operations list."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it.",
+    "periodKey": "CNAR:{year}"
+  },
+  {
+    "id": "cn.beneficialOwners",
+    "version": 1,
+    "jurisdiction": "CN",
+    "category": "Mainland China",
+    "name": {
+      "en": "Beneficial owner filing (PRC)",
+      "tc": "受益所有人備案（中國內地）",
+      "sc": "受益所有人备案（中国内地）"
+    },
+    "phrase": {
+      "en": "the beneficial owner filing",
+      "tc": "受益所有人備案",
+      "sc": "受益所有人备案"
+    },
+    "description": "File or update beneficial owner information under the PBOC/SAMR rules effective 1 November 2024.",
+    "whenToUse": "A Mainland China company needs to file or update its beneficial owners.",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Beneficial owner information filing",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "effectiveDate",
+      "rule": "Update within 30 days after a change"
+    },
+    "requirements": [
+      {
+        "key": "cnBeneficialOwners"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect beneficial owner details"
+      },
+      {
+        "kind": "file",
+        "label": "File on the registration system",
+        "human": true,
+        "authority": "State Administration for Market Regulation"
+      },
+      {
+        "kind": "register",
+        "label": "Record the filing",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [],
+    "feeCents": 200000,
+    "complianceNotes": [
+      "Existing entities had until 1 November 2025 to complete their first filing."
+    ],
+    "verifyNote": "Summarised from secondary sources for CN; verify with a qualified local company secretary or agent before relying on it."
+  }
+]

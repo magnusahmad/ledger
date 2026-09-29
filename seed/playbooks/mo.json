@@ -1,0 +1,471 @@
+[
+  {
+    "id": "mo.changeAdministrators",
+    "version": 1,
+    "jurisdiction": "MO",
+    "category": "Macau",
+    "name": {
+      "en": "Change administrators (Macau)",
+      "tc": "更換行政管理機關成員（澳門）",
+      "sc": "更换行政管理机关成员（澳门）"
+    },
+    "phrase": {
+      "en": "the change of administrators",
+      "tc": "更換行政管理機關成員",
+      "sc": "更换行政管理机关成员"
+    },
+    "description": "Appoint or remove administrators (administradores/gerentes) of a Macau company and register the change.",
+    "whenToUse": "A company incorporated in Macau changes its administrators or managers.",
+    "startedBy": "client request",
+    "personSelection": "new",
+    "forms": "Registration application (Commercial Registry)",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Register the change promptly; firm default 30 days (verify the statutory period)"
+    },
+    "requirements": [
+      {
+        "key": "moAdminDetails"
+      },
+      {
+        "key": "moResolution"
+      },
+      {
+        "key": "idCopy",
+        "scope": "person",
+        "condition": "personLacksCurrentCdd"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect resolution and appointee details"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the appointee"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare minutes (acta)"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Register with the Commercial and Movable Property Registry",
+        "human": true,
+        "authority": "Conservatória do Registo Comercial e de Bens Móveis (Macau)"
+      },
+      {
+        "kind": "register",
+        "label": "Update administrators",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:mo-acta",
+        "name": "Minutes of the quota holders’ meeting (acta)",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "appoint_officer",
+        "role": "administrator"
+      }
+    ],
+    "feeCents": 580000,
+    "complianceNotes": [
+      "Signatures on some registry documents need notarial recognition; check before sending the pack."
+    ],
+    "verifyNote": "Summarised from secondary sources for MO; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "mo.quotaTransfer",
+    "version": 1,
+    "jurisdiction": "MO",
+    "category": "Macau",
+    "name": {
+      "en": "Transfer of quotas (Macau)",
+      "tc": "股的轉讓（澳門）",
+      "sc": "股的转让（澳门）"
+    },
+    "phrase": {
+      "en": "the transfer of quotas",
+      "tc": "股的轉讓",
+      "sc": "股的转让"
+    },
+    "description": "Transfer quotas in a Macau sociedade por quotas and register the new quota holder.",
+    "whenToUse": "A quota holder of a Macau company is transferring its quota.",
+    "startedBy": "client request",
+    "personSelection": "any",
+    "forms": "Registration application; transfer deed",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "effectiveDate",
+      "rule": "Register promptly; firm default 30 days (verify)"
+    },
+    "requirements": [
+      {
+        "key": "moQuotaTransfer"
+      },
+      {
+        "key": "moResolution"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect transfer terms and company consent"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the transferee"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare transfer documents"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures (notarial recognition may be needed)"
+      },
+      {
+        "kind": "file",
+        "label": "Register with the Commercial and Movable Property Registry",
+        "human": true,
+        "authority": "Conservatória do Registo Comercial e de Bens Móveis (Macau)"
+      },
+      {
+        "kind": "register",
+        "label": "Update quota holders",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:mo-acta",
+        "name": "Minutes approving the quota transfer (acta)",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "transfer_shares"
+      },
+      {
+        "kind": "update_controllers"
+      }
+    ],
+    "feeCents": 780000,
+    "complianceNotes": [
+      "Transfers to non-quota holders usually need the company’s consent under the articles.",
+      "Transfer deeds generally need notarised or authenticated signatures."
+    ],
+    "verifyNote": "Summarised from secondary sources for MO; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "mo.changeOffice",
+    "version": 1,
+    "jurisdiction": "MO",
+    "category": "Macau",
+    "name": {
+      "en": "Change registered office (Macau)",
+      "tc": "更改住所（澳門）",
+      "sc": "更改住所（澳门）"
+    },
+    "phrase": {
+      "en": "the change of registered office",
+      "tc": "更改住所",
+      "sc": "更改住所"
+    },
+    "description": "Move the registered office of a Macau company.",
+    "whenToUse": "A Macau company is moving its registered office (sede).",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 15,
+      "from": "effectiveDate",
+      "rule": "Register within 15 days (verify)"
+    },
+    "requirements": [
+      {
+        "key": "newAddr"
+      },
+      {
+        "key": "moResolution"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the new address"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare minutes (acta)"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Register with the Commercial and Movable Property Registry",
+        "human": true,
+        "authority": "Conservatória do Registo Comercial e de Bens Móveis (Macau)"
+      },
+      {
+        "kind": "register",
+        "label": "Update the registered office",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, reminding them to update the Financial Services Bureau",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:mo-acta",
+        "name": "Minutes: change of registered office (acta)",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "change_registered_office"
+      }
+    ],
+    "feeCents": 380000,
+    "complianceNotes": [
+      "Also notify the Financial Services Bureau (DSF) of the new address for tax."
+    ],
+    "verifyNote": "Summarised from secondary sources for MO; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "mo.amendArticles",
+    "version": 1,
+    "jurisdiction": "MO",
+    "category": "Macau",
+    "name": {
+      "en": "Amend the articles (Macau)",
+      "tc": "修改章程（澳門）",
+      "sc": "修改章程（澳门）"
+    },
+    "phrase": {
+      "en": "the amendment of the articles",
+      "tc": "修改章程",
+      "sc": "修改章程"
+    },
+    "description": "Amend the articles (estatutos) of a Macau company.",
+    "whenToUse": "A Macau company wants to change its articles of association (estatutos).",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 30,
+      "from": "resolution",
+      "rule": "Register promptly; firm default 30 days (verify)"
+    },
+    "requirements": [
+      {
+        "key": "articlesChange"
+      },
+      {
+        "key": "moResolution"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the amendment"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare minutes and amended articles"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Register with the Commercial and Movable Property Registry",
+        "human": true,
+        "authority": "Conservatória do Registo Comercial e de Bens Móveis (Macau)"
+      },
+      {
+        "kind": "register",
+        "label": "Record the amendment",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:mo-acta",
+        "name": "Minutes: amendment of articles (acta)",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [],
+    "feeCents": 680000,
+    "complianceNotes": [
+      "Amendments usually need a qualified majority of quota holders under the Commercial Code and the articles."
+    ],
+    "verifyNote": "Summarised from secondary sources for MO; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "mo.approveAccounts",
+    "version": 1,
+    "jurisdiction": "MO",
+    "category": "Macau",
+    "name": {
+      "en": "Approve annual accounts (Macau)",
+      "tc": "通過年度帳目（澳門）",
+      "sc": "通过年度账目（澳门）"
+    },
+    "phrase": {
+      "en": "the approval of the annual accounts",
+      "tc": "通過年度帳目",
+      "sc": "通过年度账目"
+    },
+    "description": "Quota holders approve the annual report and accounts.",
+    "whenToUse": "The annual accounts of a Macau company need approving by the quota holders, or the client sends its accounts.",
+    "startedBy": "firm calendar",
+    "personSelection": "none",
+    "forms": "Minutes (acta)",
+    "deadline": {
+      "kind": "fye",
+      "months": 3,
+      "rule": "Firm default: within 3 months after the year end (verify the Commercial Code period and the articles)"
+    },
+    "requirements": [
+      {
+        "key": "accounts"
+      },
+      {
+        "key": "moResolution"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect accounts"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare minutes (acta)"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "register",
+        "label": "Record the approval",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:mo-acta",
+        "name": "Minutes approving the accounts (acta)",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "record_agm"
+      }
+    ],
+    "feeCents": 250000,
+    "complianceNotes": [
+      "Complementary tax (M/1) filing is separate; coordinate with the accountant."
+    ],
+    "periodKey": "MOACC:{year}",
+    "verifyNote": "Summarised from secondary sources for MO; verify with a qualified local company secretary or agent before relying on it."
+  }
+]
