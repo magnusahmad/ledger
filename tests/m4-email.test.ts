@@ -44,6 +44,19 @@ describe("Email channel", () => {
     expect(contacts[0]).toMatchObject({ email: "sam@venture.example", isBilling: true });
   });
 
+  it("a prospect first known only by the sender's name takes the company's name and number when the client gives them", async () => {
+    ctx.llm.on("intake", intake({ client: { kind: "new_prospect", clientId: null, companyName: null, companyNumber: null, senderName: "Sam Lee", reason: "Unknown sender" }, actions: [action({ type: "start_request", playbookId: "hk.changeOffice" })] }));
+    ctx.llm.on("draft", goodDraft);
+    ctx.mail.deliver({ from: { email: "sam@venture.example", name: "Sam Lee" }, subject: "Office", text: "Can you move our office?" });
+    await pollMail(ctx);
+    const prospect = await ctx.db.query.client.findFirst({ where: eq(client.nameEn, "Sam Lee (new prospect)") });
+    expect(prospect).toBeTruthy();
+    ctx.llm.set("intake", intake({ client: { kind: "existing", clientId: prospect!.id, companyName: "Blue Harbour Trading Limited", companyNumber: "3345678", senderName: "Sam Lee", reason: "Same sender" }, actions: [action({ type: "general_correspondence" })] }));
+    ctx.mail.deliver({ from: { email: "sam@venture.example", name: "Sam Lee" }, subject: "Re: Office", text: "It's Blue Harbour Trading Limited, CR 3345678." });
+    await pollMail(ctx);
+    expect(await ctx.db.query.client.findFirst({ where: eq(client.id, prospect!.id) })).toMatchObject({ nameEn: "Blue Harbour Trading Limited", companyNumber: "3345678" });
+  });
+
   it("polling twice does not ingest the same message twice, and our own sent mail is ignored", async () => {
     ctx.llm.on("intake", appoint());
     ctx.llm.on("draft", goodDraft);

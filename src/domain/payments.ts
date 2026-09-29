@@ -6,7 +6,7 @@ import { bankTransaction, invoice, payment, request as requestT, task as taskT }
 import type { BankDeposit } from "@/integrations/types";
 import { createProposal, onApprove } from "./proposals";
 import { advance, logEvent } from "./engine";
-import { kvGet, kvSet } from "./kv";
+import { kvGet, kvSet, withLease } from "./kv";
 import { enqueue } from "./jobs";
 import { hkDate } from "@/lib/clock";
 import { money } from "./labels";
@@ -15,6 +15,10 @@ import { audit } from "./audit";
 const squash = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 export async function pollBank(ctx: Ctx) {
+  return (await withLease(ctx, "bank", 120, () => pollBankUnlocked(ctx))) ?? { fetched: 0, matched: 0, proposed: 0, unmatched: 0 };
+}
+
+async function pollBankUnlocked(ctx: Ctx) {
   const since = await kvGet<string>(ctx, `bank.cursor.${ctx.bank.name}`);
   const deposits = await ctx.bank.listDeposits(since ? new Date(new Date(since).getTime() - 3600_000) : null);
   const out = { fetched: deposits.length, matched: 0, proposed: 0, unmatched: 0 };

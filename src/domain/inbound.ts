@@ -21,7 +21,7 @@ import { createInvoiceForRequest, invoiceWithLines } from "./invoices";
 import { createProposal } from "./proposals";
 import { getFirm } from "./firm";
 import { itemLabel, money, PROTECTED_KEYS } from "./labels";
-import { fmtDate } from "./dates";
+import { fmtDate, isIsoDate } from "./dates";
 import "./handlers";
 import "./payments";
 import "./accounting-sync";
@@ -110,6 +110,7 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
     return { ...result, proposalIds: [p.id] };
   }
   result.clientId = clientId;
+  await namePropsect(ctx, clientId, intake);
   if (conv.clientId !== clientId) await ctx.db.update(conversation).set({ clientId }).where(eq(conversation.id, conv.id));
   for (const a of atts) if (a.documentId) await ctx.db.update(document).set({ clientId }).where(eq(document.id, a.documentId));
   const cl = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) }))!;
@@ -158,25 +159,39 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   }
 
   const touchedTasks: Task[] = [];
-  for (const a of actions.filter((x) => ["provide_information", "change_request", "cancel_request"].includes(x.type))) {
+  const taskActions = actions.filter((x) => ["provide_information", "change_request", "cancel_request"].includes(x.type));
+  // Different tasks are independent, so their reviews run in parallel; actions on the same task stay in order.
+  const byTask = new Map<string, IntakeAction[]>();
+  for (const a of taskActions) byTask.set(a.taskId ?? `none-${Math.random()}`, [...(byTask.get(a.taskId ?? "") ?? []), a]);
+  const groupResults = await Promise.all([...byTask.values()].map(async (group) => {
+    const local = { questions: [] as string[], touched: [] as Task[], changes: [] as ReplyFacts["changes"], cancellations: [] as ReplyFacts["cancellations"], proposals: [] as string[] };
+    for (const a of group) await handleTaskAction(a, local);
+    return local;
+  }));
+  for (const g of groupResults) {
+    facts.clarifications.push(...g.questions); touchedTasks.push(...g.touched); facts.changes.push(...g.changes); facts.cancellations.push(...g.cancellations); result.proposalIds.push(...g.proposals);
+  }
+  async function handleTaskAction(a: IntakeAction, local: { questions: string[]; touched: Task[]; changes: ReplyFacts["changes"]; cancellations: ReplyFacts["cancellations"]; proposals: string[] }) {
     const t = a.taskId ? await getTask(ctx, a.taskId).catch(() => null) : null;
     if (!t || t.clientId !== clientId || t.status !== "open") {
       const p = await createProposal(ctx, { kind: "triage", title: `Which task is this for? (${a.type.replace("_", " ")})`, summary: a.description ?? JSON.stringify(a.fields.map((f) => f.key)), clientId, payload: { messageId, action: a } });
-      result.proposalIds.push(p.id);
-      continue;
+      local.proposals.push(p.id);
+      return;
     }
     if (a.type === "cancel_request") {
       const p = await proposeCancel(ctx, t, a.description ?? "Client asked to cancel", messageId);
-      result.proposalIds.push(p.id);
-      facts.cancellations.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), note: a.description ?? "" });
-      continue;
+      local.proposals.push(p.id);
+      local.cancellations.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), note: a.description ?? "" });
+      return;
     }
+    const sub = { proposalIds: [] as string[] } as ProcessResult;
     const questions = a.type === "provide_information"
-      ? await applyInformation(ctx, t, a, atts, messageId, result)
-      : await applyChange(ctx, t, a, messageId, result);
-    facts.clarifications.push(...questions);
-    touchedTasks.push(await getTask(ctx, t.id));
-    if (a.type === "change_request") facts.changes.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), change: a.description ?? "", nowNeeded: outstanding(await getTask(ctx, t.id)).map((e) => itemLabel(e.key, intake.language, t.params)) });
+      ? await applyInformation(ctx, t, a, atts, messageId, sub)
+      : await applyChange(ctx, t, a, messageId, sub);
+    local.proposals.push(...sub.proposalIds);
+    local.questions.push(...questions);
+    if (!local.touched.some((x) => x.id === t.id)) local.touched.push(await getTask(ctx, t.id));
+    if (a.type === "change_request") local.changes.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), change: a.description ?? "", nowNeeded: outstanding(await getTask(ctx, t.id)).map((e) => itemLabel(e.key, intake.language, t.params)) });
   }
   for (const a of actions.filter((x) => x.type === "ask_question")) facts.questions.push({ question: a.description ?? "", facts: await answerFacts(ctx, clientId) });
 
@@ -193,7 +208,7 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
         title: pbTitle(pb, intake.language) + (tt.personId ? ` (${(await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, tt.personId!) }))?.nameEn})` : ""),
         needed: outstanding(tt).map((e) => itemLabel(e.key, intake.language, tt.params)),
         onFile: tt.checklist.filter((e) => e.status === "on_file").map((e) => itemLabel(e.key, intake.language, tt.params)),
-        alreadyReceived: tt.checklist.filter((e) => e.status === "received").map((e) => `${itemLabel(e.key, intake.language, tt.params)}${e.value && !PROTECTED_KEYS.has(e.key) ? `: ${e.value}` : ""}`),
+        alreadyReceived: tt.checklist.filter((e) => e.status === "received").map((e) => `${itemLabel(e.key, intake.language, tt.params)}${e.value && !PROTECTED_KEYS.has(e.key) ? `: ${isIsoDate(e.value) ? fmtDate(e.value, intake.language) : e.value}` : ""}`),
         deadline: tt.dueDate ? `${fmtDate(tt.dueDate, intake.language)} (${pb.deadline.kind !== "none" ? pb.deadline.rule : ""})` : null,
       });
     }
@@ -220,6 +235,20 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
 }
 
 // ---------- Helpers ----------
+/** A prospect first known only by the sender's name takes the company's name and number once given. */
+async function namePropsect(ctx: Ctx, clientId: string, intake: Intake) {
+  const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) });
+  if (!cl || cl.lifecycle !== "prospect") return;
+  const patch: Partial<typeof clientT.$inferInsert> = {};
+  if (intake.client.companyName && /\(new prospect\)$/.test(cl.nameEn)) patch.nameEn = intake.client.companyName.trim();
+  if (intake.client.companyNumber && !cl.companyNumber) patch.companyNumber = intake.client.companyNumber.trim();
+  if (Object.keys(patch).length) {
+    await ctx.db.update(clientT).set(patch).where(eq(clientT.id, clientId));
+    const { audit } = await import("./audit");
+    await audit(ctx, "client.named", "client", clientId, patch, "agent");
+  }
+}
+
 function emptyFacts(language: Lang): ReplyFacts {
   return { language, recipientName: "", clientName: "", signOff: "", newRequests: [], updates: [], changes: [], cancellations: [], questions: [], clarifications: [], invoice: null, uploadUrl: null };
 }

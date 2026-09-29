@@ -1,0 +1,7 @@
+{
+  "/(desk)/demo/page": "app/(desk)/demo/page.js",
+  "/(desk)/page": "app/(desk)/page.js",
+  "/(desk)/review/[id]/page": "app/(desk)/review/[id]/page.js",
+  "/(desk)/tasks/page": "app/(desk)/tasks/page.js",
+  "/api/live/route": "app/api/live/route.js"
+}

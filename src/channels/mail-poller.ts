@@ -1,9 +1,13 @@
 // Polls the connected mailbox, ingests new mail and runs the intake pipeline on each.
 import type { Ctx } from "@/lib/ctx";
 import { ingestMessage, processInbound } from "@/domain/inbound";
-import { kvGet, kvSet } from "@/domain/kv";
+import { kvGet, kvSet, withLease } from "@/domain/kv";
 
 export async function pollMail(ctx: Ctx): Promise<{ fetched: number; processed: number; errors: string[] }> {
+  return (await withLease(ctx, "mail", 300, () => pollMailUnlocked(ctx))) ?? { fetched: 0, processed: 0, errors: [] };
+}
+
+async function pollMailUnlocked(ctx: Ctx): Promise<{ fetched: number; processed: number; errors: string[] }> {
   const key = `mail.cursor.${ctx.mail.name}`;
   const cursor = await kvGet<string>(ctx, key);
   const { messages, cursor: next } = await ctx.mail.fetchNew(cursor);
