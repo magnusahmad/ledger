@@ -1,0 +1,189 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { asc, eq, inArray } from "drizzle-orm";
+import { getCtx } from "@/server/ctx";
+import { getProposal } from "@/domain/proposals";
+import { getTask, tasksForRequest } from "@/domain/engine";
+import { itemLabel, money } from "@/domain/labels";
+import { attachment, client, document, invoice, invoiceLine, message, request as requestT } from "@/db/schema";
+import { ReviewForm, RedraftButtons, InlineEdit } from "./client";
+import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
+import { ActionButton } from "@/components/ActionForm";
+import { Pill, ago, fmt } from "@/components/ui";
+import type { Intake } from "@/agent/schemas";
+
+const STATUS_ICON: Record<string, string> = { needed: "○", received: "●", on_file: "✓", not_needed: "–" };
+const STATUS_TEXT: Record<string, string> = { needed: "To request", received: "Received", on_file: "On file", not_needed: "Not needed" };
+
+export default async function Review({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const ctx = getCtx();
+  const p = await getProposal(ctx, id).catch(() => null);
+  if (!p) notFound();
+  const cl = p.clientId ? await ctx.db.query.client.findFirst({ where: eq(client.id, p.clientId) }) : null;
+  const decided = p.status !== "pending";
+  const approve = approveAction.bind(null, p.id);
+  const reject = rejectAction.bind(null, p.id);
+
+  const header = (
+    <div className="top">
+      <div>
+        <Link href="/" className="back">← Today</Link>
+        <h1>{p.title}</h1>
+        <p className="sub">{cl ? <><Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{cl.lifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{decided ? ` · ${p.status}` : ""}</p>
+      </div>
+      {!decided && <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>}
+    </div>
+  );
+  if (decided) return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>This was {p.status}{p.decidedAt ? ` ${ago(p.decidedAt)}` : ""}.</div></>;
+
+  if (p.kind === "send_message") {
+    const draft = (await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }))!;
+    const conv = await ctx.db.query.conversation.findFirst({ where: (c, { eq }) => eq(c.id, draft.conversationId) });
+    const source = draft.inReplyTo ? await ctx.db.query.message.findFirst({ where: eq(message.rfcMessageId, draft.inReplyTo) }) : conv ? (await ctx.db.select().from(message).where(eq(message.conversationId, conv.id)).orderBy(asc(message.at))).filter((m) => m.direction === "in").at(-1) : null;
+    const srcAtts = source ? await ctx.db.select().from(attachment).where(eq(attachment.messageId, source.id)) : [];
+    const intake = source?.intake as { intake?: Intake } | Intake | null;
+    const it = (intake && "actions" in intake ? intake : (intake as { intake?: Intake } | null)?.intake) as Intake | undefined;
+    const reqId = (p.payload.requestId as string | null) ?? null;
+    const req = reqId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, reqId) }) : null;
+    const inv = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
+    const lines = inv ? await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, inv.id)).orderBy(asc(invoiceLine.sort)) : [];
+    const tasks = [] as Awaited<ReturnType<typeof getTask>>[];
+    for (const tid of (p.payload.taskIds as string[]) ?? []) tasks.push(await getTask(ctx, tid));
+    if (!tasks.length && reqId) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
+    const attachInvoice = inv && inv.status === "draft" && (draft.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
+    return (
+      <>
+        {header}
+        <div className="cols">
+          <div className="stack">
+            <div className="card">
+              <div className="sec-h"><h2>Reply</h2><RedraftButtons proposalId={p.id} current={(draft.language as "en" | "tc" | "sc") ?? "en"} /></div>
+              {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the template because the AI draft missed required details. Check the wording.</div>}
+              <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">
+                <div className="fld"><label className="f" htmlFor="to">To</label><input id="to" type="email" name="to" defaultValue={draft.toAddrs.join(", ")} /></div>
+                <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue={draft.subject ?? ""} /></div>
+                <div className="fld"><label className="f" htmlFor="text">Message</label><textarea id="text" name="text" defaultValue={draft.text ?? ""} style={{ minHeight: 360 }} lang={draft.language === "en" ? "en" : draft.language === "sc" ? "zh-Hans" : "zh-Hant"} /></div>
+                {attachInvoice && <p className="small muted" style={{ marginTop: 10 }}>Attached: <a href={`/api/invoices/${inv!.id}/pdf`} target="_blank">{inv!.number}.pdf</a></p>}
+              </ReviewForm>
+            </div>
+          </div>
+          <div className="stack">
+            {source && (
+              <div className="card">
+                <h2>What the client sent</h2>
+                <p className="small muted" style={{ marginTop: -4 }}>{source.fromName ?? ""} &lt;{source.fromAddr}&gt; · {fmt(source.at, true)}</p>
+                <div className="draft" style={{ maxHeight: 220 }}>{source.text}</div>
+                {srcAtts.length > 0 && <p className="small">Attachments: {srcAtts.map((a) => <a key={a.id} href={`/api/docs/${a.documentId}`} target="_blank" style={{ marginRight: 8 }}>{a.filename}</a>)}</p>}
+                {it && (
+                  <>
+                    <h3>What Harbourline understood</h3>
+                    <p className="small" style={{ margin: 0 }}>{it.summary}</p>
+                    <ul className="small" style={{ paddingLeft: 18, margin: "6px 0 0" }}>
+                      {it.actions.map((a, i) => <li key={i}>{a.type.replace(/_/g, " ")}{a.playbookId ? `: ${a.playbookId}` : ""}{a.description ? ` — ${a.description}` : ""} <span className="muted">({Math.round(a.confidence * 100)}%)</span></li>)}
+                    </ul>
+                    <p className="small muted" style={{ marginBottom: 0 }}>Client: {it.client.kind === "new_prospect" ? "new prospect" : it.client.kind} · replying in {it.language === "en" ? "English" : it.language === "tc" ? "Traditional Chinese" : "Simplified Chinese"}</p>
+                  </>
+                )}
+              </div>
+            )}
+            {tasks.map((t) => (
+              <div className="card" key={t.id}>
+                <div className="sec-h"><h2><Link href={`/tasks/${t.id}`}>{t.title}</Link></h2>{t.dueDate && <span className="small muted">Deadline {fmt(t.dueDate)}</span>}</div>
+                <div>
+                  {t.checklist.map((e, i) => (
+                    <div key={i} className="chk"><span className="ic" aria-hidden>{STATUS_ICON[e.status]}</span><span>{itemLabel(e.key, "en", t.params)}{e.value && !["idNo", "resAddr"].includes(e.key) && e.status !== "on_file" ? <span className="muted">: {e.value}</span> : null}</span><span className="small muted">{STATUS_TEXT[e.status]}</span></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {inv && (
+              <div className="card">
+                <div className="sec-h"><h2>Invoice</h2><Pill tone={inv.status === "draft" ? undefined : "amber"}>{inv.status}</Pill></div>
+                {inv.status === "draft" ? <InlineEdit action={invoiceNumberAction.bind(null, inv.id)} name="number" value={inv.number} label="Invoice number" /> : <p className="mono">{inv.number}</p>}
+                <table className="tbl" style={{ marginTop: 8 }}><tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id}><td>{l.description}{l.kind === "disbursement" && <div className="small muted">Disbursement</div>}</td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inv.status === "draft" ? <InlineEdit action={lineAmountAction.bind(null, l.id)} name="amount" value={(l.amountCents / 100).toFixed(0)} label="Amount (HK$)" prefix="HK$" /> : money(l.amountCents)}</td></tr>
+                  ))}
+                  <tr><td><b>Total</b></td><td style={{ textAlign: "right" }}><b>{money(inv.totalCents)}</b></td></tr>
+                </tbody></table>
+                <p className="small muted" style={{ marginBottom: 0 }}>{inv.termsDays ? `${inv.termsDays} days credit: work starts now` : "Payable upfront: work starts once paid"}. Creating it in Xero on send.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ---------- Other kinds ----------
+  const task = p.taskId ? await getTask(ctx, p.taskId).catch(() => null) : null;
+  const taskLink = task ? <p className="small">Task: <Link href={`/tasks/${task.id}`}>{task.title}</Link></p> : null;
+  const summary = p.summary ? <div className="draft" style={{ maxHeight: 300 }}>{p.summary}</div> : null;
+
+  if (p.kind === "record_filing") {
+    const docs = task ? await ctx.db.select().from(document).where(eq(document.taskId, task.id)) : [];
+    return (<>{header}<div className="card" style={{ maxWidth: 720 }}>
+      {taskLink}
+      <p>{p.summary}</p>
+      <h3>Documents to file</h3>
+      <ul className="small">{docs.map((d) => <li key={d.id}><a href={`/api/docs/${d.id}`} target="_blank">{d.title}</a></li>)}</ul>
+      <ReviewForm action={approve} submit="Record filing" redirectTo="/">
+        <div className="grid2">
+          <div className="fld"><label className="f" htmlFor="reference">Filing reference</label><input id="reference" type="text" name="reference" placeholder="e.g. e-Registry submission number" required /></div>
+          <div className="fld" style={{ marginTop: 0 }}><label className="f" htmlFor="filedOn">Filed on</label><input id="filedOn" type="date" name="filedOn" defaultValue={ctx.clock.today()} /></div>
+        </div>
+      </ReviewForm>
+    </div></>);
+  }
+  if (p.kind === "register_change") {
+    return (<>{header}<div className="card" style={{ maxWidth: 720 }}>{taskLink}<h3>These changes will be made to the statutory records</h3>
+      <ul>{((p.payload.preview as string[]) ?? []).map((x, i) => <li key={i} style={{ marginBottom: 6 }}>{x}</li>)}</ul>
+      <ReviewForm action={approve} submit="Update registers" redirectTo="/" /></div></>);
+  }
+  if (p.kind === "send_signing") {
+    const signers = (p.payload.signers as { personId: string; name: string; email: string | null; role: string; docIds: string[] }[]) ?? [];
+    const docs = await ctx.db.select().from(document).where(inArray(document.id, signers.flatMap((s) => s.docIds).concat(["_"])));
+    return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}
+      <h3>Documents</h3><ul className="small">{docs.map((d) => <li key={d.id}><a href={`/api/docs/${d.id}`} target="_blank">{d.title}</a></li>)}</ul>
+      <ReviewForm action={approve} submit="Send for signature" redirectTo="/">
+        {signers.map((s) => (<div key={s.personId} className="fld"><label className="f" htmlFor={`e-${s.personId}`}>{s.name} · {s.role} · signs {s.docIds.length} document(s)</label><input id={`e-${s.personId}`} type="email" name={`email:${s.personId}`} defaultValue={s.email ?? ""} required /></div>))}
+        <p className="small muted">Each signer gets a personal link and confirms a 6-digit code sent to their email.</p>
+      </ReviewForm>
+    </div></>);
+  }
+  if (p.kind === "screening_review") {
+    return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}{summary}
+      <div className="grid2" style={{ marginTop: 16 }}>
+        <ReviewForm action={approve} submit="Clear: not the same person" redirectTo="/"><input type="hidden" name="decision" value="clear" /><div className="fld"><label className="f" htmlFor="note">Reason</label><input id="note" type="text" name="note" placeholder="e.g. different date of birth on HKID" required /></div></ReviewForm>
+        <ReviewForm action={approve} submit="Escalate to MLRO" tone="danger" redirectTo="/"><input type="hidden" name="decision" value="escalate" /><p className="small muted">The task stays on hold.</p></ReviewForm>
+      </div></div></>);
+  }
+  if (p.kind === "conflict") {
+    const pl = p.payload as { onFile: string; incoming: string; question: string };
+    return (<>{header}<div className="card" style={{ maxWidth: 720 }}>{taskLink}
+      <dl className="kv"><dt>On file</dt><dd>{pl.onFile}</dd><dt>Client now says</dt><dd><b>{pl.incoming}</b></dd><dt>Suggested question</dt><dd>{pl.question}</dd></dl>
+      <div className="row" style={{ marginTop: 16 }}>
+        <ReviewForm action={approve} submit="Use the new value" redirectTo="/"><input type="hidden" name="accept" value="incoming" /></ReviewForm>
+        <ReviewForm action={approve} submit="Keep what's on file" tone="secondary" redirectTo="/"><input type="hidden" name="accept" value="onFile" /></ReviewForm>
+      </div></div></>);
+  }
+  if (p.kind === "custom_plan" && task) {
+    const plan = task.params.plan as { title: string; items: { labelEn: string }[]; steps: string[]; feeHkd: number; caveats: string[] };
+    return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}
+      <p>{String(task.params.description ?? "")}</p>
+      <h3>Planned checklist</h3><ul>{plan.items.map((x, i) => <li key={i}>{x.labelEn}</li>)}</ul>
+      <h3>Steps</h3><ol>{plan.steps.map((x, i) => <li key={i}>{x}</li>)}</ol>
+      {plan.caveats.length > 0 && <><h3>Caveats</h3><ul className="small">{plan.caveats.map((x, i) => <li key={i}>{x}</li>)}</ul></>}
+      <ReviewForm action={approve} submit="Approve plan" redirectTo="/">
+        <div className="grid2"><div className="fld"><label className="f" htmlFor="title">Title</label><input id="title" type="text" name="title" defaultValue={plan.title} /></div><div className="fld" style={{ marginTop: 0 }}><label className="f" htmlFor="fee">Fee (HK$)</label><input id="fee" type="number" name="feeHkd" defaultValue={plan.feeHkd} min={0} /></div></div>
+      </ReviewForm></div></>);
+  }
+  const verb: Record<string, string> = { match_payment: "Record payment", cancel_task: "Cancel task", change_request: "Apply change", revise_invoice: "Issue revised invoice", triage: "Mark handled" };
+  const srcMsg = p.payload.messageId ? await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }) : null;
+  return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}{summary}
+    {srcMsg && srcMsg.direction === "in" && <><h3>Message</h3><p className="small muted">{srcMsg.fromName} &lt;{srcMsg.fromAddr}&gt;</p><div className="draft">{srcMsg.text}</div></>}
+    {p.kind === "triage" && <p className="small muted">Start the work by hand from <Link href="/new">New request</Link> if needed.</p>}
+    <div style={{ marginTop: 16 }}><ReviewForm action={approve} submit={verb[p.kind] ?? "Approve"} redirectTo="/" /></div>
+  </div></>);
+}
