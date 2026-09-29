@@ -13,3 +13,6 @@ dist/
 coverage/
 *.log
 .claude/settings.local.json
+
+# Local file storage (uploads, generated documents, datasets)
+storage/

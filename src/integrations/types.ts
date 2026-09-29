@@ -3,7 +3,7 @@
 // ---------- LLM ----------
 export type LlmMessage =
   | { role: "system" | "user" | "assistant"; content: string }
-  | { role: "user"; content: ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[] };
+  | { role: "user"; content: ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } } | { type: "file"; file: { filename: string; file_data: string } })[] };
 
 export type LlmRequest = {
   agent: string;
