@@ -1,0 +1,475 @@
+[
+  {
+    "id": "tw.changeDirectors",
+    "version": 1,
+    "jurisdiction": "TW",
+    "category": "Taiwan",
+    "name": {
+      "en": "Change directors or supervisors (Taiwan)",
+      "tc": "變更董事或監察人（台灣）",
+      "sc": "变更董事或监察人（台湾）"
+    },
+    "phrase": {
+      "en": "the change of directors or supervisors",
+      "tc": "變更董事或監察人",
+      "sc": "变更董事或监察人"
+    },
+    "description": "Change directors or supervisors of a Taiwan company, register the change and update the Article 22-1 declaration.",
+    "whenToUse": "A company incorporated in Taiwan changes a director (董事) or supervisor (監察人).",
+    "startedBy": "client request",
+    "personSelection": "new",
+    "forms": "Change registration application (變更登記申請書)",
+    "deadline": {
+      "kind": "event",
+      "days": 15,
+      "from": "effectiveDate",
+      "rule": "Apply for change registration within 15 days after the change (Company Registration Regulations art. 4)"
+    },
+    "requirements": [
+      {
+        "key": "twDirectorDetails"
+      },
+      {
+        "key": "twResolution"
+      },
+      {
+        "key": "effDate"
+      },
+      {
+        "key": "idCopy",
+        "scope": "person",
+        "condition": "personLacksCurrentCdd"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect resolution and appointee details"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the appointee"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare resolution"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Apply to the MOEA (or local government) for change registration",
+        "human": true,
+        "authority": "Ministry of Economic Affairs, Department of Commerce"
+      },
+      {
+        "kind": "task",
+        "label": "File the Article 22-1 change declaration within 15 days",
+        "human": true,
+        "instructions": "Update directors/supervisors on the TDCC platform (ctp.tdcc.com.tw)."
+      },
+      {
+        "kind": "register",
+        "label": "Update directors",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:tw-resolution",
+        "name": "Shareholders’ resolution: change of directors",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "appoint_officer",
+        "role": "director"
+      }
+    ],
+    "feeCents": 680000,
+    "complianceNotes": [
+      "Changes to Article 22-1 data (directors, supervisors, managers, shareholders over 10%) must be declared within 15 days."
+    ],
+    "verifyNote": "Summarised from secondary sources for TW; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "tw.changeResponsiblePerson",
+    "version": 1,
+    "jurisdiction": "TW",
+    "category": "Taiwan",
+    "name": {
+      "en": "Change responsible person (Taiwan)",
+      "tc": "變更代表人（台灣）",
+      "sc": "变更代表人（台湾）"
+    },
+    "phrase": {
+      "en": "the change of responsible person",
+      "tc": "變更代表人",
+      "sc": "变更代表人"
+    },
+    "description": "Change the responsible person (代表人/董事長) of a Taiwan company.",
+    "whenToUse": "A Taiwan company changes its responsible person or chairman.",
+    "startedBy": "client request",
+    "personSelection": "any",
+    "forms": "Change registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 15,
+      "from": "effectiveDate",
+      "rule": "Apply within 15 days after the change"
+    },
+    "requirements": [
+      {
+        "key": "twDirectorDetails"
+      },
+      {
+        "key": "twResolution"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect resolution"
+      },
+      {
+        "kind": "screen",
+        "label": "Screen the new responsible person"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare resolution"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Apply to the MOEA (or local government) for change registration",
+        "human": true,
+        "authority": "Ministry of Economic Affairs, Department of Commerce"
+      },
+      {
+        "kind": "register",
+        "label": "Update the responsible person",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, reminding them to update the company seal and bank records",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:tw-resolution",
+        "name": "Resolution: change of responsible person",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "replace_officer",
+        "role": "responsible_person"
+      }
+    ],
+    "feeCents": 580000,
+    "complianceNotes": [
+      "The responsible person of a limited company (有限公司) is a director; of a company limited by shares, the chairman."
+    ],
+    "verifyNote": "Summarised from secondary sources for TW; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "tw.declaration221",
+    "version": 1,
+    "jurisdiction": "TW",
+    "category": "Taiwan",
+    "name": {
+      "en": "Article 22-1 declaration (Taiwan)",
+      "tc": "公司法第22條之1申報（台灣）",
+      "sc": "公司法第22条之1申报（台湾）"
+    },
+    "phrase": {
+      "en": "the Article 22-1 declaration",
+      "tc": "公司法第22條之1申報",
+      "sc": "公司法第22条之1申报"
+    },
+    "description": "Annual (and change) declaration of directors, supervisors, managers, shareholders over 10% and beneficial owners on the TDCC platform.",
+    "whenToUse": "The Taiwan Article 22-1 annual declaration is due (March), or declared data changed.",
+    "startedBy": "firm calendar",
+    "personSelection": "none",
+    "forms": "TDCC declaration platform",
+    "deadline": {
+      "kind": "fixed_annual",
+      "month": 3,
+      "day": 31,
+      "rule": "Annual declaration 1 to 31 March; changes within 15 days"
+    },
+    "requirements": [
+      {
+        "key": "tw221Data"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the data"
+      },
+      {
+        "kind": "file",
+        "label": "Declare on the TDCC platform",
+        "human": true,
+        "authority": "TDCC Company Responsible Persons and Major Shareholders platform"
+      },
+      {
+        "kind": "register",
+        "label": "Record the declaration",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [
+      {
+        "kind": "record_annual_return"
+      }
+    ],
+    "feeCents": 150000,
+    "complianceNotes": [
+      "Failure to declare after notice: fines of NT$50,000 to NT$500,000, repeated up to NT$5,000,000."
+    ],
+    "verifyNote": "Summarised from secondary sources for TW; verify with a qualified local company secretary or agent before relying on it.",
+    "periodKey": "TW221:{year}"
+  },
+  {
+    "id": "tw.changeAddress",
+    "version": 1,
+    "jurisdiction": "TW",
+    "category": "Taiwan",
+    "name": {
+      "en": "Change company address (Taiwan)",
+      "tc": "變更公司所在地（台灣）",
+      "sc": "变更公司所在地（台湾）"
+    },
+    "phrase": {
+      "en": "the change of company address",
+      "tc": "變更公司所在地",
+      "sc": "变更公司所在地"
+    },
+    "description": "Change the company address (所在地) of a Taiwan company.",
+    "whenToUse": "A Taiwan company is moving its registered address.",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Change registration application",
+    "deadline": {
+      "kind": "event",
+      "days": 15,
+      "from": "effectiveDate",
+      "rule": "Apply within 15 days after the change"
+    },
+    "requirements": [
+      {
+        "key": "newAddr"
+      },
+      {
+        "key": "twResolution"
+      },
+      {
+        "key": "effDate"
+      },
+      {
+        "key": "premises"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the new address and consent"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare resolution"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Apply to the MOEA (or local government) for change registration",
+        "human": true,
+        "authority": "Ministry of Economic Affairs, Department of Commerce"
+      },
+      {
+        "kind": "register",
+        "label": "Update the address",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client, reminding them to update tax registration",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:tw-resolution",
+        "name": "Resolution: change of company address",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "change_registered_office"
+      }
+    ],
+    "feeCents": 380000,
+    "complianceNotes": [],
+    "verifyNote": "Summarised from secondary sources for TW; verify with a qualified local company secretary or agent before relying on it."
+  },
+  {
+    "id": "tw.capitalIncrease",
+    "version": 1,
+    "jurisdiction": "TW",
+    "category": "Taiwan",
+    "name": {
+      "en": "Capital increase (Taiwan)",
+      "tc": "增資（台灣）",
+      "sc": "增资（台湾）"
+    },
+    "phrase": {
+      "en": "the capital increase",
+      "tc": "增資",
+      "sc": "增资"
+    },
+    "description": "Increase the capital of a Taiwan company with CPA capital verification.",
+    "whenToUse": "A Taiwan company wants to increase its capital.",
+    "startedBy": "client request",
+    "personSelection": "none",
+    "forms": "Change registration application; CPA capital verification report",
+    "deadline": {
+      "kind": "event",
+      "days": 15,
+      "from": "effectiveDate",
+      "rule": "Apply within 15 days after the increase"
+    },
+    "requirements": [
+      {
+        "key": "twCapitalIncrease"
+      },
+      {
+        "key": "twResolution"
+      },
+      {
+        "key": "effDate"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect subscription and verification"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare resolution"
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signatures"
+      },
+      {
+        "kind": "file",
+        "label": "Apply to the MOEA (or local government) for change registration",
+        "human": true,
+        "authority": "Ministry of Economic Affairs, Department of Commerce"
+      },
+      {
+        "kind": "register",
+        "label": "Update capital",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [
+      {
+        "template": "tpl:tw-resolution",
+        "name": "Resolution: capital increase",
+        "signers": "members"
+      }
+    ],
+    "registerEffects": [
+      {
+        "kind": "change_capital"
+      }
+    ],
+    "feeCents": 680000,
+    "complianceNotes": [
+      "A CPA must verify the capital contribution."
+    ],
+    "verifyNote": "Summarised from secondary sources for TW; verify with a qualified local company secretary or agent before relying on it."
+  }
+]

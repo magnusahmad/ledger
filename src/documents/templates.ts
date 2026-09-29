@@ -181,3 +181,81 @@ export const TEMPLATES: Record<string, (c: DocContext) => Block[]> = {
   "tpl:register-directors": registerOfDirectors,
   "tpl:register-members": registerOfMembers,
 };
+
+// ---------- Mainland China, Macau, Taiwan ----------
+const eff2 = (c: DocContext) => c.task.effectiveDate ?? c.values.effDate ?? c.today;
+
+function cnClauses(c: DocContext): string[] {
+  const v = c.values, p = c.person, d0 = fmtDate(eff2(c), "sc"), name = p ? (p.nameZh ? `${p.nameZh}（${p.nameEn}）` : p.nameEn) : "";
+  switch (c.pb.id) {
+    case "cn.changeLegalRep": return [`同意变更公司法定代表人为${name}，自${d0}起生效。`, "授权公司办理相关变更登记手续，并更换营业执照。"];
+    case "cn.changeOfficers": return [`同意委任${name}为公司董事，自${d0}起生效。`, "授权公司于三十日内向登记机关办理备案。"];
+    case "cn.changeAddress": return [`同意将公司住所变更为${v.cnNewAddress ?? ""}，自${d0}起生效。`, "同意相应修改公司章程，并办理变更登记。"];
+    case "cn.changeCapital": return [`同意变更公司注册资本及出资安排：${v.cnCapitalChange ?? ""}。`, "同意相应修改公司章程；如属减资，依法通知债权人并公告。"];
+    case "cn.equityTransfer": return [`同意以下股权转让：${v.cnEquityTransfer ?? ""}。`, "其他股东放弃优先购买权（如适用），并同意修改公司章程及办理变更登记。"];
+    default: return [c.task.title];
+  }
+}
+
+export function cnResolution(c: DocContext): Block[] {
+  const nameSc = c.client.nameSc ?? c.client.nameEn;
+  const uscc = (c.client.jurisdictionData as { uscc?: string }).uscc ?? c.client.companyNumber ?? "";
+  const single = new Set(c.members.map((m) => m.personId)).size <= 1;
+  return [
+    { t: "title", text: nameSc }, { t: "subtitle", text: `统一社会信用代码：${uscc}  ·  ${single ? "股东决定" : "股东会决议"}` },
+    { t: "p", text: `${single ? "本公司唯一股东" : "本公司股东会"}依据《中华人民共和国公司法》及公司章程，作出如下${single ? "决定" : "决议"}：` },
+    { t: "list", items: cnClauses(c), numbered: true },
+    { t: "p", text: `日期：${fmtDate(c.today, "sc")}` },
+    { t: "sign", names: [...new Map(c.members.map((m) => [m.personId, m])).values()].map((m) => ({ name: m.name, caption: "股东（签字/盖章）", field: `sign:${m.personId}` })) },
+    { t: "small", text: "The English translation is for reference; the Chinese text prevails for filing with the market regulator." },
+  ];
+}
+
+function moClauses(c: DocContext): [string, string][] {
+  const v = c.values, p = c.person;
+  switch (c.pb.id) {
+    case "mo.changeAdministrators": return [[`Deliberado nomear ${p?.nameEn ?? ""} como administrador da sociedade.`, `議決委任${p?.nameZh ?? p?.nameEn ?? ""}為公司行政管理機關成員。`]];
+    case "mo.quotaTransfer": return [[`Deliberado consentir na cessão de quota: ${v.moQuotaTransfer ?? ""}.`, `議決同意以下股的轉讓：${v.moQuotaTransfer ?? ""}。`]];
+    case "mo.changeOffice": return [[`Deliberado transferir a sede da sociedade para ${v.newAddr ?? ""}.`, `議決將公司住所遷往${v.newAddr ?? ""}。`]];
+    case "mo.amendArticles": return [[`Deliberado alterar os estatutos: ${v.articlesChange ?? ""}.`, `議決修改公司章程：${v.articlesChange ?? ""}。`]];
+    case "mo.approveAccounts": return [["Deliberado aprovar o relatório e as contas do exercício.", "議決通過年度報告及帳目。"]];
+    default: return [[c.task.title, c.task.title]];
+  }
+}
+
+export function moActa(c: DocContext): Block[] {
+  return [
+    { t: "title", text: `${c.client.nameEn}${c.client.nameTc ? ` ${c.client.nameTc}` : ""}` },
+    { t: "subtitle", text: `Registo n.º ${c.client.companyNumber ?? ""}  ·  Acta da Assembleia Geral / 股東會會議錄` },
+    { t: "p", text: `Aos ${fmtDate(c.today)}, reuniram-se os sócios representando a totalidade do capital social, que deliberaram por unanimidade: / 全體股東出席，一致議決：` },
+    { t: "list", items: moClauses(c).map(([pt, tc]) => `${pt}\n${tc}`), numbered: true },
+    { t: "sign", names: [...new Map(c.members.map((m) => [m.personId, m])).values()].map((m) => ({ name: m.name, caption: "Sócio / 股東", field: `sign:${m.personId}` })) },
+    { t: "small", text: "Signatures on documents for the Commercial Registry may need notarial recognition. / 提交商業登記局的文件簽名或須經公證認定。" },
+  ];
+}
+
+function twClauses(c: DocContext): string[] {
+  const v = c.values, p = c.person, name = p ? (p.nameZh ?? p.nameEn) : "";
+  switch (c.pb.id) {
+    case "tw.changeDirectors": return [`經全體股東同意，選任${name}為本公司董事，自${fmtDate(eff2(c), "tc")}起生效。`];
+    case "tw.changeResponsiblePerson": return [`經全體股東同意，推選${name}為本公司代表人，自${fmtDate(eff2(c), "tc")}起生效。`];
+    case "tw.changeAddress": return [`經全體股東同意，本公司所在地變更為${v.newAddr ?? ""}。`];
+    case "tw.capitalIncrease": return [`經全體股東同意，本公司辦理增資：${v.twCapitalIncrease ?? ""}，並修正章程。`];
+    default: return [c.task.title];
+  }
+}
+
+export function twResolution(c: DocContext): Block[] {
+  const ubn = (c.client.jurisdictionData as { ubn?: string }).ubn ?? c.client.companyNumber ?? "";
+  return [
+    { t: "title", text: c.client.nameTc ?? c.client.nameEn }, { t: "subtitle", text: `統一編號：${ubn}  ·  股東同意書` },
+    { t: "p", text: "本公司全體股東依公司法及章程規定，同意下列事項：" },
+    { t: "list", items: twClauses(c), numbered: true },
+    { t: "p", text: `中華民國${Number(c.today.slice(0, 4)) - 1911}年${Number(c.today.slice(5, 7))}月${Number(c.today.slice(8, 10))}日` },
+    { t: "sign", names: [...new Map(c.members.map((m) => [m.personId, m])).values()].map((m) => ({ name: m.name, caption: "股東（簽名蓋章）", field: `sign:${m.personId}` })) },
+  ];
+}
+
+TEMPLATES["tpl:cn-resolution"] = cnResolution;
+TEMPLATES["tpl:mo-acta"] = moActa;
+TEMPLATES["tpl:tw-resolution"] = twResolution;

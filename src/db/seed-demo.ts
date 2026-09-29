@@ -134,6 +134,64 @@ export async function seedDemo(ctx: Ctx, opts: { demoEmail?: string | null } = {
   }
 
   await seedShowcaseHistory(ctx);
+  await seedOtherJurisdictions(ctx);
+}
+
+async function seedOtherJurisdictions(ctx: Ctx) {
+  // Mainland China: a WFOE owned by Kowloon Bay Trading (fictional).
+  const kbt = await createPerson(ctx, { id: "per_kbt", kind: "corporate", nameEn: "Kowloon Bay Trading Limited", nameZh: "九龍灣貿易有限公司" });
+  const liu = await createPerson(ctx, { id: "per_cn_liu", nameEn: "LIU Wei", nameZh: "刘伟", idType: "Home Return Permit", idNumber: "H12345678", email: "liu.wei@qianhai.example" });
+  const wang = await createPerson(ctx, { id: "per_cn_wang", nameEn: "WANG Fang", nameZh: "王芳", idType: "PRC resident ID", idNumber: "440301199001011234", email: "wang.fang@qianhai.example" });
+  const cn = await createClient(ctx, {
+    id: "cli_cn1", code: "CN1", jurisdiction: "CN", companyType: "Wholly foreign-owned enterprise (limited liability company)",
+    nameEn: "Shenzhen Qianhai Harbour Trading Co., Ltd.", nameTc: "深圳前海港灣貿易有限公司", nameSc: "深圳前海港湾贸易有限公司",
+    companyNumber: "91440300MA5G123X4K", lifecycle: "active", staffId: "user_ky", messageLang: "tc", docLang: "sc", riskRating: "medium", paymentTermsDays: 30,
+    regOfficeEn: "Room 301, Building B7, Qianhai Fund Town, 128 Guiwan 5th Road, Nanshan, Shenzhen", regOfficeZh: "深圳市前海深港合作区南山街道桂湾五路128号前海深港基金小镇B7栋301",
+    businessNatureEn: "Import and export of household goods", businessNatureZh: "家居用品进出口", incorporatedOn: "2021-06-18", fyeMonth: 12, fyeDay: 31,
+    jurisdictionData: { uscc: "91440300MA5G123X4K", registeredCapital: { currency: "RMB", amountCents: 100000000 }, businessScope: "一般经营项目：家居用品的批发、进出口", subscriptions: [
+      { holder: "Kowloon Bay Trading Limited", amountCents: 40000000, paidCents: 40000000, deadline: "2023-06-30" },
+      { holder: "Kowloon Bay Trading Limited", amountCents: 30000000, paidCents: 0, deadline: "2028-12-31" },
+      { holder: "Kowloon Bay Trading Limited", amountCents: 30000000, paidCents: 0, deadline: "2035-06-30" },
+    ] },
+  });
+  await appoint(ctx, { clientId: cn.id, personId: liu.id, role: "director", fromDate: "2021-06-18", extra: { title: "Executive director 执行董事" } });
+  await appoint(ctx, { clientId: cn.id, personId: liu.id, role: "legal_representative", fromDate: "2021-06-18" });
+  await appoint(ctx, { clientId: cn.id, personId: "per_p2", role: "manager", fromDate: "2021-06-18", extra: { title: "General manager 总经理" } });
+  await appoint(ctx, { clientId: cn.id, personId: wang.id, role: "supervisor", fromDate: "2021-06-18" });
+  const cnCap = await createShareClass(ctx, { clientId: cn.id, name: "Registered capital", nameZh: "注册资本", currency: "RMB", unit: "capital" });
+  await allot(ctx, { clientId: cn.id, shareClassId: cnCap.id, date: "2021-06-18", toPersonId: kbt.id, quantity: 1000000, amountPaidCents: 40000000, note: "Subscribed RMB 1,000,000; RMB 400,000 paid" });
+  await addContact(ctx, { clientId: cn.id, personId: liu.id, name: "LIU Wei", role: "Legal representative, gives instructions", email: liu.email, channel: "email", language: "sc", isInstructing: true, isBilling: true });
+
+  // Macau: sociedade por quotas (fictional).
+  const maria = await createPerson(ctx, { id: "per_mo_b", nameEn: "Maria Ferreira", nameZh: "費麗雅", idType: "Macau BIR", idNumber: "1234567(8)", email: "maria.ferreira@baiavista.example" });
+  const mo = await createClient(ctx, {
+    id: "cli_mo1", code: "MO1", jurisdiction: "MO", companyType: "Sociedade por quotas (limited company)",
+    nameEn: "Baia Vista Comercio, Limitada", nameTc: "灣景貿易有限公司", nameSc: "湾景贸易有限公司", companyNumber: "SO 81234",
+    lifecycle: "active", staffId: "user_mc", messageLang: "en", docLang: "bilingual", riskRating: "low", paymentTermsDays: 0,
+    regOfficeEn: "Avenida da Praia Grande, No. 409, 12 andar, Macau", businessNatureEn: "Trading", incorporatedOn: "2020-03-15", fyeMonth: 12, fyeDay: 31,
+    jurisdictionData: { registeredCapital: { currency: "MOP", amountCents: 2500000 } },
+  });
+  await appoint(ctx, { clientId: mo.id, personId: maria.id, role: "administrator", fromDate: "2020-03-15" });
+  const quota = await createShareClass(ctx, { clientId: mo.id, name: "Quota", nameZh: "股", currency: "MOP", unit: "quota" });
+  await allot(ctx, { clientId: mo.id, shareClassId: quota.id, date: "2020-03-15", toPersonId: "per_p2", quantity: 12500, amountPaidCents: 1250000 });
+  await allot(ctx, { clientId: mo.id, shareClassId: quota.id, date: "2020-03-15", toPersonId: maria.id, quantity: 12500, amountPaidCents: 1250000 });
+  await addContact(ctx, { clientId: mo.id, personId: maria.id, name: "Maria Ferreira", role: "Administrator, gives instructions", email: maria.email, channel: "email", language: "en", isInstructing: true, isBilling: true });
+
+  // Taiwan: limited company (fictional).
+  const lin = await createPerson(ctx, { id: "per_tw_lin", nameEn: "LIN Chih-Hao", nameZh: "林志豪", idType: "ROC ID", idNumber: "A123456789", email: "chihhao.lin@taipeiharbour.example" });
+  const tw = await createClient(ctx, {
+    id: "cli_tw1", code: "TW1", jurisdiction: "TW", companyType: "有限公司 (limited company)",
+    nameEn: "Taipei Harbour Technology Co., Ltd.", nameTc: "台北港灣科技有限公司", nameSc: "台北港湾科技有限公司", companyNumber: "83475612",
+    lifecycle: "active", staffId: "user_ky", messageLang: "tc", docLang: "tc", riskRating: "low", paymentTermsDays: 30,
+    regOfficeEn: "7F, No. 100, Section 5, Xinyi Road, Xinyi District, Taipei", regOfficeZh: "台北市信義區信義路五段100號7樓", businessNatureEn: "Software development",
+    incorporatedOn: "2019-08-01", fyeMonth: 12, fyeDay: 31, jurisdictionData: { ubn: "83475612", capital: { currency: "TWD", amountCents: 500000000 } },
+  });
+  await appoint(ctx, { clientId: tw.id, personId: lin.id, role: "director", fromDate: "2019-08-01" });
+  await appoint(ctx, { clientId: tw.id, personId: lin.id, role: "responsible_person", fromDate: "2019-08-01" });
+  const twCap = await createShareClass(ctx, { clientId: tw.id, name: "Capital contribution", nameZh: "出資額", currency: "TWD", unit: "capital" });
+  await allot(ctx, { clientId: tw.id, shareClassId: twCap.id, date: "2019-08-01", toPersonId: lin.id, quantity: 5000000, amountPaidCents: 500000000 });
+  await addContact(ctx, { clientId: tw.id, personId: lin.id, name: "LIN Chih-Hao", role: "Responsible person, gives instructions", email: lin.email, channel: "email", language: "tc", isInstructing: true, isBilling: true });
+  for (const pid of ["per_cn_liu", "per_cn_wang", "per_mo_b", "per_tw_lin"]) await ctx.db.insert(cddRecord).values({ id: ctx.ids.next("cdd"), firmId: ctx.firmId, personId: pid, riskRating: "low", verifiedOn: "2025-06-01", reviewDueOn: "2028-06-01" });
 }
 
 async function storeDoc(ctx: Ctx, d: { clientId?: string; personId?: string; taskId?: string; kind: string; title: string; lines: string[]; createdAt: string; source?: "seed" | "generated" | "signed" | "email"; requirementKey?: string }) {
