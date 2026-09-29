@@ -26,6 +26,7 @@ import "./handlers";
 import "./payments";
 import "./accounting-sync";
 import "./step-hooks";
+import "./signing";
 
 const MIN_CONFIDENCE = 0.7;
 const ONBOARDING = new Set(["hk.transferIn", "hk.incorporation"]);
