@@ -81,7 +81,7 @@ describe("Xero MCP adapter (recorded tool output)", () => {
       return "";
     } });
     expect(await x.findInvoiceByNumber("CRCS-2026-0001")).toBe("inv-555");
-    expect(await x.findInvoiceByNumber("CRCS-2026-9999")).toBe("inv-555" === "x" ? "" : null);
+    expect(await x.findInvoiceByNumber("CRCS-2026-9999")).toBeNull();
     expect(await x.createPayment({ invoiceId: "inv-555", amountCents: 180000, date: "2026-09-30", reference: "CRCS-2026-0001" })).toBe("pay-1");
   });
 
