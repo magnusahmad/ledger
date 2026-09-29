@@ -10,6 +10,7 @@ export const DEMO_FIRM = {
   email: "desk@caineroad.example",
   phone: "+852 3000 0000",
   invoicePrefix: "CRCS-",
+  settings: { businessRegistrationNumber: "70000000" }, // fictional demo firm
   signOff: {
     en: "Karen Yip\nSenior Company Secretary\nCaine Road Corporate Services Limited",
     tc: "葉嘉欣\n高級公司秘書\n堅道企業服務有限公司",

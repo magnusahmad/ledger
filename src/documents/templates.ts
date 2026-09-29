@@ -3,6 +3,7 @@
 // boilerplate and is marked for company secretary review in the playbook library.
 import type { Block } from "./builder";
 import type { DocContext } from "./context";
+import { certificateHoldings } from "./share-document-plan";
 import { fmtDate } from "@/domain/dates";
 
 type L = "en" | "tc" | "sc";
@@ -12,6 +13,9 @@ const t = (en: string, tc: string, sc: string): Tri => ({ en, tc, sc });
 function langs(c: DocContext): L[] { return c.lang === "bilingual" ? ["en", "tc"] : [c.lang]; }
 function nm(c: DocContext, l: L) { return (l === "en" ? c.client.nameEn : l === "tc" ? c.client.nameTc : c.client.nameSc) ?? c.client.nameEn; }
 function pname(p: { nameEn: string; nameZh?: string | null } | null | undefined, l: L) { if (!p) return ""; return l === "en" || !p.nameZh ? p.nameEn : `${p.nameZh}（${p.nameEn}）`; }
+function documentDirectors(c: DocContext) {
+  return c.incorporation ? [{ personId: c.incorporation.directorPersonId, person: c.incorporation.director }] : c.directors;
+}
 function d(date: string | null | undefined, l: L) { return fmtDate(date ?? "", l); }
 const eff = (c: DocContext) => c.task.effectiveDate ?? c.values.effDate ?? c.today;
 
@@ -74,8 +78,8 @@ export function boardResolution(c: DocContext): Block[] {
     blocks.push({ t: "p", text: LBL.boardIntro[l] });
     blocks.push({ t: "list", items: resolutionClauses(c, l), numbered: true });
   }
-  blocks.push({ t: "p", text: `${LBL.dated.en}: ${fmtDate(c.today)}` });
-  blocks.push({ t: "sign", names: c.directors.map((x) => ({ name: x.person.nameEn, caption: langs(c).map((l) => LBL.director[l]).join(" / "), field: `sign:${x.personId}` })) });
+  blocks.push({ t: "p", text: `${label(c, LBL.dated)}: ${fmtDate(c.today, langs(c)[0])}` });
+  blocks.push({ t: "sign", names: documentDirectors(c).map((x) => ({ name: x.person.nameEn, caption: langs(c).map((l) => LBL.director[l]).join(" / "), field: `sign:${x.personId}` })) });
   return blocks;
 }
 
@@ -96,79 +100,109 @@ export function consentToAct(c: DocContext): Block[] {
   for (const l of langs(c)) {
     blocks.push({ t: "p", text: ({ en: `I, ${pname(p, "en")}, consent to act as a director of ${nm(c, "en")} with effect from ${d(eff(c), "en")}, and confirm that I have attained the age of 18 years.`, tc: `本人${pname(p, "tc")}同意出任${nm(c, "tc")}董事，自${d(eff(c), "tc")}起生效，並確認本人已年滿18歲。`, sc: `本人${pname(p, "sc")}同意出任${nm(c, "sc")}董事，自${d(eff(c), "sc")}起生效，并确认本人已年满18岁。` } as Tri)[l] });
   }
-  blocks.push({ t: "sign", names: [{ name: p?.nameEn ?? "", caption: "Director / 董事", field: p ? `sign:${p.id}` : undefined }] });
+  blocks.push({ t: "sign", names: [{ name: p?.nameEn ?? "", caption: label(c, LBL.director), field: p ? `sign:${p.id}` : undefined }] });
   return blocks;
 }
 
+function label(c: DocContext, text: Tri): string { return langs(c).map(l => text[l]).join(" / "); }
+const transferor = t("Transferor", "轉讓人", "转让人"), transferee = t("Transferee", "承讓人", "承让人");
+
 export function shareCertificate(c: DocContext): Block[] {
   const blocks: Block[] = [];
-  const holders = c.members.length ? c.members : [];
-  holders.forEach((m, i) => {
+  certificateHoldings(c).forEach((m, i) => {
     if (i > 0) blocks.push({ t: "pagebreak" });
     blocks.push(...header(c, LBL.certificate));
-    blocks.push({ t: "p", text: `Certificate No. ${String(i + 1).padStart(3, "0")}` });
-    blocks.push({ t: "p", text: `This is to certify that ${m.name}${m.nameZh ? ` (${m.nameZh})` : ""} is the registered holder of ${m.quantity.toLocaleString("en-US")} ${m.className} shares in the above-named company, subject to its articles of association.` });
-    blocks.push({ t: "p", text: `茲證明${m.nameZh ?? m.name}為上述公司${m.quantity.toLocaleString("en-US")}股${m.className === "Ordinary" ? "普通股" : m.className}的登記持有人，受公司組織章程細則規限。` });
-    blocks.push({ t: "sign", names: c.directors.slice(0, 2).map((x) => ({ name: x.person.nameEn, caption: "Director / 董事", field: `sign:${x.personId}` })) });
+    for (const l of langs(c)) {
+      const count = m.quantity.toLocaleString("en-US");
+      const cls = m.className === "Ordinary" && l !== "en" ? "普通股" : m.className;
+      blocks.push({ t: "p", text: `${t("Certificate No.", "股票編號", "股票编号")[l]} ${c.task.id}-${String(i + 1).padStart(3, "0")}` });
+      blocks.push({ t: "p", text: t(`This is to certify that ${m.name}${m.nameZh ? ` (${m.nameZh})` : ""} is the registered holder of ${count} ${m.className} shares in the above-named company, subject to its articles of association.`, `茲證明${m.nameZh ?? m.name}為上述公司${count}股${cls}的登記持有人，受公司組織章程細則規限。`, `兹证明${m.nameZh ?? m.name}为上述公司${count}股${cls}的登记持有人，受公司组织章程细则规限。`)[l] });
+    }
+    blocks.push({ t: "sign", names: documentDirectors(c).slice(0, 2).map(x => ({ name: x.person.nameEn, caption: label(c, LBL.director), field: `sign:${x.personId}` })) });
   });
   return blocks;
 }
 
 export function instrumentOfTransfer(c: DocContext): Block[] {
-  const v = c.values;
-  return [
-    ...header(c, t("Instrument of Transfer", "轉讓文書", "转让文书")),
-    { t: "p", text: `Transfer details: ${v.transferDetails ?? ""}` },
-    { t: "p", text: "The transferor, in consideration of the sum stated above paid by the transferee, transfers to the transferee the shares described, to hold unto the transferee, subject to the conditions on which the transferor held them; and the transferee agrees to take the shares subject to the same conditions." },
-    { t: "p", text: "轉讓人在承讓人支付上述代價後，將上述股份轉讓予承讓人，承讓人按轉讓人持有該等股份時的相同條件接受該等股份。" },
-    { t: "small", text: "Stamp duty: 0.1% of the higher of consideration and value on each of the bought and sold notes (0.2% in total), plus HK$5 on this instrument. Stamp within 30 days (2 days for contract notes executed in Hong Kong). Verify with the company secretary." },
-    { t: "sign", names: [{ name: "Transferor", caption: "Transferor / 轉讓人", field: "sign:transferor" }, { name: "Transferee", caption: "Transferee / 承讓人", field: "sign:transferee" }] },
-  ];
+  const blocks = header(c, t("Instrument of Transfer", "轉讓文書", "转让文书"));
+  for (const l of langs(c)) {
+    blocks.push({ t: "p", text: `${t("Transfer details", "轉讓詳情", "转让详情")[l]}: ${c.values.transferDetails ?? ""}` });
+    blocks.push({ t: "p", text: t("The transferor, in consideration of the sum stated above paid by the transferee, transfers to the transferee the shares described, to hold unto the transferee, subject to the conditions on which the transferor held them; and the transferee agrees to take the shares subject to the same conditions.", "轉讓人在承讓人支付上述代價後，將上述股份轉讓予承讓人，承讓人按轉讓人持有該等股份時的相同條件接受該等股份。", "转让人在承让人支付上述对价后，将上述股份转让予承让人，承让人按转让人持有该等股份时的相同条件接受该等股份。")[l] });
+    blocks.push({ t: "small", text: t("The company secretary must verify the applicable stamp duty, payment and stamping deadline before registration.", "公司秘書須於登記前核實適用印花稅、付款及加蓋印花期限。", "公司秘书须于登记前核实适用印花税、付款及加盖印花期限。")[l] });
+  }
+  blocks.push({ t: "sign", names: [{ name: label(c, transferor), caption: label(c, transferor), field: "sign:transferor" }, { name: label(c, transferee), caption: label(c, transferee), field: "sign:transferee" }] });
+  return blocks;
 }
 
 export function contractNotes(c: DocContext): Block[] {
-  return [
-    ...header(c, t("Bought and Sold Notes", "買賣單據", "买卖单据")),
-    { t: "p", text: `Shares: ${c.values.transferDetails ?? ""}` },
-    { t: "h", text: "Bought Note / 買入單據" }, { t: "sign", names: [{ name: "Transferee", caption: "Buyer / 買方", field: "sign:transferee" }] },
-    { t: "h", text: "Sold Note / 賣出單據" }, { t: "sign", names: [{ name: "Transferor", caption: "Seller / 賣方", field: "sign:transferor" }] },
-  ];
+  const blocks = header(c, t("Bought and Sold Notes", "買賣單據", "买卖单据"));
+  for (const l of langs(c)) blocks.push({ t: "p", text: `${t("Shares", "股份", "股份")[l]}: ${c.values.transferDetails ?? ""}` });
+  blocks.push({ t: "h", text: label(c, t("Bought Note", "買入單據", "买入单据")) }, { t: "sign", names: [{ name: label(c, transferee), caption: label(c, t("Buyer", "買方", "买方")), field: "sign:transferee" }] });
+  blocks.push({ t: "h", text: label(c, t("Sold Note", "賣出單據", "卖出单据")) }, { t: "sign", names: [{ name: label(c, transferor), caption: label(c, t("Seller", "賣方", "卖方")), field: "sign:transferor" }] });
+  return blocks;
 }
 
 export function engagementLetter(c: DocContext): Block[] {
-  return [
-    { t: "title", text: c.firm.legalName }, { t: "subtitle", text: `${c.firm.address} · TCSP licence ${c.firm.tcspLicence}` },
-    { t: "h", text: `Engagement letter: ${c.client.nameEn}` },
-    { t: "p", text: `We are pleased to act as company secretary and to provide a registered office address for ${c.client.nameEn}${c.client.companyNumber ? ` (company number ${c.client.companyNumber})` : ""} from the date of this letter, on the terms below.` },
-    { t: "list", items: [
-      "Services: company secretary, registered office, statutory registers, annual return and statutory filings, and other work you instruct us on, each quoted before we start.",
-      "Customer due diligence: as a licensed trust or company service provider we must identify and verify the company, its directors and significant controllers before acting, and keep records for at least 5 years after the relationship ends (AMLO Cap. 615).",
-      "Fees: as quoted per task; invoices are issued with each request, payable as stated on the invoice.",
-      "Your responsibilities: to give us complete and accurate information promptly and to tell us of changes in directors, shareholders, controllers and addresses.",
-      "Data: we handle personal data under the Personal Data (Privacy) Ordinance (Cap. 486).",
-      "Termination: either side may end this engagement by 30 days' written notice.",
-    ] },
-    { t: "sign", names: [{ name: c.firm.legalName, caption: "For and on behalf of the firm" }, ...c.directors.slice(0, 1).map((x) => ({ name: x.person.nameEn, caption: `For and on behalf of ${c.client.nameEn}`, field: `sign:${x.personId}` }))] },
+  const blocks: Block[] = [];
+  const terms = [
+    t("Services: company secretary, registered office, statutory registers, annual return and statutory filings, and other work you instruct us on, each quoted before we start.", "服務：公司秘書、註冊辦事處、法定登記冊、周年申報表及法定申報，以及您委託的其他工作；每項工作開始前均先報價。", "服务：公司秘书、注册办事处、法定登记册、周年申报表及法定申报，以及您委托的其他工作；每项工作开始前均先报价。"),
+    t("Customer due diligence: as a licensed trust or company service provider we must identify and verify the company, its directors and significant controllers before acting, and keep records for at least 5 years after the relationship ends (AMLO Cap. 615).", "客戶盡職審查：作為持牌信託或公司服務提供者，我們須於提供服務前識別及核實公司、董事及重要控制人，並在業務關係結束後保存紀錄至少5年（《打擊洗錢條例》第615章）。", "客户尽职审查：作为持牌信托或公司服务提供者，我们须于提供服务前识别及核实公司、董事及重要控制人，并在业务关系结束后保存记录至少5年（《打击洗钱条例》第615章）。"),
+    t("Fees: as quoted per task; invoices are issued with each request, payable as stated on the invoice.", "費用：按每項工作報價；每次委託均發出發票，並按發票所載條款付款。", "费用：按每项工作报价；每次委托均发出发票，并按发票所载条款付款。"),
+    t("Your responsibilities: to give us complete and accurate information promptly and to tell us of changes in directors, shareholders, controllers and addresses.", "您的責任：及時提供完整準確的資料，並通知我們董事、股東、控制人及地址的變更。", "您的责任：及时提供完整准确的资料，并通知我们董事、股东、控制人及地址的变更。"),
+    t("Data: we handle personal data under the Personal Data (Privacy) Ordinance (Cap. 486).", "資料：我們依照《個人資料（私隱）條例》（第486章）處理個人資料。", "资料：我们依照《个人资料（私隐）条例》（第486章）处理个人资料。"),
+    t("Termination: either side may end this engagement by 30 days' written notice.", "終止：任何一方均可提前30日發出書面通知終止本委託。", "终止：任何一方均可提前30日发出书面通知终止本委托。"),
   ];
+  for (const l of langs(c)) {
+    blocks.push({ t: "title", text: l === "en" ? c.firm.legalName : c.firm.legalNameZh ?? c.firm.legalName });
+    blocks.push({ t: "subtitle", text: `${c.firm.address} · ${t("TCSP licence", "信託或公司服務提供者牌照", "信托或公司服务提供者牌照")[l]} ${c.firm.tcspLicence}` });
+    blocks.push({ t: "h", text: `${t("Engagement letter", "委託書", "委托书")[l]}: ${nm(c,l)}` });
+    const co = `${nm(c,l)}${c.client.companyNumber ? ` (${LBL.companyNo[l]} ${c.client.companyNumber})` : ""}`;
+    blocks.push({ t: "p", text: t(`We are pleased to act as company secretary and to provide a registered office address for ${co} from the date of this letter, on the terms below.`, `我們同意自本函日期起，按以下條款擔任${co}的公司秘書及提供註冊辦事處地址。`, `我们同意自本函日期起，按以下条款担任${co}的公司秘书及提供注册办事处地址。`)[l] });
+    blocks.push({ t: "list", items: terms.map(term=>term[l]) });
+  }
+  blocks.push({ t: "sign", names: [{ name: c.firm.legalName, caption: label(c,t("For and on behalf of the firm", "代表本事務所", "代表本事务所")) }, ...documentDirectors(c).slice(0,1).map(x=>({name:x.person.nameEn, caption:label(c,t(`For and on behalf of ${c.client.nameEn}`,`代表${nm(c,"tc")}`,`代表${nm(c,"sc")}`)),field:`sign:${x.personId}`}))] });
+  return blocks;
 }
 
 export function scrNotice(c: DocContext): Block[] {
-  return [...header(c, t("Notice to Registrable Person", "致須登記人士通知", "致须登记人士通知")),
-    { t: "p", text: `Under Part 12, Division 2 of the Companies Ordinance (Cap. 622), the Company records the following particulars in its significant controllers register: ${c.values.controllerDetails ?? ""}. Please confirm they are correct within 7 days.` }];
+  const blocks = header(c, t("Notice to Registrable Person", "致須登記人士通知", "致须登记人士通知"));
+  for (const l of langs(c)) blocks.push({ t: "p", text: t(`Under Part 12, Division 2 of the Companies Ordinance (Cap. 622), the Company records the following particulars in its significant controllers register: ${c.values.controllerDetails ?? ""}. Please confirm they are correct within 7 days.`, `根據《公司條例》（第622章）第12部第2分部，本公司於重要控制人登記冊記錄以下資料：${c.values.controllerDetails ?? ""}。請於7日內確認資料正確。`, `根据《公司条例》（第622章）第12部第2分部，本公司于重要控制人登记册记录以下资料：${c.values.controllerDetails ?? ""}。请于7日内确认资料正确。`)[l] });
+  return blocks;
 }
 
 export function registerOfDirectors(c: DocContext): Block[] {
   return [...header(c, t("Register of Directors", "董事登記冊", "董事登记册")),
-    { t: "table", head: ["Name", "Chinese name", "Correspondence address", "Appointed"], rows: c.directors.map((x) => [x.person.nameEn, x.person.nameZh ?? "", x.person.correspondenceAddress ?? c.client.regOfficeEn ?? "", x.fromDate]), widths: [130, 80, 190, 67] }];
+    { t: "table", head: [t("Name", "姓名", "姓名"), t("Chinese name", "中文姓名", "中文姓名"), t("Correspondence address", "通訊地址", "通讯地址"), t("Appointed", "委任日期", "委任日期")].map(x=>label(c,x)), rows: c.directors.map(x=>[x.person.nameEn,x.person.nameZh??"",x.person.correspondenceAddress??"",x.fromDate]), widths:[130,80,190,67] }];
 }
 
 export function registerOfMembers(c: DocContext): Block[] {
   return [...header(c, t("Register of Members", "成員登記冊", "成员登记册")),
-    { t: "table", head: ["Member", "Class", "Shares", "%"], rows: c.members.map((m) => [m.name + (m.nameZh ? ` ${m.nameZh}` : ""), m.className, m.quantity.toLocaleString("en-US"), `${m.percent}%`]), widths: [220, 90, 90, 67] }];
+    { t:"table",head:[LBL.member,t("Class","類別","类别"),t("Shares","股數","股数"),t("%","%","%")].map(x=>label(c,x)),rows:c.members.map(m=>[m.name+(m.nameZh?` ${m.nameZh}`:""),m.className,m.quantity.toLocaleString("en-US"),`${m.percent}%`]),widths:[220,90,90,67] }];
+}
+
+export function meetingMinutes(c: DocContext, members = false): Block[] {
+  const keys = ["meetingDate", "meetingTime", "meetingPlace", "meetingChair", "meetingAttendees", "meetingDecisions"] as const;
+  for (const key of keys) if (!c.values[key]?.trim()) throw new Error(`Meeting minutes require ${key}.`);
+  const v=c.values;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.meetingDate) || !Number.isFinite(Date.parse(v.meetingDate)) || new Date(v.meetingDate).toISOString().slice(0,10)!==v.meetingDate) throw new Error("Meeting minutes require a valid meetingDate.");
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(v.meetingTime)) throw new Error("Meeting minutes require meetingTime in HH:mm format.");
+  const blocks=header(c,members?t("Minutes of the Members' Meeting","成員大會會議紀錄","成员大会会议记录"):t("Minutes of the Board Meeting","董事會會議紀錄","董事会会议记录"));
+  for (const l of langs(c)) {
+    blocks.push({t:"p",text:`${LBL.dated[l]}: ${d(v.meetingDate,l)} · ${t("Time","時間","时间")[l]}: ${v.meetingTime}`});
+    blocks.push({t:"p",text:`${t("Place","地點","地点")[l]}: ${v.meetingPlace}`});
+    blocks.push({t:"p",text:`${t("Chair","主席","主席")[l]}: ${v.meetingChair}`});
+    blocks.push({t:"p",text:`${t("Attendees","出席人士","出席人士")[l]}: ${v.meetingAttendees}`});
+    blocks.push({t:"h",text:t("Recorded decisions","議事及決定紀錄","议事及决定记录")[l]},{t:"p",text:v.meetingDecisions});
+  }
+  // The chair is supplied as an actual meeting fact. No guessed signatory/person binding.
+  blocks.push({t:"sign",names:[{name:v.meetingChair,caption:label(c,t("Chair","主席","主席"))}]});
+  return blocks;
 }
 
 export const TEMPLATES: Record<string, (c: DocContext) => Block[]> = {
   "tpl:board-resolution": boardResolution,
+  "tpl:board-meeting-minutes": c => meetingMinutes(c),
+  "tpl:members-meeting-minutes": c => meetingMinutes(c, true),
   "tpl:first-board-resolution": boardResolution,
   "tpl:members-written-resolution": (c) => membersResolution(c, false),
   "tpl:members-special-resolution": (c) => membersResolution(c, true),

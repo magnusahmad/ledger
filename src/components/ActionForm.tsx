@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useEffect, useState, type ReactNode } from "react";
+import { useActionState, useEffect, useState, useRef, type ReactNode } from "react";
 import type { ActionResult } from "@/server/actions";
 
 type Action = (prev: ActionResult | null, form: FormData) => Promise<ActionResult>;
@@ -10,10 +10,10 @@ export function ActionForm({ action, children, submit, tone, className, confirm,
 }) {
   const [state, run, pending] = useActionState(action, null);
   const [shownAt] = useState(() => new Date().toISOString());
-  const [formKey, setFormKey] = useState(0);
-  useEffect(() => { if (state?.ok && resetOnSuccess) setFormKey((k) => k + 1); }, [state, resetOnSuccess]);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => { if (state?.ok && resetOnSuccess) formRef.current?.reset(); }, [state, resetOnSuccess]);
   return (
-    <form key={formKey} action={run} className={className} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }}>
+    <form ref={formRef} action={run} className={className} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }}>
       {stampShownAt && <input type="hidden" name="shownAt" value={shownAt} />}
       {children}
       <div className="row" style={{ marginTop: children ? 12 : 0 }}>

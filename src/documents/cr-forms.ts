@@ -4,11 +4,13 @@
 // field exists, so a Registry revision breaks the build instead of producing a wrong form.
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { PDFDocument, PDFCheckBox, PDFTextField } from "pdf-lib";
+import { PDFDocument, PDFCheckBox, PDFTextField, PDFDropdown } from "pdf-lib";
 import { embedFonts } from "./fonts";
 
 export const FORMS_DIR = path.join(process.cwd(), "forms/hk-cr");
-export type FieldValues = Record<string, string | boolean | null | undefined>;
+const CONTINUATIONS = Symbol.for("harbourline.formContinuations");
+type Continuation = { page: number; values: FieldValues };
+export type FieldValues = Record<string, string | boolean | null | undefined> & { [CONTINUATIONS]?: Continuation[] };
 
 // ---------- Helpers ----------
 export type Address = { flat: string; building: string; street: string; district: string; country: string };
@@ -16,6 +18,15 @@ export type Address = { flat: string; building: string; street: string; district
 const BUILDING = /(building|centre|center|tower|house|plaza|court|mansion|garden|place|commercial|industrial|square|estate|block|大廈|中心|大樓|廣場|花園|閣)/i;
 const STREET = /(road|street|lane|avenue|drive|terrace|path|way|circuit|rise|道|街|路|里|徑)/i;
 const FLAT = /^(flat|unit|room|rm|suite|shop|\d+\/f|\d+(st|nd|rd|th)? floor|g\/f|\d+樓|[a-z]?\d+室)/i;
+// Recognize an explicitly supplied country in English or either Chinese script.
+const countryNames = new Map<string, string>([["bvi", "British Virgin Islands"]]);
+const regions = ["en", "zh-Hant", "zh-Hans"].map(locale => new Intl.DisplayNames([locale], { type: "region" }));
+for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) {
+  const code = String.fromCharCode(a, b), english = regions[0].of(code)!;
+  if (english === code) continue;
+  for (const names of regions) countryNames.set(names.of(code)!.toLowerCase(), english);
+}
+
 
 /** Splits a Hong Kong-style address into the Registry's address boxes. */
 export function splitAddress(addr: string | null | undefined): Address {
@@ -25,6 +36,8 @@ export function splitAddress(addr: string | null | undefined): Address {
   const rest: string[] = [];
   for (const p of parts) {
     if (/^hong kong$|^香港$|^hk$/i.test(p)) { out.country = "Hong Kong"; continue; }
+    const country = countryNames.get(p.toLowerCase());
+    if (country) { out.country = country; continue; }
     if (FLAT.test(p) && !out.building && !out.street) out.flat = [out.flat, p].filter(Boolean).join(", ");
     else if (STREET.test(p) && !out.street) out.street = p;
     else if (BUILDING.test(p) && !out.building && !out.street) out.building = p;
@@ -173,6 +186,16 @@ export function mapND2B(d: ND2BInput): FieldValues {
   if (c.email) Object.assign(v, { "fill_27_P.2": c.email, "fill_28_P.2": dd, "fill_29_P.2": mm, "fill_30_P.2": yy });
   if (c.idNumber && isHkid(c.idNumber)) Object.assign(v, { "fill_31_P.2": partialId(c.idNumber), "fill_32_P.2": dd, "fill_33_P.2": mm, "fill_34_P.2": yy });
   else if (c.idNumber) Object.assign(v, { "fill_35_P.2": c.passportCountry ?? "", "fill_36_P.2": partialId(c.idNumber), "fill_37_P.2": dd, "fill_38_P.2": mm, "fill_39_P.2": yy });
+  if (c.idNumber || c.residentialAddress) {
+    const pn = nameParts(c.nameEn ?? o.nameEn);
+    const [idMain, idCheck] = hkidParts(c.idNumber);
+    Object.assign(v, cap(o.capacity, ["cb_1_P.6", "cb_2_P.6", "cb_3_P.6"]), {
+      "fill_1_P.6": d.brNumber, "fill_2_P.6": c.nameZh ?? o.nameZh ?? "", "fill_3_P.6": pn.surname, "fill_4_P.6": pn.other,
+      ...(c.idNumber ? isHkid(c.idNumber) ? { "fill_5_P.6": idMain, "fill_6_P.6": idCheck } : { "fill_7_P.6": c.passportCountry ?? "", "fill_8_P.6": c.idNumber } : {}),
+      ...(c.residentialAddress ? addrFields(splitAddress(c.residentialAddress), ["fill_9_P.6", "fill_10_P.6", "fill_11_P.6", "fill_12_P.6", "fill_13_P.6"]) : {}),
+      "fill_29_P.3": "1",
+    });
+  }
   v["fill_30_P.3"] = d.signer.name;
   v["fill_31_P.3"] = dateParts(d.signDate).join("/");
   return v;
@@ -201,6 +224,10 @@ export type NSC1Input = {
   presentor: Presentor; signer: Signer; signDate: string;
 };
 export function mapNSC1(d: NSC1Input): FieldValues {
+  if (d.cashRows.length > 3 || d.capital.length > 1 || d.allottees.length > 2 || new Set(d.allottees.map(a => a.className)).size > 1) {
+    throw new Error("NSC1: unsupported continuation sheets or multiple-class rights; prepare and review the complete official form manually.");
+  }
+  if (!d.cashRows.length || !d.allottees.length) throw new Error("NSC1: allotment details and allottees are required.");
   const [fd, fm, fy] = dateParts(d.from), [td, tm, ty] = dateParts(d.to);
   const v: FieldValues = { "fill_2_P.1": d.companyName, "fill_3_P.1": fd, "fill_4_P.1": fm, "fill_5_P.1": fy, "fill_6_P.1": td, "fill_7_P.1": tm, "fill_8_P.1": ty,
     "cb_1_P.1": d.increase > 0, "cb_2_P.1": d.increase <= 0, "fill_9_P.1": d.currency, "fill_10_P.1": d.increase.toLocaleString("en-US"),
@@ -208,6 +235,8 @@ export function mapNSC1(d: NSC1Input): FieldValues {
   for (const p of [1, 2, 3, 7]) v[`fill_1_P.${p}`] = d.brNumber;
   d.cashRows.slice(0, 3).forEach((r, i) => { const b = 15 + i * 5; Object.assign(v, { [`fill_${b}_P.1`]: r.className, [`fill_${b + 1}_P.1`]: r.currency, [`fill_${b + 2}_P.1`]: r.number.toLocaleString("en-US"), [`fill_${b + 3}_P.1`]: String(r.paidEach), [`fill_${b + 4}_P.1`]: String(r.unpaidEach) }); });
   v["cb_1_P.3"] = true;
+  v["fill_26_P.3"] = "1"; // one Schedule 2 in this supported subset
+  v["fill_26_P.7"] = "1"; v["fill_27_P.7"] = "1";
   d.capital.slice(0, 3).forEach((r, i) => { const b = 2 + i * 6; Object.assign(v, { [`fill_${b}_P.3`]: r.className, [`fill_${b + 1}_P.3`]: r.currency, [`fill_${b + 2}_P.3`]: r.totalNumber.toLocaleString("en-US"), [`fill_${b + 3}_P.3`]: r.totalAmount.toLocaleString("en-US"), [`fill_${b + 4}_P.3`]: r.paidUp.toLocaleString("en-US"), [`fill_${b + 5}_P.3`]: (r.totalAmount - r.paidUp).toLocaleString("en-US") }); });
   v["fill_27_P.3"] = d.signer.name;
   v["fill_28_P.3"] = dateParts(d.signDate).join("/");
@@ -234,6 +263,9 @@ export type NAR1Input = {
   presentor: Presentor; signer: Signer; signDate: string;
 };
 export function mapNAR1(d: NAR1Input): FieldValues {
+  if (d.capital.length > 4 || new Set(d.capital.map(c => c.currency)).size > 1) {
+    throw new Error("NAR1: unsupported continuation sheets or currency totals; prepare and review the complete official form manually.");
+  }
   const [dd, mm, yy] = dateParts(d.madeUpTo), ro = splitAddress(d.registeredOffice);
   const v: FieldValues = {
     "fill_2_P.1": d.companyName, "fill_3_P.1": d.businessName ?? "", "cb_1_P.1": d.type === "private", "cb_2_P.1": d.type === "public", "cb_3_P.1": d.type === "guarantee",
@@ -276,6 +308,32 @@ export function mapNAR1(d: NAR1Input): FieldValues {
     });
     v["fill_29_P.9"] = "1"; v["fill_30_P.9"] = "1";
   }
+  const extra: Continuation[] = [];
+  // Sheet C is the Registry's dedicated natural-person director continuation,
+  // not a copy of the main director page. Its first four fields identify the return.
+  for (const director of d.directors.slice(1)) {
+    const source = mapNAR1({ ...d, directors: [director], members: [] });
+    const values: FieldValues = { "fill_1_P.13": dd, "fill_2_P.13": mm, "fill_3_P.13": yy, "fill_4_P.13": d.brNumber };
+    for (const [key, value] of Object.entries(source)) {
+      const match = key.match(/^(fill|cb)_(\d+)_P\.5$/);
+      if (match && !(match[1] === "fill" && match[2] === "1")) values[`${match[1]}_${Number(match[2]) + (match[1] === "fill" ? 3 : 0)}_P.13`] = value;
+    }
+    extra.push({ page: 13, values });
+  }
+  const schedules = d.members.flatMap(group => {
+    const chunks: typeof group[] = [];
+    for (let i = 0; i < group.rows.length; i += 2) chunks.push({ ...group, rows: group.rows.slice(i, i + 2) });
+    return chunks;
+  });
+  v["fill_6_P.8"] = String(Math.max(0, d.directors.length - 1));
+  v["fill_9_P.8"] = String(schedules.length);
+  for (let index = 1; index < schedules.length; index++) {
+    const source = mapNAR1({ ...d, directors: [], members: [schedules[index]] });
+    const values: FieldValues = Object.fromEntries(Object.entries(source).filter(([key]) => key.endsWith("_P.9")));
+    values["fill_29_P.9"] = String(index + 1); values["fill_30_P.9"] = String(index + 1);
+    extra.push({ page: 9, values });
+  }
+  if (extra.length) v[CONTINUATIONS] = extra;
   return v;
 }
 
@@ -284,6 +342,10 @@ export type NNC1Input = {
   registeredOffice: string; email: string; phone: string;
   capital: { className: string; number: number; currency: string; subscribed: number; paidUp: number }[];
   presentor: Presentor;
+  founder?: { nameEn: string; nameZh?: string | null; address: string };
+  secretary?: { nameEn: string; nameZh?: string | null; address: string; email?: string | null; brNumber?: string | null; tcspLicence?: string | null };
+  director?: Officer & { adult: boolean; consentToAct: boolean };
+  signDate?: string;
 };
 export function mapNNC1(d: NNC1Input): FieldValues {
   const a = splitAddress(d.registeredOffice);
@@ -293,6 +355,29 @@ export function mapNNC1(d: NNC1Input): FieldValues {
     "fill_1_P.2": d.email, "fill_2_P.2": d.phone.replace(/^\+852\s*/, "") };
   d.capital.slice(0, 2).forEach((r, i) => { const b = 3 + i * 6; Object.assign(v, { [`fill_${b}_P.2`]: r.className, [`fill_${b + 1}_P.2`]: r.number.toLocaleString("en-US"), [`fill_${b + 2}_P.2`]: r.currency, [`fill_${b + 3}_P.2`]: r.subscribed.toLocaleString("en-US"), [`fill_${b + 4}_P.2`]: r.paidUp.toLocaleString("en-US"), [`fill_${b + 5}_P.2`]: (r.subscribed - r.paidUp).toLocaleString("en-US") }); });
   Object.assign(v, { "fill_15_P.2": d.capital.reduce((s, r) => s + r.number, 0).toLocaleString("en-US"), "fill_16_P.2": d.capital[0]?.currency ?? "HKD", "fill_17_P.2": d.capital.reduce((s, r) => s + r.subscribed, 0).toLocaleString("en-US"), "fill_18_P.2": d.capital.reduce((s, r) => s + r.paidUp, 0).toLocaleString("en-US"), "fill_19_P.2": d.capital.reduce((s, r) => s + r.subscribed - r.paidUp, 0).toLocaleString("en-US") });
+  if (d.founder && d.secretary && d.director) {
+    if (d.capital.length !== 1) throw new Error("NNC1: multiple capital classes require continuation mapping.");
+    const f = d.founder, n = nameParts(f.nameEn), capital = d.capital[0];
+    Object.assign(v, { "fill_1_P.3": f.nameZh ?? "", "fill_2_P.3": n.surname, "fill_3_P.3": n.other,
+      ...addrFields(splitAddress(f.address), ["fill_5_P.3", "fill_6_P.3", "fill_7_P.3", "fill_8_P.3", "fill_9_P.3"]),
+      "fill_10_P.3": capital.className, "fill_11_P.3": String(capital.number), "fill_12_P.3": capital.currency, "fill_13_P.3": String(capital.subscribed),
+      "fill_18_P.3": String(capital.number), "fill_19_P.3": capital.currency, "fill_20_P.3": String(capital.subscribed),
+    });
+    const s = d.secretary;
+    Object.assign(v, { "fill_1_P.5": s.nameZh ?? "", "fill_2_P.5": s.nameEn,
+      ...addrFields(splitAddress(s.address), ["fill_3_P.5", "fill_4_P.5", "fill_5_P.5", "fill_6_P.5"]),
+      "fill_7_P.5": s.email ?? "", "fill_8_P.5": s.brNumber ?? "", "fill_9_P.5": s.tcspLicence ?? "" });
+    const director = d.director, dn = nameParts(director.nameEn), [main, check] = hkidParts(director.idNumber);
+    Object.assign(v, { "fill_1_P.6": director.nameZh ?? "", "fill_2_P.6": dn.surname, "fill_3_P.6": dn.other,
+      ...addrFields(splitAddress(director.correspondenceAddress), ["fill_8_P.6", "fill_9_P.6", "fill_10_P.6", "fill_11_P.6", "fill_12_P.6"]),
+      "fill_13_P.6": director.email ?? "", "cb_1_P.6": director.adult && director.consentToAct,
+      ...(isHkid(director.idNumber) ? { "fill_14_P.6": partialId(director.idNumber) } : { "fill_15_P.6": director.passportCountry ?? "", "fill_16_P.6": partialId(director.idNumber) }),
+      "fill_1_P.14": d.nameEn, "cb_2_P.14": true, "fill_2_P.14": director.nameZh ?? "", "fill_3_P.14": dn.surname, "fill_4_P.14": dn.other,
+      ...(isHkid(director.idNumber) ? { "fill_5_P.14": main, "fill_6_P.14": check } : { "fill_7_P.14": director.passportCountry ?? "", "fill_8_P.14": director.idNumber ?? "" }),
+      ...addrFields(splitAddress(director.residentialAddress), ["fill_9_P.14", "fill_10_P.14", "fill_11_P.14", "fill_12_P.14", "fill_13_P.14"]),
+      "fill_6_P.8": "1", "fill_7_P.8": f.nameEn, "fill_8_P.8": dateParts(d.signDate).join("/"),
+    });
+  }
   return v;
 }
 
@@ -302,16 +387,16 @@ export async function listFieldNames(form: string): Promise<Set<string>> {
   return new Set(doc.getForm().getFields().map((f) => f.getName()));
 }
 
-export async function fillForm(form: string, values: FieldValues, opts: { flatten?: boolean } = {}): Promise<Buffer> {
-  const doc = await PDFDocument.load(readFileSync(path.join(FORMS_DIR, `${form}.pdf`)), { ignoreEncryption: true });
+async function writeFields(doc: PDFDocument, form: string, values: FieldValues) {
   const pdfForm = doc.getForm();
-  const fonts = await embedFonts(doc, "tc");
+  const fonts = await embedFonts(doc, "tc", { text: Object.values(values).filter(v => typeof v === "string").join(""), bold: false });
   const unknown: string[] = [];
   for (const [name, val] of Object.entries(values)) {
     if (val === undefined || val === null) continue;
     let field;
     try { field = pdfForm.getField(name); } catch { unknown.push(name); continue; }
     if (field instanceof PDFCheckBox) { if (val === true) field.check(); else field.uncheck(); }
+    else if (field instanceof PDFDropdown) { field.select(String(val)); }
     else if (field instanceof PDFTextField) {
       const text = String(val);
       field.setText(text);
@@ -319,7 +404,24 @@ export async function fillForm(form: string, values: FieldValues, opts: { flatte
     }
   }
   if (unknown.length) throw new Error(`${form}: unknown fields ${unknown.join(", ")}`);
-  if (opts.flatten) pdfForm.flatten();
+}
+
+export async function fillForm(form: string, values: FieldValues, opts: { flatten?: boolean } = {}): Promise<Buffer> {
+  const source = readFileSync(path.join(FORMS_DIR, `${form}.pdf`));
+  const doc = await PDFDocument.load(source, { ignoreEncryption: true });
+  await writeFields(doc, form, values);
+  if (opts.flatten) doc.getForm().flatten();
+  for (const continuation of values[CONTINUATIONS] ?? []) {
+    const sheet = await PDFDocument.load(source, { ignoreEncryption: true });
+    await writeFields(sheet, form, continuation.values);
+    // Flatten each populated official sheet before copying so identically named
+    // PDF widgets cannot share values with other members/directors in the pack.
+    sheet.getForm().flatten();
+    // save() embeds/subsets the fonts; copying an unsaved sheet drops glyphs.
+    const ready = await PDFDocument.load(await sheet.save(), { ignoreEncryption: true });
+    const [page] = await doc.copyPages(ready, [continuation.page - 1]);
+    doc.addPage(page);
+  }
   return Buffer.from(await doc.save());
 }
 

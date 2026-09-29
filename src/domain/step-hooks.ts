@@ -1,16 +1,18 @@
 // Wires the engine's human-gated steps to proposals, and automatic steps to their work.
 import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { conversation, filing, message, proposal, request as requestT } from "@/db/schema";
-import { onEnterStep, markStepState, getTask, logEvent, advance } from "./engine";
+import { conversation, filing, message, proposal, request as requestT, task as taskT } from "@/db/schema";
+import { onEnterStep, markStepState, getTask, logEvent, advance, assertTaskReady } from "./engine";
 import { createProposal, onApprove, pendingProposals } from "./proposals";
-import { planRegisterChanges, applyRegisterChanges } from "./register-effects";
+import { planRegisterChanges } from "./register-effects";
 import { generateForTask } from "@/documents/generate";
 import { enqueue, onJob } from "./jobs";
 import { composeReply } from "./inbound";
 import { itemLabel } from "./labels";
 import type { ReplyFacts } from "@/agent/draft";
 import { getPlaybook } from "./playbooks";
+import { validRegisterDate } from "@/documents/register-export";
+import { approvalState, assertApprovalState, expireApproval } from "./approval-state";
 
 onEnterStep("generate", async (ctx, task, _step, idx) => {
   try {
@@ -26,14 +28,21 @@ onEnterStep("generate", async (ctx, task, _step, idx) => {
 onEnterStep("file", async (ctx, task, step) => {
   if ((await pendingProposals(ctx, { taskId: task.id, kind: "record_filing" })).length) return;
   const pb = await getPlaybook(ctx, task.playbookId, task.playbookVersion);
-  await createProposal(ctx, { kind: "record_filing", title: `${step.label}: ${task.title}`, summary: `File on ${step.authority ?? "the portal"} and record the reference here.`, clientId: task.clientId, taskId: task.id, payload: { taskId: task.id, form: pb.forms ?? "", authority: step.authority ?? null } });
+  await createProposal(ctx, { kind: "record_filing", title: `${step.label}: ${task.title}`, summary: `File on ${step.authority ?? "the portal"} and record the reference here.`, clientId: task.clientId, taskId: task.id, payload: { taskId: task.id, approvalState: await approvalState(ctx, task.id), form: pb.forms ?? "", authority: step.authority ?? null } });
 });
 
 onApprove("record_filing", async (ctx, p, opts) => {
   const taskId = p.payload.taskId as string;
-  const t = await getTask(ctx, taskId);
-  const edits = (opts.edits ?? {}) as { reference?: string; filedOn?: string };
+  const t = await assertTaskReady(ctx, taskId, "file");
+  await assertApprovalState(ctx, taskId, p.payload.approvalState, p.id);
+  const edits = (opts.edits ?? {}) as { reference?: string; filedOn?: string; companyNumber?: string; incorporatedOn?: string };
   if (!edits.reference?.trim()) throw new Error("Enter the filing reference (e.g. the e-Registry submission number)");
+  if (t.playbookId === "hk.incorporation") {
+    const companyNumber = edits.companyNumber?.trim();
+    const incorporatedOn = edits.incorporatedOn ?? "";
+    if (!companyNumber || !validRegisterDate(incorporatedOn)) throw new Error("Enter the company number and valid incorporation date from the certificate");
+    await ctx.db.update(taskT).set({ params: { ...t.params, incorporationRegistration: { companyNumber, incorporatedOn } } }).where(and(eq(taskT.id, t.id), eq(taskT.firmId, ctx.firmId)));
+  }
   const form = String(p.payload.form ?? "");
   const filedOn = edits.filedOn ?? ctx.clock.today();
   const periodKey = t.periodKey ?? (form === "NAR1" ? `NAR1:${filedOn.slice(0, 4)}` : null);
@@ -45,13 +54,27 @@ onApprove("record_filing", async (ctx, p, opts) => {
 
 onEnterStep("register", async (ctx, task) => {
   if ((await pendingProposals(ctx, { taskId: task.id, kind: "register_change" })).length) return;
-  const changes = await planRegisterChanges(ctx, task.id);
-  await createProposal(ctx, { kind: "register_change", title: `Update registers: ${task.title}`, summary: changes.map((c) => c.description).join("\n") || "No register changes; confirm to continue.", clientId: task.clientId, taskId: task.id, payload: { taskId: task.id, preview: changes.map((c) => c.description) } });
+  try {
+    const changes = await planRegisterChanges(ctx, task.id);
+    await createProposal(ctx, { kind: "register_change", title: `Update registers: ${task.title}`, summary: changes.map((c) => c.description).join("\n") || "No register changes; confirm to continue.", clientId: task.clientId, taskId: task.id, payload: { taskId: task.id, approvalState: await approvalState(ctx, task.id), preview: changes.map((c) => c.description) } });
+  } catch (e) {
+    await logEvent(ctx, task.id, "register.blocked", (e as Error).message);
+    await createProposal(ctx, { kind: "triage", title: `Register update needs attention: ${task.title}`, summary: (e as Error).message, clientId: task.clientId, taskId: task.id, payload: { taskId: task.id } });
+  }
 });
 
 onApprove("register_change", async (ctx, p) => {
   const taskId = p.payload.taskId as string;
-  const applied = await applyRegisterChanges(ctx, taskId);
+  await assertTaskReady(ctx, taskId, "register");
+  await assertApprovalState(ctx, taskId, p.payload.approvalState, p.id);
+  const changes = await planRegisterChanges(ctx, taskId);
+  const applied = changes.map(c => c.description);
+  if (JSON.stringify(applied) !== JSON.stringify(p.payload.preview)) {
+    await expireApproval(ctx, taskId, p.id);
+    throw new Error("The register changes differ from the preview. Preparation has restarted for a fresh approval.");
+  }
+  // Execute the checked plan itself; never independently recompute effects after approval.
+  for (const change of changes) await change.apply();
   await markStepState(ctx, taskId, "register", { applied: true, changes: applied });
   await logEvent(ctx, taskId, "register.updated", applied.length ? applied.join("; ") : "Registers confirmed", {}, ctx.userId);
   await advance(ctx, taskId);

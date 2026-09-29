@@ -1,8 +1,8 @@
 // Screening step: sanctions/PEP screening of the task's people, LLM adjudication of any
 // hits, a human decision on anything not clear, and the CDD record on success.
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { cddRecord, client as clientT, contact, document, screeningResult } from "@/db/schema";
+import { cddRecord, client as clientT, contact, document, screeningResult, task as taskT } from "@/db/schema";
 import { onEnterStep, getTask, markStepState, logEvent, advance, hasCurrentCdd, type Task } from "./engine";
 import { createProposal, onApprove } from "./proposals";
 import { officersAsAt } from "./records";
@@ -13,7 +13,23 @@ import { addMonths } from "./dates";
 
 const REVIEW_YEARS = { low: 3, medium: 2, high: 1 } as const;
 
-async function peopleToScreen(ctx: Ctx, t: Task): Promise<string[]> {
+export async function peopleToScreen(ctx: Ctx, t: Task): Promise<string[]> {
+  if (t.playbookId === "hk.incorporation") {
+    const values = Object.fromEntries(t.checklist.filter(e => e.value).map(e => [e.key, e.value!]));
+    const { incorporationFor } = await import("./incorporation");
+    const plan = await incorporationFor(ctx, t, values);
+    for (const key of ["idCopy", "addrProof", "selfie"]) {
+      const entry = t.checklist.find(e => e.key === key);
+      if (!entry?.documentId) throw new Error(`Upload and identify ${key} for the sole founder/director before screening.`);
+      const doc = await ctx.db.query.document.findFirst({ where: and(eq(document.id, entry.documentId), eq(document.firmId, ctx.firmId), eq(document.taskId, t.id)) });
+      if (!doc || (doc.personId && doc.personId !== plan.directorPersonId)) throw new Error(`The ${key} upload is not unambiguously associated with the sole founder/director.`);
+      await ctx.db.update(document).set({ personId: plan.directorPersonId, requirementKey: key }).where(eq(document.id, doc.id));
+      entry.personId = plan.directorPersonId;
+    }
+    t.personId = plan.directorPersonId;
+    await ctx.db.update(taskT).set({ checklist: t.checklist, personId: plan.directorPersonId }).where(and(eq(taskT.id, t.id), eq(taskT.firmId, ctx.firmId)));
+    return [plan.directorPersonId];
+  }
   if (t.personId) return [t.personId];
   const ids = new Set((await officersAsAt(ctx, t.clientId, ctx.clock.today(), "director")).map((o) => o.personId));
   for (const c of await ctx.db.select().from(contact).where(eq(contact.clientId, t.clientId))) if (c.personId && c.isInstructing) ids.add(c.personId);

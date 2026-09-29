@@ -8,6 +8,12 @@ import { FORMS_DIR } from "./cr-forms";
 
 type Manifest = Record<string, { url: string; sha256: string; specification: string; downloadedOn: string }>;
 
+export function formCheckSummary(r: { checked: number; changed: string[]; errors: string[] }) {
+  const changed = r.changed.length ? `Changed on cr.gov.hk: ${r.changed.join(", ")}. Re-map these forms before filing.` : "";
+  if (r.errors.length) return `Check incomplete: could not verify ${r.errors.length} of ${r.checked} forms (${r.errors.join("; ")}).${changed ? ` ${changed}` : ""}`;
+  return changed || `All ${r.checked} forms match the manifest.`;
+}
+
 export function formsManifest(): Manifest {
   return JSON.parse(readFileSync(path.join(FORMS_DIR, "manifest.json"), "utf8"));
 }
@@ -22,7 +28,7 @@ export async function checkForms(ctx: Ctx, fetcher: (url: string) => Promise<Buf
       if (Crypto.sha256(buf) !== info.sha256) changed.push(code);
     } catch (e) { errors.push(`${code}: ${(e as Error).message}`); }
   }
-  await kvSet(ctx, "forms.check", { at: ctx.clock.now().toISOString(), changed, errors });
+  await kvSet(ctx, "forms.check", { at: ctx.clock.now().toISOString(), checked: Object.keys(m).length, changed, errors });
   return { checked: Object.keys(m).length, changed, errors };
 }
 

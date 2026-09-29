@@ -6,15 +6,16 @@ import type { Ctx } from "@/lib/ctx";
 import { shareClass, significantController, task as taskT } from "@/db/schema";
 import type { RegisterEffect } from "./playbook-types";
 import type { Task } from "./engine";
-import { membersAsAt, allot, transfer, buyback, createShareClass } from "./shares";
+import { membersAsAt, issuedAsAt, allot, transfer, buyback, createShareClass } from "./shares";
 import { resolvePerson } from "./people";
 import { structureMovements, type Movements } from "@/agent/structure";
+import { verifiedBuyback } from "./buyback-facts";
 import { stampDuty } from "./stamp-duty";
 
 type Planned = { effect: RegisterEffect["kind"]; description: string; apply: () => Promise<void> };
 const n = (x: number) => x.toLocaleString("en-US");
 
-async function movementsFor(ctx: Ctx, t: Task, v: Record<string, string>): Promise<Movements> {
+export async function movementsFor(ctx: Ctx, t: Task, v: Record<string, string>): Promise<Movements> {
   const cached = (t.params.structured as Movements | undefined);
   if (cached) return cached;
   const instruction = v.allotmentDetails ?? v.transferDetails ?? v.buybackDetails ?? v.cnEquityTransfer ?? v.moQuotaTransfer ?? "";
@@ -53,9 +54,10 @@ export async function planStructured(ctx: Ctx, t: Task, e: RegisterEffect, v: Re
       } });
     }
     if (it.kind === "buyback" && e.kind === "buyback_shares") {
-      out.push({ effect: e.kind, description: `Buy back ${n(it.quantity)} ${it.className} shares from ${it.fromName} on ${eff}`, apply: async () => {
+      const verified = verifiedBuyback(m.items, await issuedAsAt(ctx, t.clientId, eff), await membersAsAt(ctx, t.clientId, eff));
+      out.push({ effect: e.kind, description: `Buy back ${n(it.quantity)} ${it.className} shares from ${it.fromName} on ${eff}; reduce capital by ${verified.cls.currency} ${n(verified.capitalReductionCents / 100)} to ${n(verified.postCapitalCents / 100)}`, apply: async () => {
         const from = await resolvePerson(ctx, t.clientId, { personId: it.fromPersonId, nameEn: it.fromName });
-        await buyback(ctx, { clientId: t.clientId, shareClassId: await classId(ctx, t.clientId, it.className), date: eff, fromPersonId: from.id, quantity: it.quantity, considerationCents: it.considerationCents ?? undefined, sourceTaskId: t.id });
+        await buyback(ctx, { clientId: t.clientId, shareClassId: await classId(ctx, t.clientId, it.className), date: eff, fromPersonId: from.id, quantity: it.quantity, considerationCents: it.considerationCents ?? undefined, capitalReductionCents: verified.capitalReductionCents, sourceTaskId: t.id });
       } });
     }
   }

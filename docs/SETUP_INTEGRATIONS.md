@@ -76,3 +76,9 @@ The free tier adds a "Sent via AgentMail" footer to outgoing mail.
 ## 6. The existing-client test address
 
 Set `DEMO_EXISTING_CLIENT_EMAIL=you@yourdomain.com`, then run `npm run db:seed`. Emails from that address are recognised as CHAN Tai Man, director of Kowloon Bay Trading Limited (7 years of history, KYC on file, filings, paid invoices, earlier correspondence).
+
+## Verification status after independent review, 29 September 2026
+
+The regression and browser suites use fake adapters. This review found no configured Gmail, AgentMail, Airwallex or Xero credentials, so no live-account smoke test was run. The earlier live-model evaluation is separate evidence and does not verify those integrations.
+
+After configuring test accounts, verify each connection with fictional data: receive and approve a threaded reply through each mailbox provider; simulate and match an Airwallex sandbox deposit; confirm the corresponding invoice is authorised and its payment recorded in the Xero Demo Company; and query a known screening fixture using the selected OpenSanctions source. Record actual provider results before describing an integration as live-tested. `db:seed` resets demo data; use it only when ready to discard the existing rehearsal tasks.

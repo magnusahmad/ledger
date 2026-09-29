@@ -185,3 +185,18 @@ export async function signAction(token: string, _prev: ActionResult | null, form
     return done("Signed. Thank you.");
   } catch (e) { return fail(e); }
 }
+
+export async function batchOfficerAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const r = await batchStart(getCtx(), { playbookId: "hk.resignDirector", clientIds: form.getAll("clientId").map(String), personId: String(form.get("personId") ?? ""), effectiveDate: String(form.get("effectiveDate") ?? "") });
+    return done(`Prepared ${r.created} resignation task(s). Each request and invoice awaits approval.${r.skipped.length ? ` Skipped: ${r.skipped.map(s => s.reason).join("; ")}.` : ""}`);
+  } catch (e) { return fail(e); }
+}
+
+export async function batchGenerateAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const { batchGenerate } = await import("@/domain/batch");
+    const r = await batchGenerate(getCtx(), form.getAll("taskId").map(String));
+    return done(`Prepared documents for ${r.generated.length} task(s). Review each signing or filing request in your intray.${r.skipped.length ? ` ${r.skipped.length} task(s) skipped: ${r.skipped.map(s => s.reason).join("; ")}.` : ""}`);
+  } catch (e) { return fail(e); }
+}

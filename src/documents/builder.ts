@@ -38,7 +38,7 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
 
 export async function buildPdf(blocks: Block[], opts: { lang?: "en" | "tc" | "sc" | "bilingual"; header?: string; footer?: string } = {}): Promise<BuiltDoc> {
   const doc = await PDFDocument.create();
-  const fonts: Fonts = await embedFonts(doc, opts.lang ?? "tc");
+  const fonts: Fonts = await embedFonts(doc, opts.lang ?? "tc", { text: JSON.stringify(blocks) + (opts.header ?? "") + (opts.footer ?? "") });
   let page: PDFPage = doc.addPage([W, H]);
   let y = H - M;
   const text: string[] = [];

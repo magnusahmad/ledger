@@ -41,7 +41,9 @@ function replay(ms: Movement[]) {
       if (from < qty) throw new RegisterError(`${m.kind} on ${m.date} of ${qty} exceeds the ${from} held`);
       holdings.set(k(m.shareClassId, m.fromPersonId!), from - qty);
       const ratio = iss.issued ? qty / iss.issued : 0;
-      iss.paidUpCents -= Math.round(iss.paidUpCents * ratio);
+      const reduction = m.kind === "buyback" ? m.amountPaidCents : Math.round(iss.paidUpCents * ratio);
+      if (reduction < 0 || reduction > iss.paidUpCents) throw new RegisterError("Capital reduction exceeds paid-up share capital");
+      iss.paidUpCents -= reduction;
       iss.issued -= qty;
     }
     issued.set(m.shareClassId, iss);
@@ -70,9 +72,11 @@ export function transfer(ctx: Ctx, t: { clientId: string; shareClassId: string; 
   return insertChecked(ctx, { ...t, kind: "transfer" });
 }
 
-export function buyback(ctx: Ctx, t: { clientId: string; shareClassId: string; date: string; fromPersonId: string; quantity: number; considerationCents?: number; sourceTaskId?: string; note?: string }) {
+export function buyback(ctx: Ctx, t: { clientId: string; shareClassId: string; date: string; fromPersonId: string; quantity: number; considerationCents?: number; capitalReductionCents: number; sourceTaskId?: string; note?: string }) {
   if (t.quantity <= 0) throw new RegisterError("Buy-back quantity must be positive");
-  return insertChecked(ctx, { ...t, kind: "buyback" });
+  if (!Number.isSafeInteger(t.capitalReductionCents) || t.capitalReductionCents < 0) throw new RegisterError("Specify the verified capital payment; use zero for a profits-funded buy-back");
+  const { capitalReductionCents, ...movement } = t;
+  return insertChecked(ctx, { ...movement, amountPaidCents: capitalReductionCents, kind: "buyback" });
 }
 
 export async function membersAsAt(ctx: Ctx, clientId: string, date: string) {

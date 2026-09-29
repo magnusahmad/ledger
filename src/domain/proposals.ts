@@ -48,6 +48,7 @@ export async function getProposal(ctx: Ctx, id: string) {
 }
 
 export async function approveProposal(ctx: Ctx, id: string, opts: ApproveOpts = {}) {
+  const actedAt = ctx.clock.now();
   const p = await getProposal(ctx, id);
   if (p.status !== "pending") throw new ProposalError(`Proposal is already ${p.status}`);
   const h = handlers.get(p.kind);
@@ -59,12 +60,12 @@ export async function approveProposal(ctx: Ctx, id: string, opts: ApproveOpts = 
   try {
     await h(ctx, p, opts);
   } catch (e) {
-    await ctx.db.update(proposal).set({ status: "pending", decidedAt: null, decidedBy: null }).where(eq(proposal.id, id));
+    await ctx.db.update(proposal).set({ status: "pending", decidedAt: null, decidedBy: null }).where(and(eq(proposal.id, id), eq(proposal.status, "approved")));
     throw e;
   }
   await audit(ctx, `proposal.approve.${p.kind}`, "proposal", id, { edits: opts.edits ?? null });
   if (opts.shownAt) {
-    const now = ctx.clock.now();
+    const now = actedAt;
     await ctx.db.insert(stepTiming).values({
       id: ctx.ids.next("tim"), firmId: ctx.firmId, taskId: p.taskId, proposalId: id, activity: `approve_${p.kind}`,
       shownAt: opts.shownAt, actedAt: now, seconds: Math.max(0, Math.round((now.getTime() - opts.shownAt.getTime()) / 1000)), editChars: opts.editChars ?? 0,

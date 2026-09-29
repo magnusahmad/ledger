@@ -13,7 +13,7 @@ export type Deadline = {
   periodKey: string | null; periodYear: number; daysLeft: number; overdue: boolean;
 };
 
-const pad = (x: number) => String(x).padStart(2, "0");
+import { financialYearEnds, financialPeriodKey } from "./fye-periods";
 
 export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; withinDays: number; includeCovered?: boolean }): Promise<Deadline[]> {
   const today = ctx.clock.today();
@@ -47,19 +47,17 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
       // AGM / accounts: within 9 months after the financial year end; not for dormant companies.
       if (c.operatingStatus !== "dormant" && c.fyeMonth && c.fyeDay) {
         const lastAgm = (c.jurisdictionData as { lastAgm?: string | null }).lastAgm ?? null;
-        for (const y of [Y - 1, Y]) {
-          const fye = `${y}-${pad(c.fyeMonth)}-${pad(c.fyeDay)}`;
-          if (fye >= today || fye < c.incorporatedOn) continue;
-          const periodKey = `AGM:${y}`;
-          if (lastAgm && lastAgm >= fye) { doneKeys.add(periodKey); continue; }
-          push({ key: "AGM", label: `AGM and accounts for year ended ${fye}`, dueDate: addMonths(fye, 9), playbookId: "hk.agm", periodKey, periodYear: y });
-        }
-        // Next year's AGM once this year's is done.
-        const nextFye = `${Y}-${pad(c.fyeMonth)}-${pad(c.fyeDay)}`;
-        if (nextFye >= today && (!lastAgm || lastAgm < nextFye)) push({ key: "AGM", label: `AGM and accounts for year ended ${nextFye}`, dueDate: addMonths(nextFye, 9), playbookId: "hk.agm", periodKey: `AGM:${Y}`, periodYear: Y });
-        else if (nextFye < today && lastAgm && lastAgm >= nextFye) {
-          const f2 = `${Y + 1}-${pad(c.fyeMonth)}-${pad(c.fyeDay)}`;
-          push({ key: "AGM", label: `AGM and accounts for year ended ${f2}`, dueDate: addMonths(f2, 9), playbookId: "hk.agm", periodKey: `AGM:${Y + 1}`, periodYear: Y + 1 });
+        const firstChanged = c.jurisdictionData.firstChangedPeriodEnd as string | undefined;
+        const finalYear = Math.max(Y + 1, firstChanged ? Number(firstChanged.slice(0, 4)) : Y);
+        for (let y = Y - 1; y <= finalYear; y++) {
+          for (const fye of financialYearEnds(c, y)) {
+            if (fye < c.incorporatedOn) continue;
+            const periodKey = financialPeriodKey(c, fye);
+            if (lastAgm && lastAgm >= fye) continue;
+            // Existing filings/tasks retain their old annual keys across a calendar change.
+            if (doneKeys.has(`AGM:${y}`) || (!opts.includeCovered && covered.has(`AGM:${y}`))) continue;
+            push({ key: "AGM", label: `AGM and accounts for year ended ${fye}`, dueDate: addMonths(fye, 9), playbookId: "hk.agm", periodKey, periodYear: y });
+          }
         }
       }
       // Business registration expiry.

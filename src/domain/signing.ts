@@ -7,13 +7,14 @@ import { PDFDocument, rgb } from "pdf-lib";
 import type { Ctx } from "@/lib/ctx";
 import { Crypto } from "@/lib/crypto";
 import { document, signEnvelope, signer as signerT } from "@/db/schema";
-import { onEnterStep, getTask, markStepState, advance, logEvent, stepData } from "./engine";
+import { onEnterStep, getTask, markStepState, advance, logEvent, stepData, assertTaskReady, type Task } from "./engine";
 import { createProposal, onApprove, pendingProposals } from "./proposals";
 import { officersAsAt } from "./records";
 import { membersAsAt } from "./shares";
 import { getFirm } from "./firm";
 import { embedFonts } from "@/documents/fonts";
 import { audit } from "./audit";
+import { approvalState, assertApprovalState } from "./approval-state";
 
 export class SigningError extends Error {}
 const OTP_TTL_MS = 10 * 60_000;
@@ -29,7 +30,13 @@ async function instructingSigner(ctx: Ctx, clientId: string, role: string) {
   return p ? [{ personId: p.id, name: p.nameEn, email: p.email ?? c.email, role }] : [];
 }
 
-async function signersFor(ctx: Ctx, clientId: string, personId: string | null, kind: string | undefined) {
+async function signersFor(ctx: Ctx, clientId: string, personId: string | null, kind: string | undefined, task?: Task) {
+  if (task?.playbookId === "hk.incorporation" && (kind === "directors" || kind === "members")) {
+    const { incorporationFor } = await import("./incorporation");
+    const values = Object.fromEntries(task.checklist.filter(e => e.value).map(e => [e.key, e.value!]));
+    const plan = await incorporationFor(ctx, task, values);
+    return [{ personId: plan.directorPersonId, name: plan.director.nameEn, email: plan.director.email, role: kind === "directors" ? "First director" : "Founder member" }];
+  }
   const today = ctx.clock.today();
   if (kind === "directors") {
     const ds = (await officersAsAt(ctx, clientId, today, "director")).map((o) => ({ personId: o.personId, name: o.person.nameEn, email: o.person.email, role: "Director" }));
@@ -55,7 +62,7 @@ onEnterStep("sign", async (ctx, task) => {
   const docSigners: { docId: string; signers: Awaited<ReturnType<typeof signersFor>> }[] = [];
   for (const g of gen) {
     if (!g.signers || g.signers === "none") continue;
-    const s = await signersFor(ctx, t.clientId, t.personId, g.signers);
+    const s = await signersFor(ctx, t.clientId, t.personId, g.signers, t);
     if (s.length) docSigners.push({ docId: g.id, signers: s });
   }
   if (docSigners.length === 0) {
@@ -74,7 +81,7 @@ onEnterStep("sign", async (ctx, task) => {
   await createProposal(ctx, {
     kind: "send_signing", title: `Send for signature: ${t.title}`, clientId: t.clientId, taskId: t.id, requestId: t.requestId,
     summary: `${titles.map((x) => x.title).join(", ")}. Signers: ${[...bySigner.values()].map((s) => `${s.name} <${s.email ?? "no email"}>`).join(", ")}.${missing.length ? ` Add an email for ${missing.map((m) => m.name).join(", ")} before sending.` : ""}`,
-    payload: { envelopeId: env.id, signers: [...bySigner.values()] },
+    payload: { envelopeId: env.id, approvalState: await approvalState(ctx, t.id), signers: [...bySigner.values()] },
   });
 });
 
@@ -82,7 +89,9 @@ onApprove("send_signing", async (ctx, p, opts) => {
   const { envelopeId, signers } = p.payload as { envelopeId: string; signers: { personId: string; name: string; email: string | null; role: string; docIds: string[] }[] };
   const overrides = (opts.edits as { emails?: Record<string, string> } | undefined)?.emails ?? {};
   const env = (await ctx.db.query.signEnvelope.findFirst({ where: eq(signEnvelope.id, envelopeId) }))!;
-  const t = await getTask(ctx, env.taskId);
+  const t = await assertTaskReady(ctx, env.taskId, "sign");
+  if (env.status !== "draft") throw new SigningError("This signing request is no longer current");
+  await assertApprovalState(ctx, t.id, p.payload.approvalState, p.id);
   const firm = await getFirm(ctx);
   for (const s of signers) {
     const email = overrides[s.personId] ?? s.email;
