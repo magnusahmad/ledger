@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Harbourline Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+TC:wght@400;500&family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F8FA;--surface:#FFFFFF;--ink:#16181D;--ink2:#3A3F47;--muted:#6B7280;--faint:#9AA1AC;--line:#E6E8EC;--line2:#D3D7DD;--hover:#F2F4F6;--sel:#ECEFF3;
+--amber:#8A5A00;--amber-bg:#FFF5DC;--red:#B42318;--red-bg:#FDEDEB;--ok:#2F6B45;--ok-bg:#EAF4EE;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "IBM Plex Sans","Noto Sans TC","Noto Sans SC","PingFang HK","Microsoft JhengHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding:20px 12px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:20px;overflow:auto}
+.brand{padding:0 10px;font-weight:600;font-size:16px;letter-spacing:-.01em}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.nav{display:flex;flex-direction:column;gap:1px}
+.nb{display:flex;align-items:center;justify-content:space-between;gap:8px;background:none;border:0;padding:8px 10px;border-radius:7px;color:var(--ink2);cursor:pointer;text-align:left;width:100%}
+.nb:hover{background:var(--hover)}
+.nb[aria-current="page"]{background:var(--sel);color:var(--ink);font-weight:500}
+.cnt{font-size:12px;color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.cgroup{display:flex;align-items:center}
+.cgroup .nb{flex:1}
+.chev{background:none;border:0;border-radius:6px;width:30px;height:30px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.chev:hover{background:var(--hover)}
+.chev svg{transition:transform .15s}
+.chev[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.clist{margin:2px 0 6px 18px;padding-left:8px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:1px}
+.clist button{background:none;border:0;text-align:left;padding:5px 8px;border-radius:6px;font-size:13.5px;color:var(--muted);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clist button:hover{background:var(--hover);color:var(--ink)}
+.clist button[aria-current="page"]{color:var(--ink);background:var(--sel);font-weight:500}
+.user{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid var(--line)}
+.av{width:34px;height:34px;border-radius:50%;background:var(--sel);display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--ink2);flex:none}
+.user b{display:block;font-weight:500;font-size:14px;line-height:1.3}
+.user span{font-size:12.5px;color:var(--muted)}
+main{padding:32px 44px 72px;max-width:1200px;width:100%}
+h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.015em;line-height:1.3}
+h2{font-size:15px;font-weight:600;margin:0 0 10px}
+h3{font-size:13px;font-weight:500;color:var(--muted);margin:18px 0 8px}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:26px}
+.back{background:none;border:0;padding:0;color:var(--muted);cursor:pointer;font-size:13.5px;margin-bottom:10px;display:inline-flex;gap:6px;align-items:center}
+.back:hover{color:var(--ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.card+.card{margin-top:16px}
+.cols{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px;align-items:start}
+.stack>*+*{margin-top:16px}
+.sec{margin-bottom:30px}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.sec-h h2{margin:0}
+.btn{border-radius:7px;padding:8px 14px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;font-weight:500;font-size:14px;white-space:nowrap}
+.btn:hover{background:#2B2F36}
+.btn.sec2{background:var(--surface);color:var(--ink);border-color:var(--line2)}
+.btn.sec2:hover{background:var(--hover)}
+.btn.sm{padding:5px 11px;font-size:13.5px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.txt{background:none;border:0;padding:0;color:var(--ink2);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px;font-size:inherit}
+.txt:hover{text-decoration-color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label.f{display:block;font-size:13px;font-weight:500;color:var(--ink2);margin:0 0 6px}
+textarea,select,input[type=text]{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:7px;padding:9px 11px}
+textarea{min-height:140px;resize:vertical;line-height:1.55}
+:focus-visible{outline:2px solid #4A6FA5;outline-offset:2px}
+.fld+.fld{margin-top:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line2);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px;cursor:pointer;color:var(--ink2)}
+.chip:hover{border-color:var(--ink2)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.grp{font-size:12.5px;color:var(--muted);margin:14px 0 6px}
+.quote{border-left:2px solid var(--line2);padding:2px 0 2px 12px;color:var(--ink2);font-size:14px;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:7px 12px;font-size:13.5px;color:var(--muted);cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--ink);font-weight:500}
+.msg{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;font-size:14.5px;line-height:1.65;max-height:420px;overflow:auto;margin:0;font-family:inherit}
+.list{list-style:none;padding:0;margin:0}
+.list li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.list li:last-child{border-bottom:0}
+.pill{font-size:12px;padding:1px 9px;border-radius:999px;white-space:nowrap;border:1px solid transparent;line-height:1.7;font-weight:500}
+button.pill{cursor:pointer}
+.p-on{background:var(--bg);color:var(--muted);border-color:var(--line)}
+.p-ok{background:var(--ok-bg);color:var(--ok)}
+.p-wait{background:var(--amber-bg);color:var(--amber)}
+.p-late{background:var(--red-bg);color:var(--red)}
+.p-n{background:var(--sel);color:var(--ink2)}
+.chop{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--red);color:var(--red);border-radius:4px;padding:2px 7px 3px;transform:rotate(-3deg);text-align:center;min-width:54px;line-height:1.1;flex:none}
+.chop b{font-family:"Noto Serif TC",serif;font-size:16px;font-weight:700}
+.chop span{font-size:11px;font-weight:600;margin-top:1px;white-space:nowrap}
+.due{font-size:13.5px;color:var(--muted);white-space:nowrap}
+.items{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left}
+.it:last-child{border-bottom:0}
+.it:hover{background:var(--hover)}
+.it .t1{font-weight:500;font-size:14.5px}
+.it .t2{font-size:13px;color:var(--muted);margin-top:1px}
+.it .r{display:flex;align-items:center;gap:12px}
+.none{padding:18px 16px;color:var(--muted);font-size:14px;border:1px dashed var(--line2);border-radius:10px}
+.steps{list-style:none;margin:0;padding:0}
+.step{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:7px 0}
+.dot{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;font-size:11.5px;color:var(--faint);background:var(--surface)}
+.step.done .dot{background:var(--ink2);border-color:var(--ink2);color:#fff}
+.step.cur .dot{border-color:var(--ink);color:var(--ink);border-width:2px;font-weight:600}
+.step .lab{padding-top:1px;font-size:14.5px;color:var(--ink2)}
+.step.done .lab{color:var(--muted)}
+.step.cur .lab{font-weight:500;color:var(--ink)}
+.act{margin-top:10px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:8px;font-size:14px}
+.act p{margin:0 0 10px;color:var(--ink2)}
+.act .meta{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.scroll{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+.t th{text-align:left;font-weight:500;color:var(--muted);font-size:12.5px;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.t td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.t tr:last-child td{border-bottom:0}
+.t tr.click{cursor:pointer}
+.t tr.click:hover td{background:var(--hover)}
+.zh{color:var(--muted);font-size:13px}
+.note{font-size:13px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:minmax(110px,40%) 1fr;gap:8px 12px;font-size:14px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.banner{background:var(--amber-bg);color:var(--amber);padding:10px 14px;border-radius:8px;font-size:13.5px;margin-bottom:20px}
+.linkbox{background:var(--bg);border:1px dashed var(--line2);border-radius:7px;padding:8px 10px;font-size:13.5px;word-break:break-all;color:var(--ink2)}
+.inv{font-size:14px}
+.inv .ln{display:flex;justify-content:space-between;gap:10px;padding:5px 0}
+.inv .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:9px;font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.who{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink2)}
+.mini-av{width:22px;height:22px;border-radius:50%;background:var(--sel);display:inline-grid;place-items:center;font-size:10px;font-weight:600;color:var(--ink2);flex:none}
+.sel-inline{width:auto;padding:4px 8px;font-size:14px}
+.ctabs{margin-bottom:24px;overflow-x:auto}
+.ctabs button{white-space:nowrap;font-size:14px;padding:9px 14px}
+.edbtn{background:none;border:0;border-bottom:1px dashed var(--line2);padding:0 1px;cursor:text;border-radius:0}
+.edbtn:hover{border-bottom-color:var(--ink);color:var(--ink)}
+.edbtn.note{font-size:13px}
+.edin{font:inherit;font-size:14px;padding:2px 6px;border:1px solid var(--ink);border-radius:5px;width:auto;text-align:right;background:var(--surface);color:var(--ink)}
+.log li{display:block;font-size:13px;color:var(--muted);padding:7px 0}
+.log time{color:var(--ink2);margin-right:8px}
+.narrow{max-width:720px}
+.loader{padding:36px 8px;text-align:center}
+.bar{height:3px;background:var(--line);border-radius:3px;overflow:hidden;max-width:260px;margin:0 auto 14px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;width:35%;background:var(--ink);border-radius:3px;animation:slide 1s ease-in-out infinite}
+@keyframes slide{0%{left:-35%}100%{left:100%}}
+@media (prefers-reduced-motion:reduce){.bar i{animation:none;width:100%;opacity:.4}}
+.loader p{margin:0;color:var(--ink2);font-size:14px}
+.pbnav button{display:block;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:6px 8px;font-size:14px;color:var(--ink2);cursor:pointer}
+.pbnav button:hover{background:var(--hover)}
+.pbnav button[aria-current="true"]{background:var(--sel);color:var(--ink);font-weight:500}
+.filt{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px}
+.filt button{background:none;border:1px solid transparent;border-radius:7px;padding:5px 11px;font-size:13.5px;color:var(--muted);cursor:pointer}
+.filt button:hover{color:var(--ink)}
+.filt button[aria-pressed="true"]{background:var(--surface);border-color:var(--line2);color:var(--ink);font-weight:500}
+.modal-bg{position:fixed;inset:0;background:rgba(22,24,29,.4);display:grid;place-items:center;padding:20px;z-index:20}
+.modal{background:var(--surface);border-radius:12px;max-width:720px;width:100%;max-height:86vh;overflow:auto;padding:24px}
+.doc{border:1px solid var(--line);border-radius:6px;padding:22px;background:var(--bg);font-size:14px;line-height:1.65}
+.doc .dh{text-align:center;font-weight:600;margin-bottom:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;font-size:14px;z-index:30}
+@media (max-width:900px){.app{grid-template-columns:1fr}.rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px;gap:10px}.user{margin-top:0;border-top:0;padding:4px 10px}.cols{grid-template-columns:1fr}main{padding:22px 16px 60px}.top{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">Harbourline Desk<small>Harbourline Corporate Services</small></div>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div class="user" aria-label="Signed in user"><div class="av" aria-hidden="true">KY</div><div><b>Karen Yip</b><span>Senior Company Secretary</span></div></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="modal"></div>
+<script>
+const TODAY=new Date(2026,8,24);
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const FIRM={name:'Harbourline Corporate Services Limited',addr:'18/F, Harbourline House, 2 Pedder Lane, Central, Hong Kong'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function addMonths(d,n){const x=new Date(d);const day=x.getDate();x.setDate(1);x.setMonth(x.getMonth()+n);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();x.setDate(Math.min(day,last));return x}
+function fmt(d,lang){if(!d)return'';return(!lang||lang==='en')?d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear():d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日'}
+function shortD(d){return d.getDate()+' '+MON[d.getMonth()]}
+function daysTo(d){return Math.round((d-TODAY)/864e5)}
+function iso(s){const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])}
+function parseDate(s){if(!s)return null;let m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return new Date(+m[1],m[2]-1,+m[3]);
+m=s.match(/(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);if(m)return new Date(+m[1],m[2]-1,+m[3]);
+m=s.match(/(\d{1,2})\s+([A-Za-z]{3,})\.?,?\s+(\d{4})/);if(m){const i=MON.findIndex(x=>m[2].toLowerCase().startsWith(x.toLowerCase()));if(i>=0)return new Date(+m[3],i,+m[1])}
+m=s.match(/([A-Za-z]{3,})\s+(\d{1,2}),?\s+(\d{4})/);if(m){const i=MON.findIndex(x=>m[1].toLowerCase().startsWith(x.toLowerCase()));if(i>=0)return new Date(+m[3],i,+m[2])}return null}
+function rid(){return Math.random().toString(36).slice(2,8).toUpperCase()}
+function hkd(n){return 'HK$'+n.toLocaleString('en-HK')}
+
+/* ---------- Requirement items (trilingual) ---------- */
+const ITEMS={
+fullName:{en:'Full name as shown on ID',tc:'全名（與身份證明文件相同）',sc:'全名（与身份证明文件相同）',syn:['full name','english name','name','全名','英文姓名','姓名']},
+chiName:{en:'Chinese name (if any)',tc:'中文姓名（如有）',sc:'中文姓名（如有）',syn:['chinese name','中文姓名','中文名']},
+idNo:{en:'HKID or passport number, with issuing country',tc:'香港身份證或護照號碼及簽發國家／地區',sc:'香港身份证或护照号码及签发国家／地区',syn:['hkid','passport no','passport','id number','身份證','身份证','護照','护照']},
+resAddr:{en:'Residential address',tc:'住址',sc:'住址',syn:['residential address','home address','住址']},
+corrAddr:{en:'Correspondence address (shown on the public register)',tc:'通訊地址（會載於公眾紀錄）',sc:'通讯地址（会载于公众记录）',syn:['correspondence address','通訊地址','通讯地址']},
+contactInfo:{en:'Email and mobile number',tc:'電郵及手提電話號碼',sc:'电邮及手机号码',syn:['email and mobile','email','mobile','phone','電郵','电邮','電話','电话']},
+effDate:{en:'Effective date',tc:'生效日期',sc:'生效日期',syn:['effective date','date of appointment','start date','effective','生效日期','生效']},
+idCopy:{doc:1,en:'Copy of HKID or passport',tc:'香港身份證或護照副本',sc:'香港身份证或护照副本',file:['hkid','passport','id_']},
+addrProof:{doc:1,en:'Address proof dated within the last 3 months',tc:'最近三個月內的住址證明',sc:'最近三个月内的住址证明',file:['address','utility','electricity','bill','statement']},
+selfie:{doc:1,en:'Identity check with selfie (through the secure link)',tc:'自拍身份核實（經安全連結完成）',sc:'自拍身份核实（经安全链接完成）',file:['identity check','selfie']},
+resignLetter:{doc:1,en:'Signed resignation letter',tc:'已簽署的辭職信',sc:'已签署的辞职信',file:['resign']},
+lastDay:{en:'Last day in office',tc:'最後任職日期',sc:'最后任职日期',syn:['last day','cessation','最後任職','最后任职']},
+replacement:{en:'Replacement director, if no individual director would remain',tc:'接任董事人選（如辭任後再無個人董事）',sc:'接任董事人选（如辞任后再无个人董事）',syn:['replacement','接任']},
+changeDetail:{en:'What has changed (old and new details)',tc:'變更內容（新舊資料）',sc:'变更内容（新旧资料）',syn:['change','變更','变更']},
+supportDoc:{doc:1,en:'Supporting document for the change',tc:'變更的證明文件',sc:'变更的证明文件',file:['passport','address','proof','certificate','deed']},
+secDetails:{en:'New secretary: name, Hong Kong address and ID or company number',tc:'新公司秘書：姓名、香港地址及身份證明或公司編號',sc:'新公司秘书：姓名、香港地址及身份证明或公司编号',syn:['secretary','秘書','秘书']},
+newAddr:{en:'New registered office address in Hong Kong',tc:'新的香港註冊辦事處地址',sc:'新的香港注册办事处地址',syn:['new address','new registered office','registered office','address','新地址','註冊辦事處','注册办事处']},
+premises:{doc:1,en:'Tenancy agreement or landlord consent for the new address',tc:'新地址的租約或業主同意書',sc:'新地址的租约或业主同意书',file:['tenancy','lease','landlord']},
+newName:{en:'Proposed new name (English and/or Chinese), with a backup',tc:'擬用新名稱（英文及／或中文）及後備名稱',sc:'拟用新名称（英文及／或中文）及备选名称',syn:['new name','proposed name','新名稱','新名称']},
+approvalRoute:{en:'Members to sign a written resolution, or hold a general meeting',tc:'股東簽署書面決議，或召開股東大會',sc:'股东签署书面决议，或召开股东大会',syn:['approval','written resolution','書面決議','书面决议']},
+propName:{en:'Proposed company name (English and/or Chinese), with two backups',tc:'擬用公司名稱（英文及／或中文）及兩個後備名稱',sc:'拟用公司名称（英文及／或中文）及两个备选名称',syn:['company name','proposed name','公司名稱','公司名称']},
+business:{en:'Nature of business',tc:'業務性質',sc:'业务性质',syn:['nature of business','business','業務','业务']},
+founders:{en:'Founder members and number of shares each',tc:'創辦成員及各自認購股數',sc:'创办成员及各自认购股数',syn:['founder','shareholders','shareholder','股東','股东']},
+capital:{en:'Share capital to be paid up',tc:'擬繳足股本',sc:'拟缴足股本',syn:['share capital','capital','股本']},
+directorsList:{en:'Directors (at least one individual)',tc:'董事（最少一名為個人）',sc:'董事（最少一名为个人）',syn:['directors','director','董事']},
+scList:{en:'Significant controllers (holding over 25%)',tc:'重要控制人（持有超過25%）',sc:'重要控制人（持有超过25%）',syn:['significant controllers','significant controller','controllers','controller','控制人']},
+funds:{en:'Source of funds and source of wealth',tc:'資金及財富來源',sc:'资金及财富来源',syn:['source of funds','source of wealth','資金來源','资金来源','資金','资金']},
+engagement:{doc:1,en:'Signed engagement letter',tc:'已簽署的委聘書',sc:'已签署的委聘书',file:['engagement']},
+prevRecords:{doc:1,en:'Statutory records from your previous secretary (registers, minutes, share certificates)',tc:'前任公司秘書移交的法定紀錄（登記冊、會議紀錄、股票）',sc:'前任公司秘书移交的法定记录（登记册、会议记录、股票）',file:['records','handover','minutes']},
+changesSince:{en:'Any changes in shareholders, directors or addresses since the last return',tc:'自上次申報以來股東、董事或地址有否變更',sc:'自上次申报以来股东、董事或地址有否变更',syn:['changes','change','no change','變動','变动','變更','变更']},
+accounts:{doc:1,en:'Audited financial statements',tc:'經審計的財務報表',sc:'经审计的财务报表',file:['audited','financial','accounts']},
+auditor:{en:'Auditor to be reappointed, and fee arrangement',tc:'續聘的核數師及收費安排',sc:'续聘的审计师及收费安排',syn:['auditor','核數師','审计师']},
+brTerm:{en:'Renew for 1 year or 3 years',tc:'續期一年或三年',sc:'续期一年或三年',syn:['renew','renewal','續期','续期']},
+scConfirm:{en:'Confirmation that significant controllers are unchanged',tc:'確認重要控制人沒有變更',sc:'确认重要控制人没有变更',syn:['significant controller','controller','控制人']},
+kycUpdate:{doc:1,en:'Updated ID or address proof where ours has expired',tc:'更新已過期的身份或住址證明',sc:'更新已过期的身份或住址证明',file:['hkid','passport','address','proof']}
+};
+const PERSONAL=['fullName','chiName','idNo','resAddr','idCopy','addrProof','selfie'];
+
+/* ---------- Playbooks ---------- */
+const CATS=['Directors','Changes in particulars','New client onboarding','Annual cycle'];
+function V(m,k,f){return(m.data&&m.data[k])||f||'[to be confirmed]'}
+function personName(m){const p=m.person&&S.people[m.person];return p?p.name:V(m,'fullName')}
+const PB={
+appointDirector:{cat:'Directors',name:{en:'Appoint a director',tc:'委任董事',sc:'委任董事'},phrase:{en:'the appointment of a new director',tc:'委任新董事',sc:'委任新董事'},
+ kw:['add a director','new director','appoint','add director','加董事','加多個董事','加多个董事','新董事','委任'],form:'ND2A',person:'new',
+ deadline:{kind:'event',days:15,rule:'File ND2A within 15 days after the appointment'},
+ needs:['fullName','chiName','idNo','resAddr','corrAddr','contactInfo','effDate','idCopy','addrProof','selfie'],
+ steps:[['send','Send information request'],['collect','Collect details and documents'],['kyc','Screen against sanctions and PEP lists'],['generate','Prepare resolution and ND2A'],['sign','Send for e-signature'],['file','File ND2A with the Companies Registry'],['register','Update register of directors'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['res','Board written resolution: appointment of director'],['form','Form ND2A: appointment, with consent to act'],['reg','Register of directors (updated)'],['letter','Confirmation to client']],
+ notes:['File ND2A within 15 days after the appointment takes effect.','The appointee signs the consent to act on ND2A itself, so ND2A goes out in the e-signature pack.','A private company must keep at least one individual director, and individual directors must be 18 or over.','Complete customer due diligence and screening before the appointment takes effect.','If the new director will hold over 25% or otherwise control the company, update the significant controllers register too.'],
+ fee:1800,res:m=>'THAT '+personName(m)+' be appointed as a director of the Company with effect from '+V(m,'effDate')+'.',
+ sample:"Hi Karen, details for the new director below.\nFull name: WONG Ka Man\nChinese name: 黃嘉敏\nHKID: K987654(3), Hong Kong\nResidential address: Flat 12B, 88 Robinson Road, Mid-Levels, Hong Kong\nCorrespondence address: same as the company's registered office\nEmail and mobile: kaman.wong@example.com / +852 9123 4567\nEffective date: 1 October 2026\n[Attachment: hkid_wong.jpg]\n[Attachment: address_proof_electricity_bill.pdf]\nPortal: identity check completed"},
+resignDirector:{cat:'Directors',name:{en:'Director resignation',tc:'董事辭任',sc:'董事辞任'},phrase:{en:"a director's resignation",tc:'董事辭任',sc:'董事辞任'},
+ kw:['resign','step down','辭任','辞任','辭職','辞职','離任','离任'],form:'ND2A',person:'officer',
+ deadline:{kind:'event',days:15,rule:'File ND2A within 15 days after the resignation'},
+ needs:['resignLetter','lastDay','replacement'],
+ steps:[['send','Send information request'],['collect','Collect resignation letter'],['check','Check the board still meets minimum requirements'],['generate','Prepare resolution and ND2A'],['sign','Send for e-signature'],['file','File ND2A with the Companies Registry'],['register','Update register of directors'],['confirm','Confirm to client and remind about bank mandates'],['bill','Raise invoice']],
+ docs:[['res','Board written resolution: resignation of director'],['form','Form ND2A: cessation'],['reg','Register of directors (updated)'],['letter','Acknowledgement to resigning director']],
+ notes:['File ND2A within 15 days after the resignation takes effect.','The resigning director may also notify the Registrar directly using Form ND4.','Check the company still has at least one individual director after the resignation. If not, a replacement must be appointed at the same time.','Remind the client to update bank signatories and any authorisations the director held.'],
+ fee:1500,res:m=>'THAT the resignation of '+personName(m)+' as a director of the Company with effect from '+V(m,'lastDay')+' be accepted and noted.',
+ sample:"Attached is the signed resignation letter.\nLast day: 31 October 2026\nReplacement: not needed, LAM Mei Ling stays on as director\n[Attachment: resignation_letter_lam.pdf]"},
+changeParticulars:{cat:'Changes in particulars',name:{en:"Change in an officer's details",tc:'更改董事或秘書資料',sc:'更改董事或秘书资料'},phrase:{en:"the change in an officer's details",tc:'更改董事資料',sc:'更改董事资料'},
+ kw:['new passport','renewed my passport','moved house','new home address','changed my name','搬屋','搬家','新護照','新护照','換護照','换护照'],form:'ND2B',person:'officer',
+ deadline:{kind:'event',days:15,rule:'File ND2B within 15 days after the change'},
+ needs:['changeDetail','effDate','supportDoc'],
+ steps:[['send','Send information request'],['collect','Collect details and proof'],['task','Update the KYC record'],['generate','Prepare ND2B'],['sign','Send for e-signature'],['file','File ND2B with the Companies Registry'],['register','Update registers'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['form','Form ND2B: change in particulars'],['reg','Register of directors (updated)'],['letter','Confirmation to client']],
+ notes:['File ND2B within 15 days after the change in particulars.','Only the correspondence address and a partial ID number appear on the public register. The residential address and full ID number are protected information, but must still be kept in the company\u2019s records.','A new passport or address also refreshes our KYC record, so update the CDD file at the same time.'],
+ fee:1200,res:m=>'THAT the change in particulars of '+personName(m)+' ('+V(m,'changeDetail')+') be noted.',
+ sample:"Hi Karen, I renewed my passport last week.\nChange: passport number changed from P1234567 to P7654321, issued by Hong Kong SAR\nEffective date: 15 September 2026\n[Attachment: new_passport_ho.jpg]"},
+changeSecretary:{cat:'Changes in particulars',name:{en:'Change of company secretary',tc:'更換公司秘書',sc:'更换公司秘书'},phrase:{en:'the change of company secretary',tc:'更換公司秘書',sc:'更换公司秘书'},
+ kw:['secretary','秘書','秘书'],form:'ND2A',
+ deadline:{kind:'event',days:15,rule:'File ND2A within 15 days after the change'},
+ needs:['secDetails','effDate','resignLetter'],
+ steps:[['send','Send information request'],['collect','Collect details and documents'],['kyc','Screen the incoming secretary'],['generate','Prepare resolution and ND2A'],['sign','Send for e-signature'],['file','File ND2A with the Companies Registry'],['register','Update register of secretaries'],['task','Hand over statutory records'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['res','Board written resolution: change of secretary'],['form','Form ND2A: secretary appointment and cessation'],['list','Records handover checklist'],['letter','Confirmation to client']],
+ notes:['File ND2A within 15 days after the change.','An individual secretary must ordinarily reside in Hong Kong. A corporate secretary must have its registered office or a place of business in Hong Kong.','In a private company, a sole director cannot also be the company secretary.','Corporate secretaries providing this as a business need a TCSP licence.'],
+ fee:1800,res:m=>'THAT '+V(m,'secDetails')+' be appointed as company secretary of the Company with effect from '+V(m,'effDate')+'.',
+ sample:"Secretary: CHEUNG Pui Shan, Room 1203, 50 Hennessy Road, Wan Chai, Hong Kong, HKID Y112233(4)\nEffective date: 1 November 2026\n[Attachment: resignation_outgoing_secretary.pdf]"},
+changeOffice:{cat:'Changes in particulars',name:{en:'Change of registered office',tc:'更改註冊辦事處地址',sc:'更改注册办事处地址'},phrase:{en:'the change of registered office',tc:'更改註冊辦事處地址',sc:'更改注册办事处地址'},
+ kw:['registered office','office is moving','moving our office','new office','office move','搬寫字樓','搬写字楼','搬辦公室','搬办公室','註冊地址','注册地址'],form:'NR1',
+ deadline:{kind:'event',days:15,rule:'File NR1 within 15 days after the change'},
+ needs:['newAddr','effDate','premises'],
+ steps:[['send','Send information request'],['collect','Collect new address and proof'],['generate','Prepare resolution and NR1'],['sign','Send for e-signature'],['file','File NR1 with the Companies Registry'],['register','Update company records'],['task','Send the client a list of places to update'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['res','Board written resolution: change of registered office'],['form','Form NR1: change of address of registered office'],['list','Checklist: letterhead, signboard, bank, website, invoices'],['letter','Confirmation to client']],
+ notes:['File NR1 within 15 days after the change.','The registered office must be an address in Hong Kong. A PO box is not accepted.','Check current Companies Registry guidance on whether NR1 also updates the Business Registration Office record, and notify IRD separately if not.','The company name must be displayed at the new office.'],
+ fee:1500,res:m=>'THAT the registered office of the Company be changed to '+V(m,'newAddr')+' with effect from '+V(m,'effDate')+'.',
+ sample:"New address: 23/F, Cityplaza One, 1111 King's Road, Taikoo Shing, Hong Kong\nEffective date: 1 November 2026\n[Attachment: tenancy_agreement_cityplaza.pdf]"},
+changeName:{cat:'Changes in particulars',name:{en:'Change of company name',tc:'更改公司名稱',sc:'更改公司名称'},phrase:{en:'the change of company name',tc:'更改公司名稱',sc:'更改公司名称'},
+ kw:['change the company name','change our company name','rename the company','公司改名','改公司名','更改公司名稱','更改公司名称'],form:'NNC2',
+ deadline:{kind:'event',days:15,rule:'File NNC2 within 15 days after the special resolution'},
+ needs:['newName','approvalRoute'],
+ steps:[['send','Send information request'],['collect','Collect proposed names'],['name','Check name availability'],['generate','Prepare special resolution and NNC2'],['sign','Collect members\u2019 signatures'],['file','File NNC2 with the Companies Registry'],['task','Record the certificate of change of name'],['register','Update registers, chop and business registration'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['res','Members\u2019 special resolution: change of name'],['form','Form NNC2: notice of change of company name'],['list','Checklist: company chop, seal, signboard, bank, contracts'],['letter','Confirmation to client']],
+ notes:['The change needs a special resolution of members, and NNC2 must be filed within 15 days after it is passed.','The new name only takes effect when the Registrar issues the certificate of change of name.','Search the Companies Registry index before the resolution is signed, and hold a backup name.','A new company chop and common seal (if any) will be needed.'],
+ fee:3500,res:m=>'THAT, subject to the approval of the Registrar of Companies, the name of the Company be changed to '+V(m,'newName')+'.',
+ sample:"New name: Silverstrand Capital Limited / 銀線灣資本有限公司 (backup: Silverstrand Group Limited)\nApproval: written resolution, both shareholders will sign"},
+incorporation:{cat:'New client onboarding',name:{en:'New company incorporation',tc:'成立新公司',sc:'成立新公司'},phrase:{en:'setting up your new company',tc:'成立新公司',sc:'成立新公司'},
+ kw:['set up a company','incorporate','new company','open a company','開公司','开公司','開一間公司','开一家公司','成立公司','註冊公司','注册公司'],form:'NNC1',
+ deadline:null,
+ needs:['propName','business','founders','capital','directorsList','scList','funds','idCopy','addrProof','selfie','engagement'],
+ steps:[['send','Send onboarding pack'],['collect','Collect details and documents'],['kyc','Complete CDD, screening and risk rating'],['name','Check name availability'],['generate','Prepare NNC1 and articles'],['sign','Send for e-signature'],['file','Submit e-incorporation with business registration'],['task','Record certificate of incorporation and BR certificate'],['register','Set up registers, SCR and share certificates'],['confirm','Send company kit to client'],['bill','Raise invoice']],
+ docs:[['list','CDD record and risk assessment'],['form','Form NNC1, with business registration application'],['list','Articles of association (model articles, adapted)'],['res','First board written resolutions'],['reg','Registers of members, directors and significant controllers'],['letter','Welcome letter and company kit']],
+ notes:['NNC1 is filed together with the business registration application, so both certificates issue together.','A private company needs at least one individual director and a company secretary resident in Hong Kong.','CDD on all founders, directors and significant controllers must be completed before we act.','Set up the significant controllers register from day one, and designate a person to deal with enforcement officers.'],
+ fee:8800,res:m=>'THAT share certificates be issued to the founder members, the statutory registers be written up, and '+FIRM.name+' be confirmed as company secretary.',
+ sample:"公司名称：莲峰科技有限公司 / Lotus Peak Technology Limited（备选：莲峰数码有限公司）\n业务性质：跨境电商\n股东：张伟 6,000股；刘芳 4,000股\n股本：HK$10,000\n董事：张伟\n控制人：张伟（60%）、刘芳（40%）\n资金来源：个人储蓄及过往经营收入\n[附件: passport_zhang.jpg]\n[附件: passport_liu.jpg]\n[附件: address_proof_zhang.pdf]\n安全链接：identity check completed"},
+transferIn:{cat:'New client onboarding',name:{en:'Take over an existing company',tc:'接手現有公司',sc:'接手现有公司'},phrase:{en:'moving your company secretarial services to us',tc:'轉移公司秘書服務',sc:'转移公司秘书服务'},
+ kw:['switch provider','take over','transfer our company','current secretary is','轉秘書','转秘书','轉公司秘書','转公司秘书'],form:'ND2A, NR1',
+ deadline:null,
+ needs:['engagement','scList','funds','idCopy','addrProof','selfie','prevRecords'],
+ steps:[['send','Send onboarding pack'],['collect','Collect details and documents'],['kyc','Complete CDD, screening and risk rating'],['search','Run a company search'],['generate','Prepare secretary and office changes'],['sign','Send for e-signature'],['file','File ND2A and NR1'],['register','Load records and reconcile registers'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['list','CDD record and risk assessment'],['res','Board written resolution: appoint secretary, change registered office'],['form','Form ND2A: change of secretary'],['form','Form NR1: change of registered office'],['list','Records handover checklist']],
+ notes:['Reconcile the handed-over registers against a fresh company search before relying on them.','Check whether the annual return, SCR and business registration are up to date. Gaps become the client\u2019s first matters.','CDD on directors and significant controllers must be completed before we act.'],
+ fee:3800,res:m=>'THAT '+FIRM.name+' be appointed as company secretary, and the registered office be changed to '+FIRM.addr+'.',
+ sample:"Signed engagement letter attached. Our previous secretary will courier the records next week.\nSignificant controllers: CHAN Tai Man 100%\nSource of funds: trading profits\n[Attachment: engagement_signed.pdf]\n[Attachment: records_handover_list.pdf]\n[Attachment: passport_chan.jpg]\n[Attachment: address_proof_chan.pdf]\nPortal: identity check completed"},
+annualReturn:{cat:'Annual cycle',mode:'firm',name:{en:'Annual return',tc:'周年申報表',sc:'周年申报表'},phrase:{en:'the annual return',tc:'周年申報表',sc:'周年申报表'},
+ kw:['annual return','nar1','周年申報','周年申报','年報','年报'],form:'NAR1',
+ deadline:{kind:'annual',key:'nar1',rule:'Private company: within 42 days after the anniversary of incorporation'},
+ needs:['changesSince'],
+ steps:[['send','Send pre-filled particulars for confirmation'],['collect','Collect client confirmation'],['generate','Prepare NAR1 from the registers'],['sign','Send for e-signature'],['file','File NAR1 and pay the fee'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['form','Form NAR1, pre-filled from registers'],['list','Current particulars for client confirmation'],['letter','Confirmation to client']],
+ notes:['A private company files NAR1 within 42 days after each anniversary of incorporation.','Late filing attracts a higher registration fee that increases with delay, and can lead to prosecution.','Any unreported changes found during confirmation should be opened as their own matters first.'],
+ fee:1200,res:null,
+ sample:"No changes since last year, thanks. 冇變動。"},
+agm:{cat:'Annual cycle',mode:'firm',name:{en:'AGM and accounts approval',tc:'周年大會及通過賬目',sc:'周年大会及通过账目'},phrase:{en:'the annual accounts approval and AGM',tc:'周年大會及通過賬目',sc:'周年大会及通过账目'},
+ kw:['agm','annual general meeting','audited accounts','audited financial','周年大會','周年大会','核數','审计报告'],form:'None (internal records)',
+ deadline:{kind:'annual',key:'agm',rule:'Private company: within 9 months after the end of the accounting reference period'},
+ needs:['accounts','auditor','approvalRoute'],
+ steps:[['send','Send information request'],['collect','Collect accounts and instructions'],['generate','Prepare board and members\u2019 resolutions'],['sign','Send for e-signature'],['task','Record in the minute book'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['res','Board resolution approving financial statements and directors\u2019 report'],['res','Members\u2019 written resolutions in lieu of AGM'],['letter','Confirmation to client']],
+ notes:['A private company holds its AGM within 9 months after its accounting reference period ends.','Members can pass a written resolution instead of meeting, or unanimously agree to dispense with AGMs.','The auditor must be reappointed each year unless the members resolve otherwise.'],
+ fee:2500,res:m=>'THAT the audited financial statements and directors\u2019 report for the latest financial year be approved, and '+V(m,'auditor')+' be reappointed as auditor.',
+ sample:"Audited accounts attached.\nAuditor: reappoint Wong & Partners CPA Limited, same fee as last year\nApproval: written resolution please\n[Attachment: audited_financial_statements_FY2025.pdf]"},
+brRenewal:{cat:'Annual cycle',mode:'firm',name:{en:'Business registration renewal',tc:'商業登記續期',sc:'商业登记续期'},phrase:{en:'the business registration renewal',tc:'商業登記續期',sc:'商业登记续期'},
+ kw:['business registration','br certificate','商業登記','商业登记','商登'],form:'IRD demand note',
+ deadline:{kind:'annual',key:'br',rule:'Renew before the current certificate expires'},
+ needs:['brTerm'],
+ steps:[['send','Send renewal reminder'],['collect','Collect client instructions'],['task','Pay the fee or forward the demand note'],['register','Record the new certificate'],['confirm','Confirm to client'],['bill','Raise invoice']],
+ docs:[['letter','Renewal reminder'],['list','New business registration certificate record']],
+ notes:['IRD normally issues a demand note before expiry. Track the expiry date here rather than relying on the post.','Renewal can be for 1 or 3 years.','Branch registrations are renewed together with the main certificate.'],
+ fee:500,res:null,sample:"Renew: 1 year please"},
+kycReview:{cat:'Annual cycle',mode:'firm',name:{en:'Periodic KYC review',tc:'定期客戶盡職審查',sc:'定期客户尽职审查'},phrase:{en:'our periodic client due diligence review',tc:'定期客戶盡職審查',sc:'定期客户尽职审查'},
+ kw:['kyc','due diligence','盡職','尽职'],form:'Internal CDD record',
+ deadline:{kind:'annual',key:'kyc',rule:'Firm policy: high risk yearly, medium every 2 years, low every 3 years'},
+ needs:['scConfirm','kycUpdate'],
+ steps:[['send','Send review request'],['collect','Collect confirmation and updated documents'],['kyc','Re-screen against sanctions and PEP lists'],['task','Review and update the risk rating'],['register','Record the completed review'],['confirm','Confirm to client']],
+ docs:[['list','CDD review record'],['list','Updated risk assessment']],
+ notes:['Review frequency here follows a sample firm policy. Set it to match your own AML policies and procedures.','Keep CDD records for at least 5 years after the business relationship ends.','A change in significant controllers found here should also update the SCR.'],
+ fee:800,res:null,sample:"Controller: no change, still Mr Lam 100%\n[Attachment: address_proof_lam_2026.pdf]"}
+};
+
+
+PB.kycReview.fee=0;
+for(const id in PB){const pb=PB[id];const work=pb.steps.slice(1).filter(s=>s[0]!=='bill');pb.flow=pb.fee?[['send','Send invoice and information request'],['pay','Payment received']].concat(work):[['send',pb.steps[0][1]]].concat(work)}
+
+/* ---------- Data ---------- */
+const S={view:'today',clientOpen:null,taskOpen:null,pbOpen:'appointDirector',navClients:true,taskFilter:'me',seq:1040,invSeq:408,
+clients:[
+{id:'c1',name:{en:'Kowloon Bay Trading Limited',tc:'九龍灣貿易有限公司',sc:'九龙湾贸易有限公司'},cr:'2811043',inc:'2019-10-28',fye:[3,31],br:'2026-10-27',risk:'Medium',kyc:'2024-11-02',contact:{en:'Mr Chan',tc:'陳生',sc:'陈先生'},contactName:'CHAN Tai Man',channel:'WeChat',lang:'tc',office:'Unit 1502, 15/F, Kowloon Bay Centre, Kowloon Bay, Hong Kong',directors:['p1'],people:['p1','p2'],status:'Active'},
+{id:'c2',name:{en:'Silverstrand Holdings Limited',tc:'銀線灣控股有限公司',sc:'银线湾控股有限公司'},cr:'3102567',inc:'2021-11-15',fye:[12,31],br:'2026-11-14',risk:'Low',kyc:'2023-12-01',contact:{en:'Ms Ho',tc:'何小姐',sc:'何小姐'},contactName:'HO Wing Yan',channel:'Email',lang:'en',office:'Room 808, 8/F, Harbour Commercial Tower, Sheung Wan, Hong Kong',directors:['p3'],people:['p3'],status:'Active'},
+{id:'c3',name:{en:'Lotus Peak Technology Limited',tc:'蓮峰科技有限公司',sc:'莲峰科技有限公司'},cr:'',inc:'',fye:[12,31],br:'',risk:'Pending',kyc:'',contact:{en:'Mr Zhang',tc:'張總',sc:'张总'},contactName:'ZHANG Wei',channel:'WeChat',lang:'sc',office:'',directors:[],people:[],status:'Onboarding'},
+{id:'c4',name:{en:'Tsing Yi Logistics Limited',tc:'青衣物流有限公司',sc:'青衣物流有限公司'},cr:'2289716',inc:'2015-09-02',fye:[3,31],br:'2027-09-01',risk:'High',kyc:'2025-09-20',contact:{en:'Mrs Lam',tc:'林太',sc:'林太太'},contactName:'LAM Mei Ling',channel:'WeChat',lang:'tc',office:'Unit 5, 3/F, Tsing Yi Industrial Centre, Tsing Yi, Hong Kong',directors:['p4','p5'],people:['p4','p5'],status:'Active'}],
+people:{p1:{name:'CHAN Tai Man',zh:'陳大文',kyc:true,role:'Director, shareholder'},p2:{name:'LEE Siu Ling',zh:'李小玲',kyc:true,role:'Shareholder'},p3:{name:'HO Wing Yan',zh:'何詠欣',kyc:true,role:'Director, shareholder'},p4:{name:'LAM Kwok Keung',zh:'林國強',kyc:true,role:'Director, shareholder'},p5:{name:'LAM Mei Ling',zh:'林美玲',kyc:true,role:'Director'}},
+tasks:[],invoices:{},draft:null,invFilter:'unpaid'};
+S.clients.forEach(c=>c.terms={c1:30,c4:30}[c.id]||0);
+
+const USERS={u1:{name:'Karen Yip',ini:'KY',title:'Senior Company Secretary'},u2:{name:'Mary Chan',ini:'MC',title:'Company Secretarial Officer'},u3:{name:'Daniel Ho',ini:'DH',title:'Assistant Company Secretary'}};
+const ME='u1';
+S.clients.push({id:'c5',name:{en:'Peak Harbour Investments Limited',tc:'峰港投資有限公司',sc:'峰港投资有限公司'},cr:'2650918',inc:'2018-03-06',fye:[12,31],br:'2027-03-05',risk:'Low',kyc:'2025-04-10',contact:{en:'Mr Leung',tc:'梁生',sc:'梁先生'},contactName:'LEUNG Chi Wai',channel:'Email',lang:'en',office:'18/F, Harbourline House, 2 Pedder Lane, Central, Hong Kong',directors:['p6'],people:['p6'],status:'Active'});
+S.people.p6={name:'LEUNG Chi Wai',zh:'梁志偉',kyc:true,role:'Director, shareholder'};
+const EXT={
+c1:{staff:'u1',type:'Private company limited by shares',jur:'Hong Kong',op:'Operating',group:'Chan family companies',listedSub:false,officeZh:'香港九龍灣九龍灣中心15樓1502室',biz:{en:'Import and export of household goods',zh:'家居用品進出口'},docLang:'English',brNo:'70123456',brTerm:1,branches:[],accTo:'2025-03-31',lastAGM:'2025-12-15',lastAR:'2025-12-05',auditor:'Wong & Partners CPA Limited',
+ banks:[['HSBC','\u2022\u2022\u2022\u2022 3381','CHAN Tai Man (sole signatory)']],
+ shares:[['Ordinary','HKD',10000,10000,'Yes']],members:[['CHAN Tai Man','Ordinary',7000],['LEE Siu Ling','Ordinary',3000]],
+ moves:[['2019-10-28','Allotment on incorporation','10,000 ordinary shares: CHAN Tai Man 7,000, LEE Siu Ling 3,000']],
+ appointed:{p1:'2019-10-28'},secSince:'2022-04-01',
+ sc:[['CHAN Tai Man','Holds more than 25% of the issued shares (70%)','2019-10-28'],['LEE Siu Ling','Holds more than 25% of the issued shares (30%)','2019-10-28']],
+ dr:'Harbourline Corporate Services Limited (TCSP licensee)',regsAt:'Registered office',scrAt:'Registered office',charges:[],
+ contacts:[{name:'CHAN Tai Man',role:'Director, gives instructions',ch:'WeChat',lang:'tc'},{name:'WONG Mei Kei',role:'Accounts, receives invoices and reminders',ch:'Email, meikei.wong@kbtrading.example',lang:'en',billing:true,sal:{en:'Ms Wong',tc:'黃小姐',sc:'黄小姐'}}],
+ filings:[['NAR1','Annual return 2025','2025-12-05'],['NR1','Change of registered office','2022-04-01'],['ND2A','Change of company secretary','2022-04-01']],eacct:'5 Dec 2025'},
+c2:{staff:'u1',type:'Private company limited by shares',jur:'Hong Kong',op:'Operating',group:'',listedSub:false,officeZh:'香港上環海港商業大廈8樓808室',biz:{en:'Investment holding',zh:'投資控股'},docLang:'English',brNo:'72456123',brTerm:3,branches:[],accTo:'2025-12-31',lastAGM:'2025-09-26',lastAR:'2025-12-20',auditor:'Lau & Co CPA',
+ banks:[['Standard Chartered','\u2022\u2022\u2022\u2022 9920','HO Wing Yan (sole signatory)'],['Airwallex','\u2022\u2022\u2022\u2022 1147','HO Wing Yan']],
+ shares:[['Ordinary','HKD',1000000,1000000,'Yes'],['Preference','HKD',200000,200000,'No']],
+ members:[['HO Wing Yan','Ordinary',800000],['Brightwater Ventures Limited (BVI)','Ordinary',200000],['Brightwater Ventures Limited (BVI)','Preference',200000]],
+ moves:[['2021-11-15','Allotment on incorporation','1,000,000 ordinary shares to HO Wing Yan'],['2023-06-30','Transfer','200,000 ordinary shares from HO Wing Yan to Brightwater Ventures Limited, stamp duty paid'],['2024-03-01','Allotment','200,000 preference shares to Brightwater Ventures Limited, NSC1 filed']],
+ appointed:{p3:'2021-11-15'},secSince:'2021-11-15',
+ sc:[['HO Wing Yan','Holds more than 25% of the issued shares (80% of ordinary shares)','2021-11-15']],
+ dr:'HO Wing Yan (director)',regsAt:'Registered office',scrAt:'Registered office',charges:[['2024-05-10','Standard Chartered Bank (Hong Kong) Limited','Fixed charge over deposit account','Registered']],
+ contacts:[{name:'HO Wing Yan',role:'Director, gives instructions and pays invoices',ch:'Email, wingyan@silverstrand.example',lang:'en',billing:true,sal:{en:'Ms Ho',tc:'何小姐',sc:'何小姐'}}],
+ filings:[['NAR1','Annual return 2025','2025-12-20'],['NM1','Registration of charge','2024-05-20'],['NSC1','Return of allotment','2024-03-10']],eacct:'20 Dec 2025'},
+c3:{staff:'u1',type:'Private company limited by shares (proposed)',jur:'Hong Kong',op:'Not yet incorporated',group:'',listedSub:false,officeZh:'',biz:{en:'Cross-border e-commerce',zh:'跨境電商'},docLang:'English',brNo:'',brTerm:1,branches:[],accTo:'',lastAGM:'',lastAR:'',auditor:'',banks:[],shares:[],members:[],moves:[],appointed:{},secSince:'',sc:[],dr:'',regsAt:'',scrAt:'',charges:[],
+ contacts:[{name:'ZHANG Wei',role:'Founder, gives instructions and pays invoices',ch:'WeChat',lang:'sc',billing:true,sal:{en:'Mr Zhang',tc:'張總',sc:'张总'}}],filings:[],eacct:''},
+c4:{staff:'u1',type:'Private company limited by shares',jur:'Hong Kong',op:'Operating',group:'',listedSub:false,officeZh:'香港青衣青衣工業中心3樓5室',biz:{en:'Logistics and warehousing',zh:'物流及倉儲'},docLang:'Traditional Chinese',brNo:'64987321',brTerm:1,branches:['Kwai Chung warehouse'],accTo:'2025-03-31',lastAGM:'2025-12-18',lastAR:'2025-10-10',auditor:'Cheung Ng CPA Limited',
+ banks:[['Bank of China (Hong Kong)','\u2022\u2022\u2022\u2022 5512','Any one of LAM Kwok Keung or LAM Mei Ling']],
+ shares:[['Ordinary','HKD',1000000,1000000,'Yes']],members:[['LAM Kwok Keung','Ordinary',600000],['LAM Mei Ling','Ordinary',400000]],
+ moves:[['2015-09-02','Allotment on incorporation','1,000,000 ordinary shares: LAM Kwok Keung 600,000, LAM Mei Ling 400,000']],
+ appointed:{p4:'2015-09-02',p5:'2015-09-02'},secSince:'2019-07-01',
+ sc:[['LAM Kwok Keung','Holds more than 25% of the issued shares (60%)','2015-09-02'],['LAM Mei Ling','Holds more than 25% of the issued shares (40%)','2015-09-02']],
+ dr:'LAM Mei Ling (director)',regsAt:'Registered office',scrAt:'Registered office',charges:[['2020-02-14','Bank of China (Hong Kong) Limited','Mortgage over Kwai Chung warehouse','Registered']],
+ contacts:[{name:'LAM Mei Ling',role:'Director, gives instructions and pays invoices',ch:'WeChat',lang:'tc',billing:true,sal:{en:'Mrs Lam',tc:'林太',sc:'林太太'}},{name:'LAM Kwok Keung',role:'Director',ch:'WeChat',lang:'tc'}],
+ filings:[['NAR1','Annual return 2025','2025-10-10'],['NM1','Registration of charge','2020-02-24'],['ND2A','Change of company secretary','2019-07-01']],eacct:'10 Oct 2025'},
+c5:{staff:'u2',type:'Private company limited by shares',jur:'Hong Kong',op:'Dormant',group:'',listedSub:false,officeZh:'香港中環畢打巷2號海港大廈18樓',biz:{en:'Dormant (formerly property investment)',zh:'暫無業務（前物業投資）'},docLang:'English',brNo:'68201145',brTerm:1,branches:[],accTo:'2024-12-31',lastAGM:'',lastAR:'2026-04-12',auditor:'Not required while dormant',
+ banks:[],shares:[['Ordinary','HKD',100,100,'Yes']],members:[['LEUNG Chi Wai','Ordinary',100]],moves:[['2018-03-06','Allotment on incorporation','100 ordinary shares to LEUNG Chi Wai']],
+ appointed:{p6:'2018-03-06'},secSince:'2018-03-06',sc:[['LEUNG Chi Wai','Holds more than 25% of the issued shares (100%)','2018-03-06']],
+ dr:'Harbourline Corporate Services Limited (TCSP licensee)',regsAt:'Registered office',scrAt:'Registered office',charges:[],
+ contacts:[{name:'LEUNG Chi Wai',role:'Director and sole shareholder',ch:'Email, cw.leung@example.com',lang:'en',billing:true,sal:{en:'Mr Leung',tc:'梁生',sc:'梁先生'}}],
+ filings:[['NAR1','Annual return 2026','2026-04-12'],['Dormancy','Special resolution declaring the company dormant','2025-01-15']],eacct:'12 Apr 2026'}};
+S.clients.forEach(c=>{Object.assign(c,EXT[c.id]);if(c.terms==null)c.terms=0});
+S.clientTab='overview';S.taskWho='me';
+function userHtml(u,sm){const x=USERS[u];return '<span class="who"><span class="mini-av" aria-hidden="true">'+x.ini+'</span>'+(sm?'':esc(x.name))+'</span>'}
+function mine(t){return t.assignee===ME}
+function reassign(v){const m=M();m.assignee=v;logT(m,'Reassigned to '+USERS[v].name);render();toast('Assigned to '+USERS[v].name)}
+function billingContact(c){return (c.contacts||[]).find(x=>x.billing)}
+
+const EX=[
+{label:'add a director (Cantonese)',client:'c1',text:'陳生（WeChat）：我哋想加多個董事，李小玲，佢本身係股東，下個月一號開始。要準備啲咩？'},
+{label:'office move and new name (email)',client:'c2',text:"From: Ho Wing Yan\nSubject: Office move\n\nHi Karen, we're moving our registered office to 23/F, Cityplaza One, Taikoo Shing from 1 November. While we're at it, we'd also like to change the company name to Silverstrand Capital. Can you take care of both?\n\nThanks, Wing Yan"},
+{label:'new company (voice note)',client:'c3',text:'张总（语音转文字）：我们想在香港开一家公司，做跨境电商，股东是我和我太太，大概什么时候能办好？'},
+{label:'director resigning',client:'c4',text:'林太：我先生想十月尾辭任董事，公司之後由我一個人做董事得唔得？'}];
+function client(id){return S.clients.find(c=>c.id===id)}
+function annualDue(key,c){
+ if(key==='nar1'){if(!c.inc)return null;const i=iso(c.inc);let d=addDays(new Date(TODAY.getFullYear(),i.getMonth(),i.getDate()),42);if(d<TODAY)d=addDays(new Date(TODAY.getFullYear()+1,i.getMonth(),i.getDate()),42);return d}
+ if(key==='agm'){if(!c.inc)return null;let fy=new Date(TODAY.getFullYear(),c.fye[0]-1,c.fye[1]);if(fy>TODAY)fy=new Date(TODAY.getFullYear()-1,c.fye[0]-1,c.fye[1]);let d=addMonths(fy,9);if(d<TODAY)d=addMonths(new Date(fy.getFullYear()+1,c.fye[0]-1,c.fye[1]),9);return d}
+ if(key==='br')return c.br?iso(c.br):null;
+ if(key==='kyc'){if(!c.kyc)return null;const y={High:1,Medium:2,Low:3}[c.risk]||2;const k=iso(c.kyc);return new Date(k.getFullYear()+y,k.getMonth(),k.getDate())}
+ return null}
+function dueFor(pbId,c,eff){const dl=PB[pbId].deadline;if(!dl)return null;if(dl.kind==='event')return addDays(eff||TODAY,dl.days);return annualDue(dl.key,c)}
+function reqs(pbId,pid){const pb=PB[pbId];const p=pid&&S.people[pid];let need=[...pb.needs],on=[];if(pb.person==='new'&&p&&p.kyc){on=need.filter(k=>PERSONAL.includes(k));need=need.filter(k=>!PERSONAL.includes(k))}return{need,on}}
+function deadlines(cid){const rows=[];S.clients.filter(c=>c.status==='Active'&&(!cid||c.id===cid)).forEach(c=>{[['annualReturn','nar1'],['agm','agm'],['brRenewal','br'],['kycReview','kyc']].forEach(([pb,k])=>{if(k==='agm'&&c.op==='Dormant')return;const d=annualDue(k,c);if(d)rows.push({c,pb,d,task:S.tasks.find(t=>t.client===c.id&&t.pb===pb&&!done(t))})})});return rows.sort((a,b)=>a.d-b.d)}
+
+/* ---------- Messages ---------- */
+const TX={
+en:{hi:c=>'Dear '+c+',',intro:(ph,co,firm)=>firm?"It's time to prepare "+ph+' for '+co+'. To get this done, please send us the following:':'Thank you for letting us know about '+ph+' for '+co+'. To prepare this, please send us the following:',
+ join:a=>a.length<2?a[0]:a.slice(0,-1).join(', ')+' and '+a[a.length-1],head:n=>'For the '+n.toLowerCase()+':',
+ on:l=>"We already hold these on file, so there's no need to send them again: "+l+'.',link:u=>'You can upload documents and complete any identity checks securely here:\n'+u,
+ invc:(no,a,n)=>'Our invoice '+no+' for '+a+' is attached, payable within '+n+" days. We've already started work on this.",
+ remind:(no,a,iss,due)=>'A gentle reminder that our invoice '+no+' for '+a+', issued on '+iss+', was due on '+due+' and is still showing as unpaid. If you have already paid, thank you, and please ignore this message.',
+ inv:(no,a)=>'Our invoice '+no+' for '+a+" is attached. We'll start work as soon as payment is received.",
+ cr:(d,r)=>'This needs to reach the Companies Registry by '+d+", so we'd be grateful for the details by "+r+'.',ev:n=>'Once the change takes effect we have '+n+' days to file it with the Companies Registry, so please send these as soon as you can.',other:(d,r)=>'The deadline is '+d+", so we'd be grateful for the details by "+r+'.',
+ bye:'Best regards,\nKaren Yip\nHarbourline Corporate Services',sep:', ',
+ chase:(ph,co)=>'A quick reminder on '+ph+' for '+co+". We're still waiting for:",same:u=>'You can send them through the same secure link:\n'+u,
+ done:(n,co)=>'We have completed '+n+' for '+co+'. The updated records are available in your client portal, and a copy of the filed documents is attached.',thanks:'Thank you for your prompt help with this.'},
+tc:{hi:c=>c+'您好：',intro:(ph,co,firm)=>firm?co+'的'+ph+'即將到期，請提供以下資料：':'多謝通知有關'+co+ph+'的事宜。為辦理此事，請提供以下資料：',
+ join:a=>a.join('及'),head:n=>'【'+n+'】',
+ on:l=>'以下資料我們已存檔，毋須再次提供：'+l+'。',link:u=>'請經以下安全連結上載文件及完成身份核實：\n'+u,
+ invc:(no,a,n)=>'隨附發票'+no+'，金額'+a+'，請於'+n+'日內付款。我們已開始辦理。',
+ remind:(no,a,iss,due)=>'溫馨提示：我們於'+iss+'發出的發票'+no+'（金額'+a+'）已於'+due+'到期，至今仍未收到款項。如已付款，謝謝您，請忽略此訊息。',
+ inv:(no,a)=>'隨附發票'+no+'，金額'+a+'。收到款項後我們會隨即開始辦理。',
+ cr:(d,r)=>'此申報須於'+d+'前送達公司註冊處，請於'+r+'前提供資料。',ev:n=>'變更生效後，我們須於'+n+'日內向公司註冊處申報，請盡快提供資料。',other:(d,r)=>'限期為'+d+'，請於'+r+'前提供資料。',
+ bye:'謝謝！\n葉嘉欣\nHarbourline Corporate Services',sep:'、',
+ chase:(ph,co)=>'提提您有關'+co+ph+'的事宜，我們仍在等候以下資料：',same:u=>'請經同一安全連結提交：\n'+u,
+ done:(n,co)=>co+'的「'+n+'」已辦妥，更新後的紀錄已上載至客戶平台，已提交文件的副本亦隨附。',thanks:'多謝您的協助。'},
+sc:{hi:c=>c+'您好：',intro:(ph,co,firm)=>firm?co+'的'+ph+'即将到期，请提供以下资料：':'多谢通知有关'+co+ph+'的事宜。为办理此事，请提供以下资料：',
+ join:a=>a.join('及'),head:n=>'【'+n+'】',
+ on:l=>'以下资料我们已存档，无须再次提供：'+l+'。',link:u=>'请经以下安全链接上传文件及完成身份核实：\n'+u,
+ invc:(no,a,n)=>'随附发票'+no+'，金额'+a+'，请于'+n+'日内付款。我们已开始办理。',
+ remind:(no,a,iss,due)=>'温馨提示：我们于'+iss+'发出的发票'+no+'（金额'+a+'）已于'+due+'到期，至今仍未收到款项。如已付款，谢谢您，请忽略此信息。',
+ inv:(no,a)=>'随附发票'+no+'，金额'+a+'。收到款项后我们会随即开始办理。',
+ cr:(d,r)=>'此申报须于'+d+'前送达公司注册处，请于'+r+'前提供资料。',ev:n=>'变更生效后，我们须于'+n+'日内向公司注册处申报，请尽快提供资料。',other:(d,r)=>'期限为'+d+'，请于'+r+'前提供资料。',
+ bye:'谢谢！\n叶嘉欣\nHarbourline Corporate Services',sep:'、',
+ chase:(ph,co)=>'提醒您有关'+co+ph+'的事宜，我们仍在等候以下资料：',same:u=>'请经同一链接提交：\n'+u,
+ done:(n,co)=>co+'的「'+n+'」已办妥，更新后的记录已上传至客户平台，已提交文件的副本亦随附。',thanks:'多谢您的协助。'}};
+function linkFor(code){return 'https://portal.harbourline.hk/r/'+code}
+function requestMsg(ids,c,lang,persons,code,invNo,days,total){const T=TX[lang],co=c.name[lang];const firm=ids.length===1&&PB[ids[0]].mode==='firm';
+ let s=T.hi(c.contact[lang])+'\n\n'+T.intro(firm?PB[ids[0]].phrase[lang]:T.join(ids.map(i=>PB[i].phrase[lang])),co,firm)+'\n\n';let allOn=[];
+ ids.forEach(id=>{const {need,on}=reqs(id,persons[id]);allOn=allOn.concat(on.filter(k=>!allOn.includes(k)));if(ids.length>1)s+=T.head(PB[id].name[lang])+'\n';s+=need.map((k,i)=>(i+1)+'. '+ITEMS[k][lang]).join('\n')+'\n\n'});
+ if(allOn.length)s+=T.on(allOn.map(k=>ITEMS[k][lang]).join(T.sep))+'\n\n';
+ s+=T.link(linkFor(code))+'\n\n';
+ const fee=total!=null?total:ids.reduce((a,i)=>a+PB[i].fee,0);if(fee&&invNo)s+=(days?T.invc(invNo,hkd(fee),days):T.inv(invNo,hkd(fee)))+'\n\n';
+ const ev=ids.map(i=>PB[i].deadline).find(d=>d&&d.kind==='event');
+ if(ev)s+=T.ev(ev.days)+'\n\n';else{const id=ids.find(i=>PB[i].deadline&&PB[i].deadline.kind==='annual');if(id){const d=dueFor(id,c);if(d){let r=addDays(d,-10);if(r<addDays(TODAY,3))r=addDays(TODAY,3);s+=(PB[id].deadline.key==='nar1'?T.cr:T.other)(fmt(d,lang),fmt(r,lang))+'\n\n'}}}
+ return s+T.bye}
+function chaseMsg(m){const pb=PB[m.pb],c=client(m.client),T=TX[m.lang];const w=Object.keys(m.items).filter(k=>m.items[k]==='wait');
+ return T.hi(c.contact[m.lang])+'\n\n'+T.chase(pb.phrase[m.lang],c.name[m.lang])+'\n\n'+w.map((k,i)=>(i+1)+'. '+ITEMS[k][m.lang]).join('\n')+'\n\n'+T.same(linkFor(m.code))+'\n\n'+T.bye}
+function doneMsg(m){const pb=PB[m.pb],c=client(m.client),T=TX[m.lang];return T.hi(c.contact[m.lang])+'\n\n'+T.done(m.lang==='en'?pb.phrase.en:pb.name[m.lang],c.name[m.lang])+'\n\n'+T.thanks+'\n\n'+T.bye}
+
+/* ---------- Intent and extraction ---------- */
+function suggestAll(text){if(!text||!text.trim())return[];const t=text.toLowerCase();const sc=[];for(const id in PB){const s=PB[id].kw.reduce((a,k)=>a+(t.includes(k.toLowerCase())?k.length:0),0);if(s>0)sc.push([id,s])}sc.sort((a,b)=>b[1]-a[1]);return sc.slice(0,3).map(x=>x[0])}
+function detectPerson(text,cid){const c=client(cid);if(!text)return'';for(const pid of c.people){const p=S.people[pid];if(text.includes(p.zh)||text.toLowerCase().includes(p.name.toLowerCase()))return pid}return''}
+function extract(text,m){const needed=Object.keys(m.items).filter(k=>m.items[k]!=='on');const found={};const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const synList=[];needed.forEach(k=>{(ITEMS[k].syn||[]).forEach(s=>synList.push([s.toLowerCase(),k]))});synList.sort((a,b)=>b[0].length-a[0].length);
+ const free=[];
+ lines.forEach(line=>{const att=line.match(/^\[(?:attachment|附件)\s*[:：]\s*([^\]]+)\]/i);if(att){const f=att[1].trim(),fl=f.toLowerCase();const k=needed.find(k=>ITEMS[k].doc&&(ITEMS[k].file||[]).some(w=>fl.includes(w))&&!found[k])||needed.find(k=>ITEMS[k].doc&&(ITEMS[k].file||[]).some(w=>fl.includes(w)));if(k)found[k]=found[k]?found[k]+', '+f:f;return}
+  if(/identity check completed/i.test(line)&&needed.includes('selfie')){found.selfie='Completed through secure link';return}
+  const kv=line.match(/^([^:：]{1,40})[:：]\s*(.+)$/);if(kv){const key=kv[1].toLowerCase();const hit=synList.find(([s,k])=>key.includes(s)&&!found[k]);if(hit){found[hit[1]]=kv[2].trim();return}}
+  free.push(line)});
+ needed.forEach(k=>{if(found[k]||ITEMS[k].doc)return;const s=(ITEMS[k].syn||[]).map(x=>x.toLowerCase());const l=free.find(l=>s.some(x=>l.toLowerCase().includes(x)));if(l)found[k]=l});
+ return found}
+
+
+
+/* ---------- Tasks and invoices ---------- */
+function autoNo(){return 'INV-2026-'+String(S.invSeq+1).padStart(4,'0')}
+function newInvoice(cid,ids,days,prices,custom){const lines=ids.filter(i=>PB[i].fee).map(i=>[PB[i].name.en,prices&&prices[i]!=null?prices[i]:PB[i].fee]);if(!lines.length)return null;let no;if(!custom||custom===autoNo()){no=autoNo();S.invSeq++}else no=custom;S.invoices[no]={no,client:cid,lines,amount:lines.reduce((a,l)=>a+l[1],0),status:'unpaid',issued:TODAY,checked:'09:45',days:days||0,due:days?addDays(TODAY,days):null,reminders:[]};return S.invoices[no]}
+function newTask(pbId,cid,pid,lang,code,inv,step){const {need,on}=reqs(pbId,pid);const items={};on.forEach(k=>items[k]='on');need.forEach(k=>items[k]='wait');
+ const m={assignee:client(cid).staff||ME,id:'T-'+(++S.seq),pb:pbId,client:cid,person:pid||'',lang,code,inv:inv||null,step:step||0,items,data:{},docs:[],log:[],eff:null,out:null};S.tasks.unshift(m);return m}
+function flowOf(t){const f=PB[t.pb].flow;return t.credit?f.filter(s=>s[0]!=='pay'):f}
+function done(t){return t.step>=flowOf(t).length}
+function waiting(t){return Object.keys(t.items).filter(k=>t.items[k]==='wait')}
+function state(t){if(done(t))return'done';const k=flowOf(t)[t.step][0];if(k==='pay')return'pay';if(k==='collect'&&waiting(t).length)return'client';return'me'}
+function tDue(t){return dueFor(t.pb,client(t.client),t.eff)}
+function logT(t,x){t.log.unshift({d:shortD(TODAY),t:x})}
+(function seed(){
+ const i1=newInvoice('c2',['changeParticulars']);i1.status='paid';i1.issued=new Date(2026,8,22);i1.paidVia='Airwallex';i1.paidOn='23 Sep';
+ const a=newTask('changeParticulars','c2','p3','en',rid(),i1.no,3);a.items={changeDetail:'rec',effDate:'rec',supportDoc:'rec'};a.data={changeDetail:'Passport renewed: P1234567 replaced by P7654321 (Hong Kong SAR)',effDate:'15 September 2026',supportDoc:'new_passport_ho.jpg'};a.eff=new Date(2026,8,15);
+ a.log=[{d:'23 Sep',t:'Payment matched in Airwallex: '+hkd(i1.amount)+' for '+i1.no},{d:'23 Sep',t:'Client reply processed: 3 items received'},{d:'22 Sep',t:'Invoice '+i1.no+' sent with information request by email'}];
+ const i2=newInvoice('c4',['annualReturn'],30);i2.issued=new Date(2026,8,18);i2.due=addDays(i2.issued,30);
+ const c=newTask('annualReturn','c4','','tc',rid(),i2.no,1);c.credit=true;c.log=[{d:'18 Sep',t:'Invoice '+i2.no+' sent on 30-day terms with pre-filled particulars on WeChat'}];
+ const i3=newInvoice('c3',['incorporation']);i3.issued=new Date(2026,8,19);
+ const b=newTask('incorporation','c3','','sc',rid(),i3.no,1);b.items.engagement='rec';b.data.engagement='engagement_letter_signed.pdf';const i4=newInvoice('c1',['changeOffice'],30);i4.issued=new Date(2026,7,10);i4.due=addDays(i4.issued,30);i4.reminders=['14 Sep'];
+ const e=newTask('changeOffice','c1','','tc',rid(),i4.no,0);e.credit=true;e.items={newAddr:'rec',effDate:'rec',premises:'rec'};e.data={newAddr:'Unit 1502, 15/F, Kowloon Bay Centre, Kowloon Bay, Hong Kong',effDate:'1 August 2026',premises:'tenancy_kbc.pdf'};e.eff=new Date(2026,7,1);e.docs=PB.changeOffice.docs.slice();e.step=flowOf(e).length;
+ e.log=[{d:'14 Sep',t:'Payment reminder sent for '+i4.no},{d:'12 Aug',t:'Task complete'},{d:'10 Aug',t:'Invoice '+i4.no+' sent on 30-day terms'}];
+ S.tasks.push(S.tasks.splice(S.tasks.indexOf(e),1)[0]);
+ const i5=newInvoice('c1',['brRenewal'],30);i5.issued=new Date(2026,8,21);i5.due=addDays(i5.issued,30);
+ const f=newTask('brRenewal','c1','','tc',rid(),i5.no,1);f.credit=true;f.assignee='u3';f.log=[{d:'21 Sep',t:'Assigned to Daniel Ho'},{d:'21 Sep',t:'Invoice '+i5.no+' sent on 30-day terms with renewal reminder on WeChat'}];
+ b.log=[{d:'21 Sep',t:'Engagement letter received'},{d:'19 Sep',t:'Invoice '+i3.no+' sent with onboarding pack on WeChat'}];
+})();
+
+/* ---------- UI helpers ---------- */
+const $m=document.getElementById('modal');
+function dueHtml(d){if(!d)return'<span class="due">No fixed deadline</span>';const n=daysTo(d);if(n<=30)return'<span class="chop" title="'+(n<0?'Overdue since ':'Due ')+fmt(d)+'"><b>'+(n<0?'逾':'限')+'</b><span>'+(n<0?'Overdue':shortD(d))+'</span></span>';return'<span class="due">Due '+shortD(d)+'</span>'}
+function toast(t){const e=document.createElement('div');e.className='toast';e.setAttribute('role','status');e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2200)}
+function copyText(t){const ok=()=>toast('Copied. Paste it into WeChat or email.');const fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast('Select the text and copy it manually.')}a.remove()};try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}}
+function modal(title,html){$m.innerHTML='<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="top" style="margin-bottom:16px"><h2 style="margin:0">'+esc(title)+'</h2><button class="btn sec2 sm" onclick="closeModal()">Close</button></div>'+html+'</div></div>';$m.querySelector('.modal button').focus()}
+function closeModal(){$m.innerHTML=''}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+const LANGS=[['en','English'],['tc','繁體中文'],['sc','简体中文']];
+function langTabs(cur,fn){return '<div class="tabs" role="tablist">'+LANGS.map(([k,l])=>'<button role="tab" aria-selected="'+(k===cur)+'" onclick="'+fn+'(\''+k+'\')">'+l+'</button>').join('')+'</div>'}
+function taskRow(t,sub){const c=client(t.client),pb=PB[t.pb];const st=state(t);const pill={me:'',client:'<span class="pill p-wait">Waiting on client</span>',pay:'<span class="pill p-wait">Awaiting payment</span>',done:'<span class="pill p-ok">Done</span>'}[st];
+ return '<button class="it" onclick="openTask(\''+t.id+'\')"><div><div class="t1">'+esc(pb.name.en)+'</div><div class="t2">'+esc(sub==='client'?(done(t)?'Completed':'Next: '+flowOf(t)[t.step][1]):c.name.en+(done(t)?'':' \u00b7 Next: '+flowOf(t)[t.step][1]))+'</div></div><div class="r">'+pill+(mine(t)?'':'<span title="Assigned to '+USERS[t.assignee].name+'">'+userHtml(t.assignee,1)+'</span>')+(done(t)?'':dueHtml(tDue(t)))+'</div></button>'}
+function loaderHtml(t){return '<div class="loader" aria-live="polite"><div class="bar"><i></i></div><p id="ld">'+esc(t)+'</p></div>'}
+function withLoading(msgs,ms,fn){const d=S.draft;d.loading=msgs[0];render();let i=0;const iv=setInterval(()=>{i++;const el=document.getElementById('ld');if(el&&msgs[i])el.textContent=msgs[i]},Math.floor(ms/msgs.length));setTimeout(()=>{clearInterval(iv);d.loading=null;fn();render()},ms)}
+
+/* ---------- Nav ---------- */
+function renderNav(){const me=S.tasks.filter(t=>mine(t)&&state(t)==='me').length;const open=S.tasks.filter(t=>mine(t)&&!done(t)).length;const v=S.view;
+ const cur=x=>(x?'aria-current="page"':'');
+ let h='<button class="nb" '+cur(v==='today')+' onclick="go(\'today\')">Today'+(me?'<span class="cnt">'+me+'</span>':'')+'</button>';
+ h+='<button class="nb" '+cur(v==='tasks'||v==='task')+' onclick="go(\'tasks\')">Tasks<span class="cnt">'+open+'</span></button>';
+ h+='<div class="cgroup"><button class="nb" '+cur(v==='clients')+' onclick="go(\'clients\')">Clients<span class="cnt">'+S.clients.length+'</span></button><button class="chev" aria-label="'+(S.navClients?'Hide':'Show')+' client list" aria-expanded="'+S.navClients+'" onclick="S.navClients=!S.navClients;renderNav()"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 5.25 7 8.75l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>';
+ if(S.navClients)h+='<div class="clist">'+S.clients.map(c=>'<button '+cur((v==='client'||v==='new')&&S.clientOpen===c.id)+' onclick="openClient(\''+c.id+'\')" title="'+esc(c.name.en)+'">'+esc(c.name.en.replace(/ Limited$/,''))+'</button>').join('')+'</div>';
+ const od=Object.values(S.invoices).filter(i=>invState(i)==='overdue').length;h+='<button class="nb" '+cur(v==='invoices')+' onclick="go(\'invoices\')">Invoices'+(od?'<span class="cnt" style="color:var(--red)">'+od+' overdue</span>':'')+'</button>';
+ h+='<button class="nb" '+cur(v==='playbooks')+' onclick="go(\'playbooks\')">Playbooks</button>';
+ document.getElementById('nav').innerHTML=h}
+function go(v){S.view=v;render();window.scrollTo(0,0)}
+function render(){renderNav();document.getElementById('main').innerHTML=({today:vToday,tasks:vTasks,task:vTask,clients:vClients,client:vClient,new:vNew,playbooks:vPlaybooks,invoices:vInvoices})[S.view]()}
+function openTask(id){S.taskOpen=id;go('task')}
+function openClient(id){if(S.clientOpen!==id||S.view!=='client')S.clientTab='overview';S.clientOpen=id;go('client')}
+
+/* ---------- Today ---------- */
+
+function vToday(){const my=S.tasks.filter(mine);const me=my.filter(t=>state(t)==='me'),cl=my.filter(t=>state(t)==='client'),pay=my.filter(t=>state(t)==='pay');
+ const dl=deadlines().filter(r=>daysTo(r.d)<=30&&!r.task&&r.c.staff===ME);
+ const team=S.tasks.filter(t=>!mine(t)&&!done(t)).length;
+ let h='<div class="top"><div><h1>Good morning, Karen</h1><p class="sub">'+DAYS[TODAY.getDay()]+' '+TODAY.getDate()+' '+MONL[TODAY.getMonth()]+(team?' \u00b7 <button class="txt" onclick="S.taskWho=\'all\';S.taskFilter=\'all\';go(\'tasks\')">'+team+' more task'+(team>1?'s':'')+' with the team</button>':'')+'</p></div></div>';
+ h+='<section class="sec"><div class="sec-h"><h2>Needs you</h2><span class="cnt">'+me.length+'</span></div>'+(me.length?'<div class="items">'+me.map(t=>taskRow(t)).join('')+'</div>':'<div class="none">Nothing needs you right now.</div>')+'</section>';
+ h+='<section class="sec"><div class="sec-h"><h2>Deadlines in the next 30 days</h2><span class="cnt">'+dl.length+'</span></div>'+(dl.length?'<div class="items">'+dl.map(r=>'<div class="it" style="cursor:default"><div><div class="t1">'+esc(PB[r.pb].name.en)+'</div><div class="t2">'+esc(r.c.name.en)+' \u00b7 '+(daysTo(r.d)<0?Math.abs(daysTo(r.d))+' days overdue':'in '+daysTo(r.d)+' days')+'</div></div><div class="r">'+dueHtml(r.d)+'<button class="btn sec2 sm" onclick="startFrom(\''+r.pb+'\',\''+r.c.id+'\')">Start</button></div></div>').join('')+'</div>':'<div class="none">No deadlines without a task in the next 30 days.</div>')+'</section>';
+ const od=Object.values(S.invoices).filter(i=>invState(i)==='overdue'&&client(i.client).staff===ME);if(od.length)h+='<section class="sec"><div class="sec-h"><h2>Overdue invoices</h2><span class="cnt">'+od.length+'</span></div><div class="items">'+od.map(invRow).join('')+'</div></section>';
+ h+='<div class="cols" style="grid-template-columns:1fr 1fr"><section><div class="sec-h"><h2>Waiting on clients</h2><span class="cnt">'+cl.length+'</span></div>'+(cl.length?'<div class="items">'+cl.map(t=>taskRow(t)).join('')+'</div>':'<div class="none">Nobody owes us anything.</div>')+'</section>';
+ h+='<section><div class="sec-h"><h2>Awaiting payment</h2><span class="cnt">'+pay.length+'</span></div>'+(pay.length?'<div class="items">'+pay.map(t=>taskRow(t)).join('')+'</div>':'<div class="none">All invoices paid.</div>')+'<p class="note" style="margin:8px 2px 0">Airwallex and HSBC checked for payments at 09:45.</p></section></div>';
+ return h}
+
+/* ---------- Tasks ---------- */
+function invRow(i){const c=client(i.client);return '<div class="it" style="cursor:default"><div><div class="t1">'+esc(c.name.en)+' \u00b7 <span class="num">'+hkd(i.amount)+'</span></div><div class="t2">'+i.no+' \u00b7 '+esc(invFor(i))+(i.reminders.length?' \u00b7 last reminded '+i.reminders[i.reminders.length-1]:' \u00b7 not yet reminded')+'</div></div><div class="r">'+invLabel(i)+'<button class="btn sec2 sm" onclick="remind(\''+i.no+'\')">Remind</button></div></div>'}
+function vInvoices(){const all=Object.values(S.invoices).sort((a,b)=>a.issued-b.issued);const F=[['unpaid','Unpaid'],['overdue','Overdue'],['paid','Paid'],['all','All']];const pick=i=>S.invFilter==='all'||(S.invFilter==='unpaid'?i.status!=='paid':S.invFilter==='paid'?i.status==='paid':invState(i)===S.invFilter);const list=all.filter(pick);
+ const out=all.filter(i=>i.status!=='paid').reduce((a,i)=>a+i.amount,0),ov=all.filter(i=>invState(i)==='overdue').reduce((a,i)=>a+i.amount,0);
+ let h='<div class="top"><div><h1>Invoices</h1><p class="sub"><span class="num">'+hkd(out)+'</span> outstanding'+(ov?', of which <span class="num" style="color:var(--red)">'+hkd(ov)+'</span> is overdue':'')+'. Airwallex and HSBC checked at 09:45.</p></div></div><div class="filt" role="group" aria-label="Filter invoices">'+F.map(([k,l])=>'<button aria-pressed="'+(S.invFilter===k)+'" onclick="S.invFilter=\''+k+'\';render()">'+l+' <span class="cnt">'+all.filter(i=>{const f=S.invFilter;S.invFilter=k;const r=pick(i);S.invFilter=f;return r}).length+'</span></button>').join('')+'</div>';
+ if(!list.length)return h+'<div class="none">No invoices here.</div>';
+ h+='<div class="card scroll" style="padding:4px 8px"><table class="t"><thead><tr><th>Invoice</th><th>Client</th><th>For</th><th style="text-align:right">Amount</th><th>Terms</th><th>Status</th><th></th></tr></thead><tbody>';
+ list.forEach(i=>{const c=client(i.client);const st=invState(i);h+='<tr><td>'+i.no+'<div class="zh">Issued '+fmt(i.issued)+'</div></td><td><button class="txt" onclick="openClient(\''+c.id+'\')">'+esc(c.name.en)+'</button></td><td>'+esc(invFor(i))+'</td><td class="num" style="text-align:right">'+hkd(i.amount)+'</td><td>'+(i.days?i.days+' days':'Upfront')+'</td><td>'+invLabel(i)+(i.reminders.length&&st!=='paid'?'<div class="zh">Reminded '+i.reminders.join(', ')+'</div>':'')+'</td><td style="white-space:nowrap">'+(st==='paid'?'':'<button class="btn sec2 sm" id="ib_'+i.no+'" onclick="checkBank(\''+i.no+'\',\'ib_'+i.no+'\')">Check bank</button>'+(st!=='upfront'?' <button class="btn sec2 sm" onclick="remind(\''+i.no+'\')">Remind</button>':''))+'</td></tr>'});
+ return h+'</tbody></table></div>'}
+
+function vTasks(){const F=[['me','Needs action'],['client','Waiting on client'],['pay','Awaiting payment'],['done','Done'],['all','All']];const base=S.tasks.filter(t=>S.taskWho==='all'||mine(t));const list=base.filter(t=>S.taskFilter==='all'||state(t)===S.taskFilter);
+ let h='<div class="top"><div><h1>Tasks</h1><p class="sub">'+(S.taskWho==='all'?'Everything in progress across the team.':'Everything assigned to you.')+'</p></div><div class="filt" role="group" aria-label="Whose tasks" style="margin:0"><button aria-pressed="'+(S.taskWho==='me')+'" onclick="S.taskWho=\'me\';render()">Mine</button><button aria-pressed="'+(S.taskWho==='all')+'" onclick="S.taskWho=\'all\';render()">Everyone</button></div></div><div class="filt" role="group" aria-label="Filter tasks">'+F.map(([k,l])=>'<button aria-pressed="'+(S.taskFilter===k)+'" onclick="S.taskFilter=\''+k+'\';render()">'+l+' <span class="cnt">'+base.filter(t=>k==='all'||state(t)===k).length+'</span></button>').join('')+'</div>';
+ return h+(list.length?'<div class="items">'+list.map(t=>taskRow(t)).join('')+'</div>':'<div class="none">No tasks here.</div>')}
+
+/* ---------- Clients ---------- */
+
+function opPill(c){if(c.status==='Onboarding')return'<span class="pill p-wait">Onboarding</span>';if(c.op==='Dormant')return'<span class="pill p-wait">Dormant</span>';return'<span class="pill p-n">'+esc(c.op)+'</span>'}
+function vClients(){let h='<div class="top"><div><h1>Clients</h1><p class="sub">Open a client to see their records, deadlines and tasks, or to start a new request.</p></div></div><div class="card scroll" style="padding:4px 8px"><table class="t"><thead><tr><th>Company</th><th>Staff in charge</th><th>Status</th><th>Open tasks</th><th>Next deadline</th></tr></thead><tbody>';
+ S.clients.forEach(c=>{const open=S.tasks.filter(t=>t.client===c.id&&!done(t)).length;const nd=deadlines(c.id)[0];h+='<tr class="click" tabindex="0" onclick="openClient(\''+c.id+'\')" onkeydown="if(event.key===\'Enter\')openClient(\''+c.id+'\')"><td><div style="font-weight:500">'+esc(c.name.en)+'</div><div class="zh">'+esc(c.name.tc)+(c.group?' \u00b7 '+esc(c.group):'')+'</div></td><td>'+userHtml(c.staff)+'</td><td>'+opPill(c)+'</td><td class="num">'+(open||'<span class="note">None</span>')+'</td><td>'+(nd?esc(PB[nd.pb].name.en)+'<div class="zh">'+fmt(nd.d)+'</div>':'<span class="note">None yet</span>')+'</td></tr>'});
+ return h+'</tbody></table></div>'}
+function kv(rows){return '<dl class="kv">'+rows.filter(r=>r).map(([k,v])=>'<dt>'+esc(k)+'</dt><dd>'+(v===''||v==null?'<span class="note">\u2014</span>':v)+'</dd>').join('')+'</dl>'}
+function tbl(head,rows,alignR){return '<div class="scroll"><table class="t"><thead><tr>'+head.map((x,i)=>'<th'+(alignR&&alignR.includes(i)?' style="text-align:right"':'')+'>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map((x,i)=>'<td'+(alignR&&alignR.includes(i)?' class="num" style="text-align:right"':'')+'>'+x+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
+function dI(s){return s?fmt(iso(s)):''}
+function n(x){return x.toLocaleString('en-HK')}
+function setClient(k,v){const c=client(S.clientOpen);c[k]=v;if(k==='staff')toast('Staff in charge: '+USERS[v].name);render()}
+const CTABS=[['overview','Overview'],['company','Company'],['shares','Shares and members'],['officers','Officers and controllers'],['records','Records and filings'],['contacts','Contacts'],['billing','Billing']];
+function vClient(){const c=client(S.clientOpen);const tab=S.clientTab;
+ let h='<button class="back" onclick="go(\'clients\')">All clients</button><div class="top" style="margin-bottom:14px"><div><h1>'+esc(c.name.en)+'</h1><p class="sub">'+esc(c.name.tc)+(c.cr?' \u00b7 Company number '+esc(c.cr):'')+'</p><div class="row" style="margin-top:10px">'+opPill(c)+'<span class="note">'+esc(c.type)+'</span><span class="note">\u00b7</span><span class="note">Staff in charge</span>'+userHtml(c.staff)+'</div></div><button class="btn" onclick="startNew(\''+c.id+'\')">New request</button></div>';
+ h+='<div class="tabs ctabs" role="tablist">'+CTABS.map(([k,l])=>'<button role="tab" aria-selected="'+(k===tab)+'" onclick="S.clientTab=\''+k+'\';render()">'+l+'</button>').join('')+'</div>';
+ return h+({overview:cOverview,company:cCompany,shares:cShares,officers:cOfficers,records:cRecords,contacts:cContacts,billing:cBilling})[tab](c)}
+function cOverview(c){const tasks=S.tasks.filter(t=>t.client===c.id);const open=tasks.filter(t=>!done(t)),fin=tasks.filter(done);const dl=deadlines(c.id);
+ const wait=[];open.forEach(t=>waiting(t).forEach(k=>wait.push([t,k])));const unpaid=Object.values(S.invoices).filter(i=>i.client===c.id&&i.status!=='paid');const bc=billingContact(c);
+ let h='<div class="cols"><div>';
+ h+='<section class="sec"><div class="sec-h"><h2>Open tasks</h2><span class="cnt">'+open.length+'</span></div>'+(open.length?'<div class="items">'+open.map(t=>taskRow(t,'client')).join('')+'</div>':'<div class="none">No open tasks.</div>')+'</section>';
+ if(wait.length)h+='<section class="sec"><div class="sec-h"><h2>Waiting on the client</h2><span class="cnt">'+wait.length+'</span></div><div class="card" style="padding:6px 16px"><ul class="list">'+wait.map(([t,k])=>'<li><span>'+esc(ITEMS[k].en)+'<div class="zh">'+esc(PB[t.pb].name.en)+'</div></span><button class="btn sec2 sm" onclick="openTask(\''+t.id+'\')">Open task</button></li>').join('')+'</ul></div></section>';
+ const last={annualReturn:c.lastAR,agm:c.lastAGM,kycReview:c.kyc};
+ h+='<section class="sec"><div class="sec-h"><h2>Deadlines</h2></div>'+(dl.length?'<div class="items">'+dl.map(r=>'<div class="it" style="cursor:default"><div><div class="t1">'+esc(PB[r.pb].name.en)+'</div><div class="t2">Due '+fmt(r.d)+(last[r.pb]?' \u00b7 last done '+dI(last[r.pb]):'')+'</div></div><div class="r">'+dueHtml(r.d)+(r.task?'<button class="btn sec2 sm" onclick="openTask(\''+r.task.id+'\')">In progress</button>':'<button class="btn sec2 sm" onclick="startFrom(\''+r.pb+'\',\''+c.id+'\')">Start</button>')+'</div></div>').join('')+'</div>'+(c.op==='Dormant'?'<p class="note" style="margin:8px 2px 0">AGM and audited accounts are not tracked while the company is dormant.</p>':''):'<div class="none">Deadlines appear once the company is incorporated.</div>')+'</section>';
+ if(fin.length)h+='<section class="sec"><div class="sec-h"><h2>Completed</h2></div><div class="items">'+fin.map(t=>taskRow(t,'client')).join('')+'</div></section>';
+ h+='</div><div class="stack"><div class="card"><h2>At a glance</h2>'+kv([['Registered office',esc(c.office)],['Business',esc(c.biz.en)],['Year end',c.fye[1]+' '+MONL[c.fye[0]-1]],['Main contact',esc(c.contactName)+' via '+c.channel],['Invoices to',bc?esc(bc.name):''],['Risk rating',c.risk+(c.kyc?', reviewed '+dI(c.kyc):'')],['Payment terms',c.terms?c.terms+' days':'Before work starts']])+'</div>';
+ if(unpaid.length)h+='<div class="card"><h2>Unpaid invoices</h2><ul class="list">'+unpaid.map(i=>'<li><span>'+i.no+' \u00b7 <span class="num">'+hkd(i.amount)+'</span><div style="margin-top:4px">'+invLabel(i)+'</div></span>'+(invState(i)!=='upfront'?'<button class="btn sec2 sm" onclick="remind(\''+i.no+'\')">Remind</button>':'')+'</li>').join('')+'</ul></div>';
+ return h+'</div></div>'}
+function cCompany(c){const nextAR=annualDue('nar1',c);
+ let h='<div class="cols"><div class="stack">';
+ h+='<div class="card"><h2>Registration</h2>'+kv([['Jurisdiction',esc(c.jur)],['Company type',esc(c.type)],['Company number',esc(c.cr)],['Incorporated',dI(c.inc)||'In formation'],['Operating status',esc(c.op)],['Client group',esc(c.group)],['Subsidiary of a listed company',c.listedSub?'Yes':'No'],['Staff in charge','<select class="sel-inline" aria-label="Staff in charge" onchange="setClient(\'staff\',this.value)">'+Object.keys(USERS).map(u=>'<option value="'+u+'"'+(u===c.staff?' selected':'')+'>'+USERS[u].name+'</option>').join('')+'</select>']])+'</div>';
+ h+='<div class="card"><h2>Registered office</h2>'+kv([['English',esc(c.office)],['Chinese',esc(c.officeZh)]])+'</div>';
+ h+='<div class="card"><h2>Nature of business</h2>'+kv([['English',esc(c.biz.en)],['Chinese',esc(c.biz.zh)]])+'</div>';
+ h+='<div class="card"><h2>Banks</h2>'+(c.banks.length?tbl(['Bank','Account','Signatories'],c.banks.map(b=>b.map(esc))):'<p class="note" style="margin:0">No bank accounts recorded.</p>')+'</div>';
+ h+='</div><div class="stack">';
+ h+='<div class="card"><h2>Key dates</h2>'+kv([['Financial year end',c.fye[1]+' '+MONL[c.fye[0]-1]],['Accounts last made up to',dI(c.accTo)],['Last AGM',c.op==='Dormant'?'Not required while dormant':dI(c.lastAGM)],['Last annual return filed',dI(c.lastAR)],['Next annual return due',nextAR?fmt(nextAR):'']])+'</div>';
+ h+='<div class="card"><h2>Business registration</h2>'+kv([['BR number',esc(c.brNo)],['Renewal term',c.brNo?(c.brTerm===3?'3 years':'1 year'):''],['Expires',dI(c.br)],['Branches',c.branches.length?c.branches.map(esc).join(', '):(c.brNo?'None':'')]])+'</div>';
+ h+='<div class="card"><h2>Languages</h2>'+kv([['Documents in',esc(c.docLang)],['Messages in',{en:'English',tc:'繁體中文',sc:'简体中文'}[c.lang]]])+'</div>';
+ h+='<div class="card"><h2>Auditor</h2>'+kv([['Auditor',esc(c.auditor)]])+'</div>';
+ h+='<div class="card"><h2>Companies Registry e-account</h2><p class="note" style="margin:0">'+(c.eacct?'Credentials are held in the firm\u2019s secure vault and never shown here. Staff file under their own sign-in, and every use is logged. Last used '+esc(c.eacct)+'.':'Set up after incorporation.')+'</p></div>';
+ return h+'</div></div>'}
+function cShares(c){if(!c.shares.length)return '<div class="none">Share capital is recorded when the company is incorporated.</div>';
+ const byCls={};c.shares.forEach(s=>byCls[s[0]]=s[2]);
+ let h='<div class="stack"><div class="card"><h2>Share capital</h2>'+tbl(['Class','Currency','Issued shares','Amount paid up','Voting'],c.shares.map(s=>[esc(s[0]),s[1],n(s[2]),s[1]+' '+n(s[3]),s[4]]),[2,3])+'</div>';
+ h+='<div class="card"><h2>Members</h2>'+tbl(['Member','Class','Shares','% of class'],c.members.map(m=>[esc(m[0]),esc(m[1]),n(m[2]),(v=>(Number.isInteger(v)?v:v.toFixed(1))+'%')(Math.round(m[2]/byCls[m[1]]*1000)/10)]),[2,3])+'</div>';
+ h+='<div class="card"><div class="sec-h"><h2>Share movements</h2><span class="note">Updated when allotment and transfer tasks complete</span></div>'+tbl(['Date','Type','Detail'],c.moves.slice().reverse().map(m=>['<span style="white-space:nowrap">'+dI(m[0])+'</span>',esc(m[1]),esc(m[2])]))+'</div></div>';
+ return h}
+function cOfficers(c){if(c.status==='Onboarding')return '<div class="none">Officers and controllers are recorded as onboarding details arrive.</div>';
+ let h='<div class="stack"><div class="card"><h2>Directors</h2>'+tbl(['Name','Chinese name','Appointed','KYC'],c.directors.map(p=>{const x=S.people[p];return [esc(x.name),esc(x.zh),dI((c.appointed||{})[p])||'<span class="note">This month</span>',x.kyc?'<span class="pill p-n">Current</span>':'<span class="pill p-wait">Due</span>']}))+'</div>';
+ h+='<div class="card"><h2>Company secretary</h2>'+kv([['Secretary',esc(FIRM.name)],['Appointed',dI(c.secSince)],['Designated representative',esc(c.dr)]])+'</div>';
+ h+='<div class="card"><h2>Significant controllers</h2>'+(c.sc.length?tbl(['Name','Nature of control','Registrable since'],c.sc.map(x=>[esc(x[0]),esc(x[1]),'<span style="white-space:nowrap">'+dI(x[2])+'</span>'])):'<p class="note" style="margin:0">None recorded.</p>')+'</div></div>';
+ return h}
+function cRecords(c){if(c.status==='Onboarding')return '<div class="none">Records are set up when the company is incorporated.</div>';
+ const done=S.tasks.filter(t=>t.client===c.id&&t.filed);const fil=c.filings.map(f=>[f[0],f[1],f[2]]).concat(done.map(t=>[PB[t.pb].form,PB[t.pb].name.en,null,t.filed]));
+ const docs=[['Certificate of incorporation',dI(c.inc)],['Articles of association','Adopted '+dI(c.inc)],['Business registration certificate','Expires '+dI(c.br)],['Annual return (NAR1)','Filed '+dI(c.lastAR)],['Register of significant controllers','Kept at '+c.scrAt.toLowerCase()]].concat(S.tasks.filter(t=>t.client===c.id&&t.docs.length).flatMap(t=>t.docs.map(d=>[d[1],t.id])));
+ let h='<div class="cols"><div class="stack"><div class="card"><h2>Filing history</h2>'+tbl(['Form','Description','Filed'],fil.map(f=>['<span style="white-space:nowrap">'+esc(f[0])+'</span>',esc(f[1]),f[2]?'<span style="white-space:nowrap">'+dI(f[2])+'</span>':'<span class="zh">'+esc(f[3])+'</span>']))+'</div>';
+ h+='<div class="card"><h2>Document library</h2><ul class="list">'+docs.map(d=>'<li><span>'+esc(d[0])+'</span><span class="note" style="white-space:nowrap">'+esc(d[1])+'</span></li>').join('')+'</ul></div></div><div class="stack">';
+ h+='<div class="card"><h2>Where records are kept</h2>'+kv([['Statutory registers',esc(c.regsAt)],['Significant controllers register',esc(c.scrAt)],['Minute book','Held by '+esc(FIRM.name)]])+'</div>';
+ h+='<div class="card"><h2>Charges</h2>'+(c.charges.length?tbl(['Created','Chargee','Description','Status'],c.charges.map(x=>['<span style="white-space:nowrap">'+dI(x[0])+'</span>',esc(x[1]),esc(x[2]),esc(x[3])])):'<p class="note" style="margin:0">No charges registered.</p>')+'</div></div></div>';
+ return h}
+function cContacts(c){return '<div class="card">'+tbl(['Name','Role','Channel','Language',''],c.contacts.map(x=>['<span style="font-weight:500">'+esc(x.name)+'</span>',esc(x.role),esc(x.ch),{en:'English',tc:'繁體中文',sc:'简体中文'}[x.lang],x.billing?'<span class="pill p-n">Invoices and reminders</span>':'']))+'</div>'}
+function cBilling(c){const inv=Object.values(S.invoices).filter(i=>i.client===c.id).sort((a,b)=>b.issued-a.issued);const bc=billingContact(c);
+ let h='<div class="cols"><div class="card"><h2>Invoices</h2>'+(inv.length?tbl(['Invoice','For','Amount','Status',''],inv.map(i=>[i.no+'<div class="zh">Issued '+fmt(i.issued)+'</div>',esc(invFor(i)),hkd(i.amount),invLabel(i),(i.status!=='paid'&&invState(i)!=='upfront')?'<button class="btn sec2 sm" onclick="remind(\''+i.no+'\')">Remind</button>':'']),[2]):'<p class="note" style="margin:0">No invoices yet.</p>')+'</div>';
+ h+='<div class="card"><h2>Terms</h2><div class="fld"><label class="f" for="ct">Usual payment terms</label><select id="ct" onchange="client(\''+c.id+'\').terms=+this.value;toast(\'Payment terms updated\');render()">'+[[0,'Pay before work starts'],[14,'Within 14 days'],[30,'Within 30 days'],[60,'Within 60 days']].map(([v,l])=>'<option value="'+v+'"'+(c.terms===v?' selected':'')+'>'+l+'</option>').join('')+'</select><p class="note" style="margin:6px 0 14px">Used as the default on new requests. Can be changed per request.</p></div>'+kv([['Invoices and reminders to',bc?esc(bc.name)+'<div class="zh">'+esc(bc.ch)+'</div>':'Main contact']])+'</div></div>';
+ return h}
+
+/* ---------- New request ---------- */
+function newDraft(cid){S.draft={days:client(cid).terms,client:cid,text:'',stage:'input',sel:[],persons:{},showAll:false,lang:null,code:'',loading:null,inv:null}}
+function startNew(cid){newDraft(cid);S.clientOpen=cid;go('new')}
+function startFrom(pb,cid){newDraft(cid);S.clientOpen=cid;S.draft.sel=[pb];S.draft.stage='intent';go('new')}
+function loadEx(i){const e=EX[i];S.draft.client=e.client;S.draft.days=client(e.client).terms;S.clientOpen=e.client;S.draft.text=e.text;render()}
+function dNext(){const d=S.draft;d.text=(document.getElementById('tx')||{}).value||d.text;withLoading(['Reading the message','Matching it to request types','Checking the client record'],1300,()=>{d.sel=suggestAll(d.text);d.auto=d.sel.slice();d.showAll=!d.sel.length;d.persons={};d.sel.forEach(id=>{if(PB[id].person)d.persons[id]=detectPerson(d.text,d.client)});d.stage='intent'})}
+function togSel(id){const d=S.draft;const i=d.sel.indexOf(id);if(i>=0)d.sel.splice(i,1);else{d.sel.push(id);if(PB[id].person)d.persons[id]=detectPerson(d.text,d.client)}render()}
+function setPerson(id,v){S.draft.persons[id]=v;render()}
+function dPrepare(){const d=S.draft;const miss=d.sel.find(id=>PB[id].person==='officer'&&!d.persons[id]);if(miss){toast('Choose which director the '+PB[miss].name.en.toLowerCase()+' is about.');return}
+ d.lang=d.lang||client(d.client).lang;withLoading(['Checking what we already hold','Drafting the reply in '+{en:'English',tc:'繁體中文',sc:'简体中文'}[d.lang],'Preparing the invoice'],1600,()=>{d.code=rid();if(!d.invNo)d.invNo=autoNo();d.stage='ready'})}
+function draftTotal(){const d=S.draft;return d.sel.filter(i=>PB[i].fee).reduce((a,i)=>a+(+d.prices[i]||0),0)}
+function edField(k,shown,label,cls){const d=S.draft;if(d.edit===k){const raw=k==='no'?d.invNo:String(d.prices[k.slice(2)]);return '<input class="edin'+(k==='no'?'':' num')+'" id="ed_'+k+'" aria-label="'+esc(label)+'" value="'+esc(raw)+'" size="'+(k==='no'?14:8)+'" oninput="edInput(\''+k+'\',this.value)" onblur="edDone()" onkeydown="edKey(event)">'}
+ return '<button class="edbtn'+cls+'" onclick="edStart(\''+k+'\')" aria-label="'+esc(label)+': '+esc(shown)+'. Click to edit">'+esc(shown)+'</button>'}
+function edStart(k){const d=S.draft;d.edit=k;d.edPrev=k==='no'?d.invNo:d.prices[k.slice(2)];d.edErr='';render();const el=document.getElementById('ed_'+k);if(el){el.focus();el.select()}}
+function edLive(){const d=S.draft,c=client(d.client);window._msg=requestMsg(d.sel,c,d.lang,d.persons,d.code,d.invNo,d.days,draftTotal());const pre=document.getElementById('msgpre');if(pre)pre.textContent=window._msg;const t=document.getElementById('invtotal');if(t)t.textContent=hkd(draftTotal());const e=document.getElementById('ederr');if(e)e.textContent=d.edErr||''}
+function edInput(k,v){const d=S.draft;d.edErr='';if(k==='no'){const x=v.trim();if(!x)d.edErr='Enter an invoice number.';else if(S.invoices[x])d.edErr=x+' is already used by another invoice.';else d.invNo=x}
+ else{const n=parseFloat(v.replace(/[^\d.]/g,''));if(v.trim()===''||isNaN(n))d.edErr='Enter an amount in HK$.';else d.prices[k.slice(2)]=Math.round(n*100)/100}edLive()}
+function edKey(e){if(e.key==='Enter'){e.preventDefault();e.target.blur()}else if(e.key==='Escape'){const d=S.draft;if(d.edit==='no')d.invNo=d.edPrev;else d.prices[d.edit.slice(2)]=d.edPrev;d.edErr='';d.edit=null;render()}}
+function edDone(){const d=S.draft;if(!d.edit)return;if(d.edErr){if(d.edit==='no')d.invNo=d.edPrev;else d.prices[d.edit.slice(2)]=d.edPrev;toast(d.edErr+' Kept the previous value.');d.edErr=''}d.edit=null;render()}
+function dLang(l){S.draft.lang=l;render()}
+function dCreate(){const d=S.draft;const inv=newInvoice(d.client,d.sel,d.days,d.prices,d.invNo);const made=d.sel.map(id=>{const t=newTask(id,d.client,d.persons[id],d.lang,d.code,inv?inv.no:null,1);t.credit=!!d.days;if(d.text)t.source=d.text;logT(t,(inv?'Invoice '+inv.no+' ('+hkd(inv.amount)+(d.days?', '+d.days+'-day terms':', payable before work starts')+') sent with information request':'Information request sent')+(d.sel.length>1?', together with '+d.sel.filter(x=>x!==id).map(x=>PB[x].name.en.toLowerCase()).join(' and '):''));if(!PB[id].fee)t.step=1;return t});
+ const cid=d.client;S.draft=null;if(made.length===1){openTask(made[0].id)}else{openClient(cid)}toast(made.length===1?'Task '+made[0].id+' created':made.length+' tasks created')}
+function vNew(){if(!S.draft)newDraft(S.clientOpen||'c1');const d=S.draft,c=client(d.client);
+ let h='<button class="back" onclick="openClient(\''+c.id+'\')">'+esc(c.name.en)+'</button><div class="top"><div><h1>New request</h1><p class="sub">'+({input:'Paste what the client sent.',intent:'Confirm what they\u2019re asking for.',ready:'Review, copy and create the task.'})[d.stage]+'</p></div></div>';
+ if(d.loading)return h+'<div class="card narrow">'+loaderHtml(d.loading)+'</div>';
+ if(d.stage==='input'){h+='<div class="card narrow"><div class="fld"><label class="f" for="cl">Client</label><select id="cl" onchange="S.draft.client=this.value;S.draft.days=client(this.value).terms;S.clientOpen=this.value;render()">'+S.clients.map(x=>'<option value="'+x.id+'"'+(x.id===d.client?' selected':'')+'>'+esc(x.name.en)+'</option>').join('')+'</select></div>';
+  h+='<div class="fld"><label class="f" for="tx">What the client said</label><textarea id="tx" placeholder="Paste a WeChat message, voice-note transcript or email" oninput="S.draft.text=this.value">'+esc(d.text)+'</textarea><p class="note" style="margin:6px 0 0">Or try: '+EX.map((e,i)=>'<button class="txt" onclick="loadEx('+i+')">'+esc(e.label)+'</button>').join(', ')+'</p></div>';
+  h+='<div class="row" style="margin-top:20px;justify-content:flex-end"><button class="btn" onclick="dNext()">Next</button></div></div>';return h}
+ if(d.stage==='intent'){h+='<div class="card narrow">'+(d.text?'<p class="quote">'+esc(d.text)+'</p>':'')+'<div style="margin-top:'+(d.text?'18px':'0')+'"><label class="f">'+(d.auto&&d.auto.length?'Identified requests':'What they\u2019re asking for')+'</label>';
+  if(!d.sel.length&&d.text&&!d.showAll)h+='<p class="note">Couldn\u2019t tell from the message. Choose one or more below.</p>';
+  h+='<div class="chips">'+d.sel.map(id=>'<button class="chip" aria-pressed="true" onclick="togSel(\''+id+'\')" title="Remove">'+esc(PB[id].name.en)+' \u00d7</button>').join('')+'</div>';
+  h+='<p style="margin:10px 0 0"><button class="txt" onclick="S.draft.showAll=!S.draft.showAll;render()">'+(d.showAll?'Hide request types':(d.sel.length?'Add or change requests':'Show request types'))+'</button></p>';
+  if(d.showAll)CATS.forEach(cat=>{h+='<div class="grp">'+cat+'</div><div class="chips">'+Object.keys(PB).filter(k=>PB[k].cat===cat).map(k=>'<button class="chip" aria-pressed="'+d.sel.includes(k)+'" onclick="togSel(\''+k+'\')">'+esc(PB[k].name.en)+'</button>').join('')+'</div>'});
+  d.sel.filter(id=>PB[id].person).forEach(id=>{const pb=PB[id];const opts=pb.person==='officer'?c.directors:c.people.filter(p=>!c.directors.includes(p));const v=d.persons[id]||'';
+   h+='<div class="fld" style="margin-top:18px"><label class="f" for="pp_'+id+'">'+(pb.person==='officer'?'Which director ('+pb.name.en.toLowerCase()+')':'Who is being appointed')+'</label><select id="pp_'+id+'" onchange="setPerson(\''+id+'\',this.value)">'+(pb.person==='new'?'<option value="">Someone new to us</option>':'<option value="">Choose a director</option>')+opts.map(pid=>{const p=S.people[pid];return '<option value="'+pid+'"'+(v===pid?' selected':'')+'>'+esc(p.name+' '+p.zh)+' \u2013 '+esc(p.role)+'</option>'}).join('')+'</select>'+(pb.person==='new'&&v?'<p class="note" style="margin:6px 0 0">Already a client contact with current KYC, so we won\u2019t ask for ID or address proof again.</p>':'')+'</div>'});
+  h+='</div><div class="row" style="margin-top:22px;justify-content:space-between"><button class="btn sec2" onclick="S.draft.stage=\'input\';render()">Back</button><button class="btn" onclick="dPrepare()"'+(d.sel.length?'':' disabled')+'>Prepare</button></div></div>';return h}
+ d.prices=d.prices||{};d.sel.forEach(i=>{if(d.prices[i]==null)d.prices[i]=PB[i].fee});const lines=d.sel.filter(i=>PB[i].fee);const total=draftTotal();const msg=requestMsg(d.sel,c,d.lang,d.persons,d.code,d.invNo,d.days,total);window._msg=msg;
+ h+='<div class="cols"><div class="card"><div class="sec-h"><h2>Reply to send</h2><button class="txt note" onclick="S.draft.stage=\'intent\';render()">Edit requests</button></div>'+langTabs(d.lang,'dLang')+'<pre class="msg" id="msgpre">'+esc(msg)+'</pre><div class="row" style="margin-top:14px;justify-content:space-between"><button class="btn sec2" onclick="copyText(window._msg)">Copy message</button><button class="btn" onclick="dCreate()">Create task'+(d.sel.length>1?'s':'')+'</button></div></div><div class="stack">';
+ if(lines.length)h+='<div class="card"><div class="sec-h"><h2>Invoice</h2>'+edField('no',d.invNo,'Invoice number',' note')+'</div><div class="inv">'+lines.map(i=>'<div class="ln"><span>'+esc(PB[i].name.en)+'</span>'+edField('p_'+i,hkd(d.prices[i]),'Price for '+PB[i].name.en,' num')+'</div>').join('')+'<div class="ln tot"><span>Total</span><span class="num" id="invtotal">'+hkd(total)+'</span></div></div><p class="note" id="ederr" role="alert" style="margin:6px 0 0;color:var(--red)">'+(d.edErr?esc(d.edErr):'')+'</p><p class="note" style="margin:2px 0 0">Click the invoice number or a price to edit it.</p><div class="fld" style="margin-top:14px"><label class="f" for="terms">Payment</label><select id="terms" onchange="S.draft.days=+this.value;render()">'+[[0,'Before work starts'],[14,'Within 14 days'],[30,'Within 30 days'],[60,'Within 60 days']].map(([v,l])=>'<option value="'+v+'"'+(d.days===v?' selected':'')+'>'+l+(v===c.terms?' (client\u2019s usual terms)':'')+'</option>').join('')+'</select></div><p class="note" style="margin:8px 0 0">'+(d.days?'Work starts now. The invoice is tracked and flagged if unpaid after '+d.days+' days.':'Work starts when payment reaches Airwallex or HSBC.')+'</p></div>';
+ h+='<div class="card"><h2>Checklist</h2>'+d.sel.map(id=>{const {need,on}=reqs(id,d.persons[id]);return (d.sel.length>1?'<h3 style="margin-top:6px">'+esc(PB[id].name.en)+'</h3>':'')+'<ul class="list">'+on.map(k=>'<li><span>'+esc(ITEMS[k].en)+'</span><span class="pill p-on">On file</span></li>').join('')+need.map(k=>'<li><span>'+esc(ITEMS[k].en)+'</span><span class="pill p-wait">To request</span></li>').join('')+'</ul>'}).join('')+'</div>';
+ h+='<div class="card"><h2>Secure upload link</h2><div class="linkbox">'+esc(linkFor(d.code))+'</div><p class="note" style="margin:8px 0 0">Documents, the selfie check and signatures come back straight into the task.</p></div></div></div>';
+ return h}
+
+/* ---------- Task ---------- */
+function M(){return S.tasks.find(t=>t.id===S.taskOpen)}
+function applyRegister(m){const c=client(m.client);
+ if(m.pb==='appointDirector'){let pid=m.person;if(!pid){pid='p'+(Object.keys(S.people).length+1);S.people[pid]={name:V(m,'fullName','New director'),zh:m.data.chiName||'',kyc:true,role:'Director'};c.people.push(pid)}else S.people[pid].role='Director, '+S.people[pid].role.toLowerCase();if(!c.directors.includes(pid))c.directors.push(pid)}
+ if(m.pb==='resignDirector'&&m.person){c.directors=c.directors.filter(x=>x!==m.person);S.people[m.person].role='Former director'}
+ if(m.pb==='changeOffice'&&m.data.newAddr)c.office=m.data.newAddr}
+
+function toggleItem(k){const m=M();if(m.items[k]==='on')return;m.items[k]=m.items[k]==='wait'?'rec':'wait';logT(m,ITEMS[k].en+(m.items[k]==='rec'?' marked received':' marked outstanding'));render()}
+function runExtract(){const m=M();const t=document.getElementById('reply').value;if(!t.trim()){toast('Paste the client\u2019s reply first.');return}m.pending=extract(t,m);m.replyText=t;if(!Object.keys(m.pending).length){m.pending=null;toast('Nothing matched the checklist. Tick items manually instead.')}render()}
+function useSample(){document.getElementById('reply').value=PB[M().pb].sample}
+function confirmExtract(){const m=M();let n=0;document.querySelectorAll('[data-ex]').forEach(inp=>{const k=inp.dataset.ex;if(inp.value.trim()){m.data[k]=inp.value.trim();m.items[k]='rec';n++}});
+ if(m.data.effDate){const e=parseDate(m.data.effDate);if(e)m.eff=e}if(m.data.lastDay&&!m.eff){const e=parseDate(m.data.lastDay);if(e)m.eff=e}
+ m.pending=null;m.replyText='';logT(m,'Client reply processed: '+n+' item'+(n===1?'':'s')+' received');render();toast(n+' item'+(n===1?'':'s')+' added to the task')}
+function showChase(){const m=M();m.out={kind:'chase',title:'Chase message',text:chaseMsg(m)};render()}
+function invState(i){if(i.status==='paid')return'paid';if(!i.days)return'upfront';return daysTo(i.due)<0?'overdue':'due'}
+function invLabel(i){const st=invState(i);if(st==='paid')return'<span class="pill p-ok">Paid '+(i.paidOn||'')+'</span>';if(st==='upfront')return'<span class="pill p-wait">Due before work starts</span>';const n=daysTo(i.due);return st==='overdue'?'<span class="pill p-late">Overdue '+(-n)+' day'+(n===-1?'':'s')+'</span>':'<span class="pill p-n">Due in '+n+' day'+(n===1?'':'s')+'</span>'}
+function invFor(i){return i.lines.map(l=>l[0]).join(', ')}
+function remindMsg(i,lang){const c=client(i.client),T=TX[lang];const bc=billingContact(c);return T.hi(bc&&bc.sal?bc.sal[lang]:c.contact[lang])+'\n\n'+T.remind(i.no,hkd(i.amount),fmt(i.issued,lang),fmt(i.due,lang))+'\n\n'+T.bye}
+function remind(no,lang){const i=S.invoices[no];const _bc=billingContact(client(i.client));lang=lang||(_bc?_bc.lang:client(i.client).lang);window._rno=no;window._rmsg=remindMsg(i,lang);const bc=billingContact(client(i.client));modal('Payment reminder: '+no,(bc?'<p class="note" style="margin:-6px 0 12px">To '+esc(bc.name)+', '+esc(bc.ch)+'</p>':'')+langTabs(lang,'remindLang')+'<pre class="msg">'+esc(window._rmsg)+'</pre>'+(i.reminders.length?'<p class="note">Previous reminders: '+i.reminders.join(', ')+'</p>':'')+'<div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn" onclick="logReminder()">Copy and log reminder</button></div>')}
+function remindLang(l){remind(window._rno,l)}
+function logReminder(){const i=S.invoices[window._rno];copyText(window._rmsg);i.reminders.push(shortD(TODAY));S.tasks.filter(t=>t.inv===i.no).forEach(t=>logT(t,'Payment reminder sent for '+i.no));closeModal();render()}
+function markPaid(no,via){const inv=S.invoices[no];inv.status='paid';inv.paidVia=via;inv.paidOn=shortD(TODAY);S.tasks.filter(t=>t.inv===no).forEach(t=>{logT(t,via==='manual'?'Payment for '+no+' marked received manually':'Payment matched in '+via+': '+hkd(inv.amount)+' for '+no);if(flowOf(t)[t.step][0]==='pay')t.step++})}
+function checkBank(no,bid){const btn=document.getElementById(bid||'bankbtn');if(btn){btn.disabled=true;btn.textContent='Checking Airwallex and HSBC\u2026'}setTimeout(()=>{markPaid(no,Math.random()<.5?'Airwallex':'HSBC');render();toast('Payment found and matched')},1400)}
+function doStep(){const m=M(),pb=PB[m.pb];if(done(m))return;const [k,label]=flowOf(m)[m.step];const c=client(m.client);
+ if(k==='collect'&&waiting(m).length)return;
+ if(k==='kyc'){const names=m.person?S.people[m.person].name:(m.data.fullName||m.data.founders||m.data.scList||'the individuals involved');logT(m,'Screened '+names+' against sanctions and PEP lists: no matches')}
+ else if(k==='generate'){m.docs=pb.docs.slice();logT(m,m.docs.length+' documents prepared from the registers and client details')}
+ else if(k==='sign')logT(m,'Signature pack sent through the secure link; signed copies received');
+ else if(k==='file'){m.filed='e-filing ref '+rid()+rid().slice(0,2);logT(m,'Filed with the Companies Registry, '+m.filed)}
+ else if(k==='register'){applyRegister(m);logT(m,label+': done')}
+ else if(k==='confirm'){m.out={kind:'done',title:'Confirmation to client',text:doneMsg(m)};logT(m,'Confirmation drafted')}
+ else if(k==='name')logT(m,'No identical name found on the Companies Registry index');
+ else if(k==='search')logT(m,'Company search obtained and compared with handed-over registers');
+ else if(k==='check'){const left=c.directors.filter(x=>x!==m.person).length;logT(m,left?'Board check passed: '+left+' individual director'+(left>1?'s':'')+' will remain':'Board check: no individual director would remain, so a replacement is required')}
+ else logT(m,label+': done');
+ m.step++;if(done(m)){logT(m,'Task complete');toast('Task complete')}render()}
+function btnLabel(k){return{collect:'Continue',kyc:'Run screening',generate:'Generate documents',sign:'Send for e-signature',file:'Mark as filed',register:'Update records',confirm:'Draft confirmation',name:'Check name',search:'Run company search',check:'Run board check'}[k]||'Mark done'}
+function setMOut(l){const m=M();m.lang=l;if(m.out)m.out.text=m.out.kind==='chase'?chaseMsg(m):doneMsg(m);render()}
+function previewDoc(i){const m=M(),pb=PB[m.pb],c=client(m.client);const [type,name]=m.docs[i];let b='';
+ const head='<div class="dh">'+esc(c.name.en)+'<br>'+esc(c.name.tc)+(c.cr?'<br><span class="note">Company number '+esc(c.cr)+'</span>':'')+'</div>';
+ if(type==='res'){const dirs=c.directors.map(p=>S.people[p].name);b=head+'<p><strong>'+esc(name.replace(/:.*/,''))+'</strong> passed in writing in accordance with the Companies Ordinance (Cap. 622) and the articles of association of the Company.</p><p>IT IS RESOLVED:</p><p>'+esc(pb.res?pb.res(m):'')+'</p><p>THAT any director or the company secretary be authorised to sign and file all documents required to give effect to this resolution.</p><p style="margin-top:28px">'+(dirs.length?dirs.map(n=>'______________________<br>'+esc(n)).join('<br><br>'):'______________________<br>Director')+'</p><p class="note">Dated: ______________</p>'}
+ else if(type==='form'){const rows=Object.keys(m.data).map(k=>'<tr><td>'+esc(ITEMS[k]?ITEMS[k].en:k)+'</td><td>'+esc(m.data[k])+'</td></tr>').join('');b=head+'<p><strong>'+esc(name)+'</strong></p><div class="scroll"><table class="t"><tbody><tr><td>Company</td><td>'+esc(c.name.en)+'</td></tr>'+(m.person?'<tr><td>Officer</td><td>'+esc(S.people[m.person].name+' '+S.people[m.person].zh)+'</td></tr>':'')+rows+'<tr><td>Presentor</td><td>'+esc(FIRM.name)+'</td></tr></tbody></table></div><p class="note">Data prepared for filing. The final form is produced in the Companies Registry\u2019s specified format.</p>'}
+ else if(type==='reg'){const list=c.directors.map(p=>S.people[p]);b=head+'<p><strong>Register of directors</strong></p><div class="scroll"><table class="t"><thead><tr><th>Name</th><th>Chinese name</th><th>Status</th></tr></thead><tbody>'+list.map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+esc(p.zh)+'</td><td>Current</td></tr>').join('')+'</tbody></table></div><p class="note">'+(m.step>flowOf(m).findIndex(s=>s[0]==='register')?'Reflects this matter.':'Updates when the register step is completed.')+'</p>'}
+ else if(type==='letter'){b='<pre class="msg">'+esc(doneMsg(m))+'</pre>'}
+ else{b=head+'<p><strong>'+esc(name)+'</strong></p><ul>'+(pb.notes.map(n=>'<li>'+esc(n)+'</li>').join(''))+'</ul><p class="note">Checklist content comes from the playbook and is editable by your team.</p>'}
+ modal(name,'<div class="doc">'+b+'</div>')}
+
+function vTask(){const m=M();if(!m)return vTasks();const pb=PB[m.pb],c=client(m.client);const fin=done(m);const w=waiting(m);const inv=m.inv&&S.invoices[m.inv];
+ let h='<button class="back" onclick="openClient(\''+c.id+'\')">'+esc(c.name.en)+'</button><div class="top"><div><h1>'+esc(pb.name.en)+'</h1><p class="sub">'+m.id+(m.person?' \u00b7 '+esc(S.people[m.person].name):'')+(fin?' \u00b7 Completed':'')+'</p><div class="row" style="margin-top:8px"><label class="note" for="asg">Assigned to</label><select id="asg" class="sel-inline" onchange="reassign(this.value)">'+Object.keys(USERS).map(u=>'<option value="'+u+'"'+(u===m.assignee?' selected':'')+'>'+USERS[u].name+'</option>').join('')+'</select></div></div>'+(fin?'':dueHtml(tDue(m)))+'</div>';
+ if(pb.deadline&&pb.deadline.kind==='event'&&!m.eff&&!fin)h+='<p class="note" style="margin:-14px 0 20px">Deadline assumes the change takes effect today. It updates once the effective date is confirmed.</p>';
+ h+='<div class="cols"><div class="stack"><div class="card"><h2>Steps</h2><ol class="steps">';
+ flowOf(m).forEach(([k,label],i)=>{const st=i<m.step?'done':i===m.step?'cur':'';h+='<li class="step '+st+'"><span class="dot" aria-hidden="true">'+(i<m.step?'\u2713':i+1)+'</span><div><div class="lab">'+esc(label)+'</div>';
+  if(i===m.step){h+='<div class="act">';
+   if(k==='pay'){h+='<p>Waiting for '+hkd(inv.amount)+' against '+inv.no+'. Airwallex and HSBC are checked every 15 minutes, matching on invoice number and amount.</p><div class="row"><button class="btn sm" id="bankbtn" onclick="checkBank(\''+inv.no+'\')">Check bank now</button><button class="txt note" onclick="markPaid(\''+inv.no+'\',\'manual\');render()">Mark paid manually</button></div><p class="meta">Last checked 09:45 \u00b7 not yet received</p>'}
+   else if(k==='collect'){h+=w.length?'<p>Waiting on the client for '+w.length+' item'+(w.length>1?'s':'')+'. Paste their reply on the right, or tick items as they arrive.</p><div class="row"><button class="btn sec2 sm" onclick="showChase()">Draft a chase message</button></div>':'<p>Everything is in.</p><button class="btn sm" onclick="doStep()">Continue</button>'}
+   else h+='<button class="btn sm" onclick="doStep()">'+btnLabel(k)+'</button>';
+   h+='</div>'}
+  h+='</div></li>'});
+ h+='</ol></div>';
+ if(m.out)h+='<div class="card"><div class="sec-h"><h2>'+esc(m.out.title)+'</h2><button class="txt note" onclick="M().out=null;render()">Dismiss</button></div>'+langTabs(m.lang,'setMOut')+'<pre class="msg">'+esc(m.out.text)+'</pre><div class="row" style="margin-top:12px"><button class="btn sec2 sm" onclick="copyText(M().out.text)">Copy message</button></div></div>';
+ h+='<div class="card"><h2>Activity</h2><ul class="list log">'+m.log.map(l=>'<li><time>'+esc(l.d)+'</time>'+esc(l.t)+'</li>').join('')+'</ul>'+(m.source?'<h3>Original message</h3><p class="quote" style="-webkit-line-clamp:unset">'+esc(m.source)+'</p>':'')+'</div></div><div class="stack">';
+ if(!fin&&w.length){h+='<div class="card"><h2>Client reply</h2>';if(m.pending){h+='<p class="note" style="margin:0 0 10px">Check what was picked up, edit if needed, then confirm.</p>'+Object.keys(m.pending).map(k=>'<div class="fld" style="margin-top:10px"><label class="f" for="ex_'+k+'">'+esc(ITEMS[k].en)+'</label><input type="text" id="ex_'+k+'" data-ex="'+k+'" value="'+esc(m.pending[k])+'"></div>').join('')+'<div class="row" style="margin-top:14px"><button class="btn sm" onclick="confirmExtract()">Confirm details</button><button class="txt note" onclick="M().pending=null;render()">Discard</button></div>'}
+  else h+='<textarea id="reply" placeholder="Paste the client\u2019s reply, including attachment names" style="min-height:110px">'+esc(m.replyText||'')+'</textarea><div class="row" style="margin-top:10px;justify-content:space-between"><button class="txt note" onclick="useSample()">Use a sample reply</button><button class="btn sm" onclick="runExtract()">Extract details</button></div>';
+  h+='</div>'}
+ h+='<div class="card"><h2>Checklist</h2><ul class="list">'+Object.keys(m.items).map(k=>{const s=m.items[k];return '<li><span>'+esc(ITEMS[k].en)+(m.data[k]?'<div class="zh">'+esc(m.data[k])+'</div>':'')+'</span>'+(s==='on'?'<span class="pill p-on">On file</span>':'<button class="pill '+(s==='rec'?'p-ok':'p-wait')+'" onclick="toggleItem(\''+k+'\')" title="Click to change">'+(s==='rec'?'Received':'Waiting')+'</button>')+'</li>'}).join('')+'</ul></div>';
+ if(inv)h+='<div class="card"><div class="sec-h"><h2>Invoice</h2>'+invLabel(inv)+'</div><div class="inv">'+inv.lines.map(l=>'<div class="ln"><span>'+esc(l[0])+'</span><span class="num">'+hkd(l[1])+'</span></div>').join('')+'<div class="ln tot"><span>'+inv.no+'</span><span class="num">'+hkd(inv.amount)+'</span></div></div>'+(inv.status==='paid'?'<p class="note" style="margin:8px 0 0">'+(inv.paidVia==='manual'?'Marked paid manually':'Matched in '+inv.paidVia)+' on '+inv.paidOn+'</p>':inv.days?'<p class="note" style="margin:8px 0 10px">'+inv.days+'-day terms \u00b7 issued '+fmt(inv.issued)+' \u00b7 due '+fmt(inv.due)+(inv.reminders.length?' \u00b7 reminded '+inv.reminders.join(', '):'')+'</p><div class="row"><button class="btn sec2 sm" id="bk_'+inv.no+'" onclick="checkBank(\''+inv.no+'\',\'bk_'+inv.no+'\')">Check bank now</button><button class="btn sec2 sm" onclick="remind(\''+inv.no+'\')">Send reminder</button></div>':'')+'</div>';
+ h+='<div class="card"><h2>Documents</h2>'+(m.docs.length?'<ul class="list">'+m.docs.map((d,i)=>'<li><span>'+esc(d[1])+'</span><button class="btn sec2 sm" onclick="previewDoc('+i+')">Preview</button></li>').join('')+'</ul>':'<ul class="list">'+pb.docs.map(d=>'<li><span style="color:var(--muted)">'+esc(d[1])+'</span></li>').join('')+'</ul><p class="note" style="margin:8px 0 0">Generated once work starts.</p>')+'</div></div></div>';
+ return h}
+
+/* ---------- Playbooks ---------- */
+function vPlaybooks(){const pb=PB[S.pbOpen];let h='<div class="top"><div><h1>Playbooks</h1><p class="sub">Requirements, steps, documents and messages for each request type.</p></div></div><div class="banner">For company secretary review. Deadlines and requirements reflect the Companies Ordinance (Cap. 622) as generally applied to private companies; confirm each against current Companies Registry guidance.</div><div class="cols" style="grid-template-columns:minmax(0,3fr) minmax(0,9fr)"><nav class="card pbnav" aria-label="Playbooks" style="padding:12px">';
+ CATS.forEach((cat,ci)=>{h+='<div class="grp" style="margin-top:'+(ci?'14px':'2px')+'">'+cat+'</div>'+Object.keys(PB).filter(k=>PB[k].cat===cat).map(k=>'<button aria-current="'+(k===S.pbOpen)+'" onclick="S.pbOpen=\''+k+'\';render()">'+esc(PB[k].name.en)+'</button>').join('')});
+ h+='</nav><section class="card"><h2 style="font-size:19px;margin-bottom:2px">'+esc(pb.name.en)+'</h2><p class="zh" style="margin:0 0 18px">'+esc(pb.name.tc)+' \u00b7 '+esc(pb.name.sc)+'</p>';
+ h+='<dl class="kv"><dt>Forms</dt><dd>'+esc(pb.form)+'</dd><dt>Deadline</dt><dd>'+esc(pb.deadline?pb.deadline.rule:'No statutory deadline')+'</dd><dt>Started by</dt><dd>'+(pb.mode==='firm'?'Us, from the deadline calendar':'A client request')+'</dd><dt>Fee</dt><dd>'+(pb.fee?hkd(pb.fee)+', invoiced with the request':'No charge')+'</dd></dl>';
+ h+='<h3>What we ask the client for</h3><div class="scroll"><table class="t"><thead><tr><th>English</th><th>繁體中文</th><th>简体中文</th></tr></thead><tbody>'+pb.needs.map(k=>'<tr><td>'+esc(ITEMS[k].en)+(pb.person==='new'&&PERSONAL.includes(k)?'<div class="zh">Skipped if already on file</div>':'')+'</td><td>'+esc(ITEMS[k].tc)+'</td><td>'+esc(ITEMS[k].sc)+'</td></tr>').join('')+'</tbody></table></div>';
+ h+='<h3>Steps</h3><ol style="margin:0;padding-left:20px">'+pb.flow.map(s=>'<li>'+esc(s[1])+'</li>').join('')+'</ol>'+(pb.fee?'<p class="note" style="margin:8px 0 0">For clients on credit terms, work starts without waiting for payment, and the invoice is tracked separately.</p>':'');
+ h+='<h3>Documents</h3><ul style="margin:0;padding-left:20px">'+pb.docs.map(d=>'<li>'+esc(d[1])+'</li>').join('')+'</ul>';
+ h+='<h3>Compliance notes</h3><ul style="margin:0;padding-left:20px">'+pb.notes.map(n=>'<li>'+esc(n)+'</li>').join('')+'</ul></section></div>';
+ return h}
+
+render();
+</script>
+</body>
+</html>

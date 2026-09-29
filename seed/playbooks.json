@@ -1,0 +1,1194 @@
+{
+  "version": "0.1-draft",
+  "categories": [
+    "Directors",
+    "Changes in particulars",
+    "New client onboarding",
+    "Annual cycle"
+  ],
+  "playbooks": {
+    "appointDirector": {
+      "id": "appointDirector",
+      "category": "Directors",
+      "name": {
+        "en": "Appoint a director",
+        "tc": "委任董事",
+        "sc": "委任董事"
+      },
+      "phrase": {
+        "en": "the appointment of a new director",
+        "tc": "委任新董事",
+        "sc": "委任新董事"
+      },
+      "startedBy": "client request",
+      "personSelection": "new",
+      "forms": "ND2A",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File ND2A within 15 days after the appointment"
+      },
+      "requirements": [
+        "fullName",
+        "chiName",
+        "idNo",
+        "resAddr",
+        "corrAddr",
+        "contactInfo",
+        "effDate",
+        "idCopy",
+        "addrProof",
+        "selfie"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect details and documents"
+        },
+        {
+          "kind": "kyc",
+          "label": "Screen against sanctions and PEP lists"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare resolution and ND2A"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File ND2A with the Companies Registry"
+        },
+        {
+          "kind": "register",
+          "label": "Update register of directors"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Board written resolution: appointment of director"
+        },
+        {
+          "type": "form",
+          "name": "Form ND2A: appointment, with consent to act"
+        },
+        {
+          "type": "reg",
+          "name": "Register of directors (updated)"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "File ND2A within 15 days after the appointment takes effect.",
+        "The appointee signs the consent to act on ND2A itself, so ND2A goes out in the e-signature pack.",
+        "A private company must keep at least one individual director, and individual directors must be 18 or over.",
+        "Complete customer due diligence and screening before the appointment takes effect.",
+        "If the new director will hold over 25% or otherwise control the company, update the significant controllers register too."
+      ],
+      "feeHkd": 1800,
+      "triggerKeywords": [
+        "add a director",
+        "new director",
+        "appoint",
+        "add director",
+        "加董事",
+        "加多個董事",
+        "加多个董事",
+        "新董事",
+        "委任"
+      ],
+      "resolutionTemplate": "m=>'THAT '+personName(m)+' be appointed as a director of the Company with effect from '+V(m,'effDate')+'.'",
+      "sampleClientReply": "Hi Karen, details for the new director below.\nFull name: WONG Ka Man\nChinese name: 黃嘉敏\nHKID: K987654(3), Hong Kong\nResidential address: Flat 12B, 88 Robinson Road, Mid-Levels, Hong Kong\nCorrespondence address: same as the company's registered office\nEmail and mobile: kaman.wong@example.com / +852 9123 4567\nEffective date: 1 October 2026\n[Attachment: hkid_wong.jpg]\n[Attachment: address_proof_electricity_bill.pdf]\nPortal: identity check completed"
+    },
+    "resignDirector": {
+      "id": "resignDirector",
+      "category": "Directors",
+      "name": {
+        "en": "Director resignation",
+        "tc": "董事辭任",
+        "sc": "董事辞任"
+      },
+      "phrase": {
+        "en": "a director's resignation",
+        "tc": "董事辭任",
+        "sc": "董事辞任"
+      },
+      "startedBy": "client request",
+      "personSelection": "officer",
+      "forms": "ND2A",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File ND2A within 15 days after the resignation"
+      },
+      "requirements": [
+        "resignLetter",
+        "lastDay",
+        "replacement"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect resignation letter"
+        },
+        {
+          "kind": "check",
+          "label": "Check the board still meets minimum requirements"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare resolution and ND2A"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File ND2A with the Companies Registry"
+        },
+        {
+          "kind": "register",
+          "label": "Update register of directors"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client and remind about bank mandates"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Board written resolution: resignation of director"
+        },
+        {
+          "type": "form",
+          "name": "Form ND2A: cessation"
+        },
+        {
+          "type": "reg",
+          "name": "Register of directors (updated)"
+        },
+        {
+          "type": "letter",
+          "name": "Acknowledgement to resigning director"
+        }
+      ],
+      "complianceNotes": [
+        "File ND2A within 15 days after the resignation takes effect.",
+        "The resigning director may also notify the Registrar directly using Form ND4.",
+        "Check the company still has at least one individual director after the resignation. If not, a replacement must be appointed at the same time.",
+        "Remind the client to update bank signatories and any authorisations the director held."
+      ],
+      "feeHkd": 1500,
+      "triggerKeywords": [
+        "resign",
+        "step down",
+        "辭任",
+        "辞任",
+        "辭職",
+        "辞职",
+        "離任",
+        "离任"
+      ],
+      "resolutionTemplate": "m=>'THAT the resignation of '+personName(m)+' as a director of the Company with effect from '+V(m,'lastDay')+' be accepted and noted.'",
+      "sampleClientReply": "Attached is the signed resignation letter.\nLast day: 31 October 2026\nReplacement: not needed, LAM Mei Ling stays on as director\n[Attachment: resignation_letter_lam.pdf]"
+    },
+    "changeParticulars": {
+      "id": "changeParticulars",
+      "category": "Changes in particulars",
+      "name": {
+        "en": "Change in an officer's details",
+        "tc": "更改董事或秘書資料",
+        "sc": "更改董事或秘书资料"
+      },
+      "phrase": {
+        "en": "the change in an officer's details",
+        "tc": "更改董事資料",
+        "sc": "更改董事资料"
+      },
+      "startedBy": "client request",
+      "personSelection": "officer",
+      "forms": "ND2B",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File ND2B within 15 days after the change"
+      },
+      "requirements": [
+        "changeDetail",
+        "effDate",
+        "supportDoc"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect details and proof"
+        },
+        {
+          "kind": "task",
+          "label": "Update the KYC record"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare ND2B"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File ND2B with the Companies Registry"
+        },
+        {
+          "kind": "register",
+          "label": "Update registers"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "form",
+          "name": "Form ND2B: change in particulars"
+        },
+        {
+          "type": "reg",
+          "name": "Register of directors (updated)"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "File ND2B within 15 days after the change in particulars.",
+        "Only the correspondence address and a partial ID number appear on the public register. The residential address and full ID number are protected information, but must still be kept in the company’s records.",
+        "A new passport or address also refreshes our KYC record, so update the CDD file at the same time."
+      ],
+      "feeHkd": 1200,
+      "triggerKeywords": [
+        "new passport",
+        "renewed my passport",
+        "moved house",
+        "new home address",
+        "changed my name",
+        "搬屋",
+        "搬家",
+        "新護照",
+        "新护照",
+        "換護照",
+        "换护照"
+      ],
+      "resolutionTemplate": "m=>'THAT the change in particulars of '+personName(m)+' ('+V(m,'changeDetail')+') be noted.'",
+      "sampleClientReply": "Hi Karen, I renewed my passport last week.\nChange: passport number changed from P1234567 to P7654321, issued by Hong Kong SAR\nEffective date: 15 September 2026\n[Attachment: new_passport_ho.jpg]"
+    },
+    "changeSecretary": {
+      "id": "changeSecretary",
+      "category": "Changes in particulars",
+      "name": {
+        "en": "Change of company secretary",
+        "tc": "更換公司秘書",
+        "sc": "更换公司秘书"
+      },
+      "phrase": {
+        "en": "the change of company secretary",
+        "tc": "更換公司秘書",
+        "sc": "更换公司秘书"
+      },
+      "startedBy": "client request",
+      "personSelection": null,
+      "forms": "ND2A",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File ND2A within 15 days after the change"
+      },
+      "requirements": [
+        "secDetails",
+        "effDate",
+        "resignLetter"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect details and documents"
+        },
+        {
+          "kind": "kyc",
+          "label": "Screen the incoming secretary"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare resolution and ND2A"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File ND2A with the Companies Registry"
+        },
+        {
+          "kind": "register",
+          "label": "Update register of secretaries"
+        },
+        {
+          "kind": "task",
+          "label": "Hand over statutory records"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Board written resolution: change of secretary"
+        },
+        {
+          "type": "form",
+          "name": "Form ND2A: secretary appointment and cessation"
+        },
+        {
+          "type": "list",
+          "name": "Records handover checklist"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "File ND2A within 15 days after the change.",
+        "An individual secretary must ordinarily reside in Hong Kong. A corporate secretary must have its registered office or a place of business in Hong Kong.",
+        "In a private company, a sole director cannot also be the company secretary.",
+        "Corporate secretaries providing this as a business need a TCSP licence."
+      ],
+      "feeHkd": 1800,
+      "triggerKeywords": [
+        "secretary",
+        "秘書",
+        "秘书"
+      ],
+      "resolutionTemplate": "m=>'THAT '+V(m,'secDetails')+' be appointed as company secretary of the Company with effect from '+V(m,'effDate')+'.'",
+      "sampleClientReply": "Secretary: CHEUNG Pui Shan, Room 1203, 50 Hennessy Road, Wan Chai, Hong Kong, HKID Y112233(4)\nEffective date: 1 November 2026\n[Attachment: resignation_outgoing_secretary.pdf]"
+    },
+    "changeOffice": {
+      "id": "changeOffice",
+      "category": "Changes in particulars",
+      "name": {
+        "en": "Change of registered office",
+        "tc": "更改註冊辦事處地址",
+        "sc": "更改注册办事处地址"
+      },
+      "phrase": {
+        "en": "the change of registered office",
+        "tc": "更改註冊辦事處地址",
+        "sc": "更改注册办事处地址"
+      },
+      "startedBy": "client request",
+      "personSelection": null,
+      "forms": "NR1",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File NR1 within 15 days after the change"
+      },
+      "requirements": [
+        "newAddr",
+        "effDate",
+        "premises"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect new address and proof"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare resolution and NR1"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File NR1 with the Companies Registry"
+        },
+        {
+          "kind": "register",
+          "label": "Update company records"
+        },
+        {
+          "kind": "task",
+          "label": "Send the client a list of places to update"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Board written resolution: change of registered office"
+        },
+        {
+          "type": "form",
+          "name": "Form NR1: change of address of registered office"
+        },
+        {
+          "type": "list",
+          "name": "Checklist: letterhead, signboard, bank, website, invoices"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "File NR1 within 15 days after the change.",
+        "The registered office must be an address in Hong Kong. A PO box is not accepted.",
+        "Check current Companies Registry guidance on whether NR1 also updates the Business Registration Office record, and notify IRD separately if not.",
+        "The company name must be displayed at the new office."
+      ],
+      "feeHkd": 1500,
+      "triggerKeywords": [
+        "registered office",
+        "office is moving",
+        "moving our office",
+        "new office",
+        "office move",
+        "搬寫字樓",
+        "搬写字楼",
+        "搬辦公室",
+        "搬办公室",
+        "註冊地址",
+        "注册地址"
+      ],
+      "resolutionTemplate": "m=>'THAT the registered office of the Company be changed to '+V(m,'newAddr')+' with effect from '+V(m,'effDate')+'.'",
+      "sampleClientReply": "New address: 23/F, Cityplaza One, 1111 King's Road, Taikoo Shing, Hong Kong\nEffective date: 1 November 2026\n[Attachment: tenancy_agreement_cityplaza.pdf]"
+    },
+    "changeName": {
+      "id": "changeName",
+      "category": "Changes in particulars",
+      "name": {
+        "en": "Change of company name",
+        "tc": "更改公司名稱",
+        "sc": "更改公司名称"
+      },
+      "phrase": {
+        "en": "the change of company name",
+        "tc": "更改公司名稱",
+        "sc": "更改公司名称"
+      },
+      "startedBy": "client request",
+      "personSelection": null,
+      "forms": "NNC2",
+      "deadline": {
+        "kind": "event",
+        "days": 15,
+        "rule": "File NNC2 within 15 days after the special resolution"
+      },
+      "requirements": [
+        "newName",
+        "approvalRoute"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect proposed names"
+        },
+        {
+          "kind": "name",
+          "label": "Check name availability"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare special resolution and NNC2"
+        },
+        {
+          "kind": "sign",
+          "label": "Collect members’ signatures"
+        },
+        {
+          "kind": "file",
+          "label": "File NNC2 with the Companies Registry"
+        },
+        {
+          "kind": "task",
+          "label": "Record the certificate of change of name"
+        },
+        {
+          "kind": "register",
+          "label": "Update registers, chop and business registration"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Members’ special resolution: change of name"
+        },
+        {
+          "type": "form",
+          "name": "Form NNC2: notice of change of company name"
+        },
+        {
+          "type": "list",
+          "name": "Checklist: company chop, seal, signboard, bank, contracts"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "The change needs a special resolution of members, and NNC2 must be filed within 15 days after it is passed.",
+        "The new name only takes effect when the Registrar issues the certificate of change of name.",
+        "Search the Companies Registry index before the resolution is signed, and hold a backup name.",
+        "A new company chop and common seal (if any) will be needed."
+      ],
+      "feeHkd": 3500,
+      "triggerKeywords": [
+        "change the company name",
+        "change our company name",
+        "rename the company",
+        "公司改名",
+        "改公司名",
+        "更改公司名稱",
+        "更改公司名称"
+      ],
+      "resolutionTemplate": "m=>'THAT, subject to the approval of the Registrar of Companies, the name of the Company be changed to '+V(m,'newName')+'.'",
+      "sampleClientReply": "New name: Silverstrand Capital Limited / 銀線灣資本有限公司 (backup: Silverstrand Group Limited)\nApproval: written resolution, both shareholders will sign"
+    },
+    "incorporation": {
+      "id": "incorporation",
+      "category": "New client onboarding",
+      "name": {
+        "en": "New company incorporation",
+        "tc": "成立新公司",
+        "sc": "成立新公司"
+      },
+      "phrase": {
+        "en": "setting up your new company",
+        "tc": "成立新公司",
+        "sc": "成立新公司"
+      },
+      "startedBy": "client request",
+      "personSelection": null,
+      "forms": "NNC1",
+      "deadline": null,
+      "requirements": [
+        "propName",
+        "business",
+        "founders",
+        "capital",
+        "directorsList",
+        "scList",
+        "funds",
+        "idCopy",
+        "addrProof",
+        "selfie",
+        "engagement"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect details and documents"
+        },
+        {
+          "kind": "kyc",
+          "label": "Complete CDD, screening and risk rating"
+        },
+        {
+          "kind": "name",
+          "label": "Check name availability"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare NNC1 and articles"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "Submit e-incorporation with business registration"
+        },
+        {
+          "kind": "task",
+          "label": "Record certificate of incorporation and BR certificate"
+        },
+        {
+          "kind": "register",
+          "label": "Set up registers, SCR and share certificates"
+        },
+        {
+          "kind": "confirm",
+          "label": "Send company kit to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "list",
+          "name": "CDD record and risk assessment"
+        },
+        {
+          "type": "form",
+          "name": "Form NNC1, with business registration application"
+        },
+        {
+          "type": "list",
+          "name": "Articles of association (model articles, adapted)"
+        },
+        {
+          "type": "res",
+          "name": "First board written resolutions"
+        },
+        {
+          "type": "reg",
+          "name": "Registers of members, directors and significant controllers"
+        },
+        {
+          "type": "letter",
+          "name": "Welcome letter and company kit"
+        }
+      ],
+      "complianceNotes": [
+        "NNC1 is filed together with the business registration application, so both certificates issue together.",
+        "A private company needs at least one individual director and a company secretary resident in Hong Kong.",
+        "CDD on all founders, directors and significant controllers must be completed before we act.",
+        "Set up the significant controllers register from day one, and designate a person to deal with enforcement officers."
+      ],
+      "feeHkd": 8800,
+      "triggerKeywords": [
+        "set up a company",
+        "incorporate",
+        "new company",
+        "open a company",
+        "開公司",
+        "开公司",
+        "開一間公司",
+        "开一家公司",
+        "成立公司",
+        "註冊公司",
+        "注册公司"
+      ],
+      "resolutionTemplate": "m=>'THAT share certificates be issued to the founder members, the statutory registers be written up, and '+FIRM.name+' be confirmed as company secretary.'",
+      "sampleClientReply": "公司名称：莲峰科技有限公司 / Lotus Peak Technology Limited（备选：莲峰数码有限公司）\n业务性质：跨境电商\n股东：张伟 6,000股；刘芳 4,000股\n股本：HK$10,000\n董事：张伟\n控制人：张伟（60%）、刘芳（40%）\n资金来源：个人储蓄及过往经营收入\n[附件: passport_zhang.jpg]\n[附件: passport_liu.jpg]\n[附件: address_proof_zhang.pdf]\n安全链接：identity check completed"
+    },
+    "transferIn": {
+      "id": "transferIn",
+      "category": "New client onboarding",
+      "name": {
+        "en": "Take over an existing company",
+        "tc": "接手現有公司",
+        "sc": "接手现有公司"
+      },
+      "phrase": {
+        "en": "moving your company secretarial services to us",
+        "tc": "轉移公司秘書服務",
+        "sc": "转移公司秘书服务"
+      },
+      "startedBy": "client request",
+      "personSelection": null,
+      "forms": "ND2A, NR1",
+      "deadline": null,
+      "requirements": [
+        "engagement",
+        "scList",
+        "funds",
+        "idCopy",
+        "addrProof",
+        "selfie",
+        "prevRecords"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect details and documents"
+        },
+        {
+          "kind": "kyc",
+          "label": "Complete CDD, screening and risk rating"
+        },
+        {
+          "kind": "search",
+          "label": "Run a company search"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare secretary and office changes"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File ND2A and NR1"
+        },
+        {
+          "kind": "register",
+          "label": "Load records and reconcile registers"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "list",
+          "name": "CDD record and risk assessment"
+        },
+        {
+          "type": "res",
+          "name": "Board written resolution: appoint secretary, change registered office"
+        },
+        {
+          "type": "form",
+          "name": "Form ND2A: change of secretary"
+        },
+        {
+          "type": "form",
+          "name": "Form NR1: change of registered office"
+        },
+        {
+          "type": "list",
+          "name": "Records handover checklist"
+        }
+      ],
+      "complianceNotes": [
+        "Reconcile the handed-over registers against a fresh company search before relying on them.",
+        "Check whether the annual return, SCR and business registration are up to date. Gaps become the client’s first matters.",
+        "CDD on directors and significant controllers must be completed before we act."
+      ],
+      "feeHkd": 3800,
+      "triggerKeywords": [
+        "switch provider",
+        "take over",
+        "transfer our company",
+        "current secretary is",
+        "轉秘書",
+        "转秘书",
+        "轉公司秘書",
+        "转公司秘书"
+      ],
+      "resolutionTemplate": "m=>'THAT '+FIRM.name+' be appointed as company secretary, and the registered office be changed to '+FIRM.addr+'.'",
+      "sampleClientReply": "Signed engagement letter attached. Our previous secretary will courier the records next week.\nSignificant controllers: CHAN Tai Man 100%\nSource of funds: trading profits\n[Attachment: engagement_signed.pdf]\n[Attachment: records_handover_list.pdf]\n[Attachment: passport_chan.jpg]\n[Attachment: address_proof_chan.pdf]\nPortal: identity check completed"
+    },
+    "annualReturn": {
+      "id": "annualReturn",
+      "category": "Annual cycle",
+      "name": {
+        "en": "Annual return",
+        "tc": "周年申報表",
+        "sc": "周年申报表"
+      },
+      "phrase": {
+        "en": "the annual return",
+        "tc": "周年申報表",
+        "sc": "周年申报表"
+      },
+      "startedBy": "firm (deadline calendar)",
+      "personSelection": null,
+      "forms": "NAR1",
+      "deadline": {
+        "kind": "annual",
+        "key": "nar1",
+        "rule": "Private company: within 42 days after the anniversary of incorporation"
+      },
+      "requirements": [
+        "changesSince"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect client confirmation"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare NAR1 from the registers"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "file",
+          "label": "File NAR1 and pay the fee"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "form",
+          "name": "Form NAR1, pre-filled from registers"
+        },
+        {
+          "type": "list",
+          "name": "Current particulars for client confirmation"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "A private company files NAR1 within 42 days after each anniversary of incorporation.",
+        "Late filing attracts a higher registration fee that increases with delay, and can lead to prosecution.",
+        "Any unreported changes found during confirmation should be opened as their own matters first."
+      ],
+      "feeHkd": 1200,
+      "triggerKeywords": [
+        "annual return",
+        "nar1",
+        "周年申報",
+        "周年申报",
+        "年報",
+        "年报"
+      ],
+      "resolutionTemplate": null,
+      "sampleClientReply": "No changes since last year, thanks. 冇變動。"
+    },
+    "agm": {
+      "id": "agm",
+      "category": "Annual cycle",
+      "name": {
+        "en": "AGM and accounts approval",
+        "tc": "周年大會及通過賬目",
+        "sc": "周年大会及通过账目"
+      },
+      "phrase": {
+        "en": "the annual accounts approval and AGM",
+        "tc": "周年大會及通過賬目",
+        "sc": "周年大会及通过账目"
+      },
+      "startedBy": "firm (deadline calendar)",
+      "personSelection": null,
+      "forms": "None (internal records)",
+      "deadline": {
+        "kind": "annual",
+        "key": "agm",
+        "rule": "Private company: within 9 months after the end of the accounting reference period"
+      },
+      "requirements": [
+        "accounts",
+        "auditor",
+        "approvalRoute"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect accounts and instructions"
+        },
+        {
+          "kind": "generate",
+          "label": "Prepare board and members’ resolutions"
+        },
+        {
+          "kind": "sign",
+          "label": "Send for e-signature"
+        },
+        {
+          "kind": "task",
+          "label": "Record in the minute book"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "res",
+          "name": "Board resolution approving financial statements and directors’ report"
+        },
+        {
+          "type": "res",
+          "name": "Members’ written resolutions in lieu of AGM"
+        },
+        {
+          "type": "letter",
+          "name": "Confirmation to client"
+        }
+      ],
+      "complianceNotes": [
+        "A private company holds its AGM within 9 months after its accounting reference period ends.",
+        "Members can pass a written resolution instead of meeting, or unanimously agree to dispense with AGMs.",
+        "The auditor must be reappointed each year unless the members resolve otherwise."
+      ],
+      "feeHkd": 2500,
+      "triggerKeywords": [
+        "agm",
+        "annual general meeting",
+        "audited accounts",
+        "audited financial",
+        "周年大會",
+        "周年大会",
+        "核數",
+        "审计报告"
+      ],
+      "resolutionTemplate": "m=>'THAT the audited financial statements and directors\\u2019 report for the latest financial year be approved, and '+V(m,'auditor')+' be reappointed as auditor.'",
+      "sampleClientReply": "Audited accounts attached.\nAuditor: reappoint Wong & Partners CPA Limited, same fee as last year\nApproval: written resolution please\n[Attachment: audited_financial_statements_FY2025.pdf]"
+    },
+    "brRenewal": {
+      "id": "brRenewal",
+      "category": "Annual cycle",
+      "name": {
+        "en": "Business registration renewal",
+        "tc": "商業登記續期",
+        "sc": "商业登记续期"
+      },
+      "phrase": {
+        "en": "the business registration renewal",
+        "tc": "商業登記續期",
+        "sc": "商业登记续期"
+      },
+      "startedBy": "firm (deadline calendar)",
+      "personSelection": null,
+      "forms": "IRD demand note",
+      "deadline": {
+        "kind": "annual",
+        "key": "br",
+        "rule": "Renew before the current certificate expires"
+      },
+      "requirements": [
+        "brTerm"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send invoice and information request"
+        },
+        {
+          "kind": "pay",
+          "label": "Payment received"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect client instructions"
+        },
+        {
+          "kind": "task",
+          "label": "Pay the fee or forward the demand note"
+        },
+        {
+          "kind": "register",
+          "label": "Record the new certificate"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "letter",
+          "name": "Renewal reminder"
+        },
+        {
+          "type": "list",
+          "name": "New business registration certificate record"
+        }
+      ],
+      "complianceNotes": [
+        "IRD normally issues a demand note before expiry. Track the expiry date here rather than relying on the post.",
+        "Renewal can be for 1 or 3 years.",
+        "Branch registrations are renewed together with the main certificate."
+      ],
+      "feeHkd": 500,
+      "triggerKeywords": [
+        "business registration",
+        "br certificate",
+        "商業登記",
+        "商业登记",
+        "商登"
+      ],
+      "resolutionTemplate": null,
+      "sampleClientReply": "Renew: 1 year please"
+    },
+    "kycReview": {
+      "id": "kycReview",
+      "category": "Annual cycle",
+      "name": {
+        "en": "Periodic KYC review",
+        "tc": "定期客戶盡職審查",
+        "sc": "定期客户尽职审查"
+      },
+      "phrase": {
+        "en": "our periodic client due diligence review",
+        "tc": "定期客戶盡職審查",
+        "sc": "定期客户尽职审查"
+      },
+      "startedBy": "firm (deadline calendar)",
+      "personSelection": null,
+      "forms": "Internal CDD record",
+      "deadline": {
+        "kind": "annual",
+        "key": "kyc",
+        "rule": "Firm policy: high risk yearly, medium every 2 years, low every 3 years"
+      },
+      "requirements": [
+        "scConfirm",
+        "kycUpdate"
+      ],
+      "steps": [
+        {
+          "kind": "send",
+          "label": "Send review request"
+        },
+        {
+          "kind": "collect",
+          "label": "Collect confirmation and updated documents"
+        },
+        {
+          "kind": "kyc",
+          "label": "Re-screen against sanctions and PEP lists"
+        },
+        {
+          "kind": "task",
+          "label": "Review and update the risk rating"
+        },
+        {
+          "kind": "register",
+          "label": "Record the completed review"
+        },
+        {
+          "kind": "confirm",
+          "label": "Confirm to client"
+        }
+      ],
+      "documents": [
+        {
+          "type": "list",
+          "name": "CDD review record"
+        },
+        {
+          "type": "list",
+          "name": "Updated risk assessment"
+        }
+      ],
+      "complianceNotes": [
+        "Review frequency here follows a sample firm policy. Set it to match your own AML policies and procedures.",
+        "Keep CDD records for at least 5 years after the business relationship ends.",
+        "A change in significant controllers found here should also update the SCR."
+      ],
+      "feeHkd": 0,
+      "triggerKeywords": [
+        "kyc",
+        "due diligence",
+        "盡職",
+        "尽职"
+      ],
+      "resolutionTemplate": null,
+      "sampleClientReply": "Controller: no change, still Mr Lam 100%\n[Attachment: address_proof_lam_2026.pdf]"
+    }
+  }
+}

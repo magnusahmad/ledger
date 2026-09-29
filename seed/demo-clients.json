@@ -1,0 +1,728 @@
+{
+  "clients": [
+    {
+      "id": "c1",
+      "name": {
+        "en": "Kowloon Bay Trading Limited",
+        "tc": "九龍灣貿易有限公司",
+        "sc": "九龙湾贸易有限公司"
+      },
+      "cr": "2811043",
+      "inc": "2019-10-28",
+      "fye": [
+        3,
+        31
+      ],
+      "br": "2026-10-27",
+      "risk": "Medium",
+      "kyc": "2024-11-02",
+      "contact": {
+        "en": "Mr Chan",
+        "tc": "陳生",
+        "sc": "陈先生"
+      },
+      "contactName": "CHAN Tai Man",
+      "channel": "WeChat",
+      "lang": "tc",
+      "office": "Unit 1502, 15/F, Kowloon Bay Centre, Kowloon Bay, Hong Kong",
+      "directors": [
+        "p1"
+      ],
+      "people": [
+        "p1",
+        "p2"
+      ],
+      "status": "Active",
+      "terms": 30,
+      "staff": "u1",
+      "type": "Private company limited by shares",
+      "jur": "Hong Kong",
+      "op": "Operating",
+      "group": "Chan family companies",
+      "listedSub": false,
+      "officeZh": "香港九龍灣九龍灣中心15樓1502室",
+      "biz": {
+        "en": "Import and export of household goods",
+        "zh": "家居用品進出口"
+      },
+      "docLang": "English",
+      "brNo": "70123456",
+      "brTerm": 1,
+      "branches": [],
+      "accTo": "2025-03-31",
+      "lastAGM": "2025-12-15",
+      "lastAR": "2025-12-05",
+      "auditor": "Wong & Partners CPA Limited",
+      "banks": [
+        [
+          "HSBC",
+          "•••• 3381",
+          "CHAN Tai Man (sole signatory)"
+        ]
+      ],
+      "shares": [
+        [
+          "Ordinary",
+          "HKD",
+          10000,
+          10000,
+          "Yes"
+        ]
+      ],
+      "members": [
+        [
+          "CHAN Tai Man",
+          "Ordinary",
+          7000
+        ],
+        [
+          "LEE Siu Ling",
+          "Ordinary",
+          3000
+        ]
+      ],
+      "moves": [
+        [
+          "2019-10-28",
+          "Allotment on incorporation",
+          "10,000 ordinary shares: CHAN Tai Man 7,000, LEE Siu Ling 3,000"
+        ]
+      ],
+      "appointed": {
+        "p1": "2019-10-28"
+      },
+      "secSince": "2022-04-01",
+      "sc": [
+        [
+          "CHAN Tai Man",
+          "Holds more than 25% of the issued shares (70%)",
+          "2019-10-28"
+        ],
+        [
+          "LEE Siu Ling",
+          "Holds more than 25% of the issued shares (30%)",
+          "2019-10-28"
+        ]
+      ],
+      "dr": "Harbourline Corporate Services Limited (TCSP licensee)",
+      "regsAt": "Registered office",
+      "scrAt": "Registered office",
+      "charges": [],
+      "contacts": [
+        {
+          "name": "CHAN Tai Man",
+          "role": "Director, gives instructions",
+          "ch": "WeChat",
+          "lang": "tc"
+        },
+        {
+          "name": "WONG Mei Kei",
+          "role": "Accounts, receives invoices and reminders",
+          "ch": "Email, meikei.wong@kbtrading.example",
+          "lang": "en",
+          "billing": true,
+          "sal": {
+            "en": "Ms Wong",
+            "tc": "黃小姐",
+            "sc": "黄小姐"
+          }
+        }
+      ],
+      "filings": [
+        [
+          "NAR1",
+          "Annual return 2025",
+          "2025-12-05"
+        ],
+        [
+          "NR1",
+          "Change of registered office",
+          "2022-04-01"
+        ],
+        [
+          "ND2A",
+          "Change of company secretary",
+          "2022-04-01"
+        ]
+      ],
+      "eacct": "5 Dec 2025"
+    },
+    {
+      "id": "c2",
+      "name": {
+        "en": "Silverstrand Holdings Limited",
+        "tc": "銀線灣控股有限公司",
+        "sc": "银线湾控股有限公司"
+      },
+      "cr": "3102567",
+      "inc": "2021-11-15",
+      "fye": [
+        12,
+        31
+      ],
+      "br": "2026-11-14",
+      "risk": "Low",
+      "kyc": "2023-12-01",
+      "contact": {
+        "en": "Ms Ho",
+        "tc": "何小姐",
+        "sc": "何小姐"
+      },
+      "contactName": "HO Wing Yan",
+      "channel": "Email",
+      "lang": "en",
+      "office": "Room 808, 8/F, Harbour Commercial Tower, Sheung Wan, Hong Kong",
+      "directors": [
+        "p3"
+      ],
+      "people": [
+        "p3"
+      ],
+      "status": "Active",
+      "terms": 0,
+      "staff": "u1",
+      "type": "Private company limited by shares",
+      "jur": "Hong Kong",
+      "op": "Operating",
+      "group": "",
+      "listedSub": false,
+      "officeZh": "香港上環海港商業大廈8樓808室",
+      "biz": {
+        "en": "Investment holding",
+        "zh": "投資控股"
+      },
+      "docLang": "English",
+      "brNo": "72456123",
+      "brTerm": 3,
+      "branches": [],
+      "accTo": "2025-12-31",
+      "lastAGM": "2025-09-26",
+      "lastAR": "2025-12-20",
+      "auditor": "Lau & Co CPA",
+      "banks": [
+        [
+          "Standard Chartered",
+          "•••• 9920",
+          "HO Wing Yan (sole signatory)"
+        ],
+        [
+          "Airwallex",
+          "•••• 1147",
+          "HO Wing Yan"
+        ]
+      ],
+      "shares": [
+        [
+          "Ordinary",
+          "HKD",
+          1000000,
+          1000000,
+          "Yes"
+        ],
+        [
+          "Preference",
+          "HKD",
+          200000,
+          200000,
+          "No"
+        ]
+      ],
+      "members": [
+        [
+          "HO Wing Yan",
+          "Ordinary",
+          800000
+        ],
+        [
+          "Brightwater Ventures Limited (BVI)",
+          "Ordinary",
+          200000
+        ],
+        [
+          "Brightwater Ventures Limited (BVI)",
+          "Preference",
+          200000
+        ]
+      ],
+      "moves": [
+        [
+          "2021-11-15",
+          "Allotment on incorporation",
+          "1,000,000 ordinary shares to HO Wing Yan"
+        ],
+        [
+          "2023-06-30",
+          "Transfer",
+          "200,000 ordinary shares from HO Wing Yan to Brightwater Ventures Limited, stamp duty paid"
+        ],
+        [
+          "2024-03-01",
+          "Allotment",
+          "200,000 preference shares to Brightwater Ventures Limited, NSC1 filed"
+        ]
+      ],
+      "appointed": {
+        "p3": "2021-11-15"
+      },
+      "secSince": "2021-11-15",
+      "sc": [
+        [
+          "HO Wing Yan",
+          "Holds more than 25% of the issued shares (80% of ordinary shares)",
+          "2021-11-15"
+        ]
+      ],
+      "dr": "HO Wing Yan (director)",
+      "regsAt": "Registered office",
+      "scrAt": "Registered office",
+      "charges": [
+        [
+          "2024-05-10",
+          "Standard Chartered Bank (Hong Kong) Limited",
+          "Fixed charge over deposit account",
+          "Registered"
+        ]
+      ],
+      "contacts": [
+        {
+          "name": "HO Wing Yan",
+          "role": "Director, gives instructions and pays invoices",
+          "ch": "Email, wingyan@silverstrand.example",
+          "lang": "en",
+          "billing": true,
+          "sal": {
+            "en": "Ms Ho",
+            "tc": "何小姐",
+            "sc": "何小姐"
+          }
+        }
+      ],
+      "filings": [
+        [
+          "NAR1",
+          "Annual return 2025",
+          "2025-12-20"
+        ],
+        [
+          "NM1",
+          "Registration of charge",
+          "2024-05-20"
+        ],
+        [
+          "NSC1",
+          "Return of allotment",
+          "2024-03-10"
+        ]
+      ],
+      "eacct": "20 Dec 2025"
+    },
+    {
+      "id": "c3",
+      "name": {
+        "en": "Lotus Peak Technology Limited",
+        "tc": "蓮峰科技有限公司",
+        "sc": "莲峰科技有限公司"
+      },
+      "cr": "",
+      "inc": "",
+      "fye": [
+        12,
+        31
+      ],
+      "br": "",
+      "risk": "Pending",
+      "kyc": "",
+      "contact": {
+        "en": "Mr Zhang",
+        "tc": "張總",
+        "sc": "张总"
+      },
+      "contactName": "ZHANG Wei",
+      "channel": "WeChat",
+      "lang": "sc",
+      "office": "",
+      "directors": [],
+      "people": [],
+      "status": "Onboarding",
+      "terms": 0,
+      "staff": "u1",
+      "type": "Private company limited by shares (proposed)",
+      "jur": "Hong Kong",
+      "op": "Not yet incorporated",
+      "group": "",
+      "listedSub": false,
+      "officeZh": "",
+      "biz": {
+        "en": "Cross-border e-commerce",
+        "zh": "跨境電商"
+      },
+      "docLang": "English",
+      "brNo": "",
+      "brTerm": 1,
+      "branches": [],
+      "accTo": "",
+      "lastAGM": "",
+      "lastAR": "",
+      "auditor": "",
+      "banks": [],
+      "shares": [],
+      "members": [],
+      "moves": [],
+      "appointed": {},
+      "secSince": "",
+      "sc": [],
+      "dr": "",
+      "regsAt": "",
+      "scrAt": "",
+      "charges": [],
+      "contacts": [
+        {
+          "name": "ZHANG Wei",
+          "role": "Founder, gives instructions and pays invoices",
+          "ch": "WeChat",
+          "lang": "sc",
+          "billing": true,
+          "sal": {
+            "en": "Mr Zhang",
+            "tc": "張總",
+            "sc": "张总"
+          }
+        }
+      ],
+      "filings": [],
+      "eacct": ""
+    },
+    {
+      "id": "c4",
+      "name": {
+        "en": "Tsing Yi Logistics Limited",
+        "tc": "青衣物流有限公司",
+        "sc": "青衣物流有限公司"
+      },
+      "cr": "2289716",
+      "inc": "2015-09-02",
+      "fye": [
+        3,
+        31
+      ],
+      "br": "2027-09-01",
+      "risk": "High",
+      "kyc": "2025-09-20",
+      "contact": {
+        "en": "Mrs Lam",
+        "tc": "林太",
+        "sc": "林太太"
+      },
+      "contactName": "LAM Mei Ling",
+      "channel": "WeChat",
+      "lang": "tc",
+      "office": "Unit 5, 3/F, Tsing Yi Industrial Centre, Tsing Yi, Hong Kong",
+      "directors": [
+        "p4",
+        "p5"
+      ],
+      "people": [
+        "p4",
+        "p5"
+      ],
+      "status": "Active",
+      "terms": 30,
+      "staff": "u1",
+      "type": "Private company limited by shares",
+      "jur": "Hong Kong",
+      "op": "Operating",
+      "group": "",
+      "listedSub": false,
+      "officeZh": "香港青衣青衣工業中心3樓5室",
+      "biz": {
+        "en": "Logistics and warehousing",
+        "zh": "物流及倉儲"
+      },
+      "docLang": "Traditional Chinese",
+      "brNo": "64987321",
+      "brTerm": 1,
+      "branches": [
+        "Kwai Chung warehouse"
+      ],
+      "accTo": "2025-03-31",
+      "lastAGM": "2025-12-18",
+      "lastAR": "2025-10-10",
+      "auditor": "Cheung Ng CPA Limited",
+      "banks": [
+        [
+          "Bank of China (Hong Kong)",
+          "•••• 5512",
+          "Any one of LAM Kwok Keung or LAM Mei Ling"
+        ]
+      ],
+      "shares": [
+        [
+          "Ordinary",
+          "HKD",
+          1000000,
+          1000000,
+          "Yes"
+        ]
+      ],
+      "members": [
+        [
+          "LAM Kwok Keung",
+          "Ordinary",
+          600000
+        ],
+        [
+          "LAM Mei Ling",
+          "Ordinary",
+          400000
+        ]
+      ],
+      "moves": [
+        [
+          "2015-09-02",
+          "Allotment on incorporation",
+          "1,000,000 ordinary shares: LAM Kwok Keung 600,000, LAM Mei Ling 400,000"
+        ]
+      ],
+      "appointed": {
+        "p4": "2015-09-02",
+        "p5": "2015-09-02"
+      },
+      "secSince": "2019-07-01",
+      "sc": [
+        [
+          "LAM Kwok Keung",
+          "Holds more than 25% of the issued shares (60%)",
+          "2015-09-02"
+        ],
+        [
+          "LAM Mei Ling",
+          "Holds more than 25% of the issued shares (40%)",
+          "2015-09-02"
+        ]
+      ],
+      "dr": "LAM Mei Ling (director)",
+      "regsAt": "Registered office",
+      "scrAt": "Registered office",
+      "charges": [
+        [
+          "2020-02-14",
+          "Bank of China (Hong Kong) Limited",
+          "Mortgage over Kwai Chung warehouse",
+          "Registered"
+        ]
+      ],
+      "contacts": [
+        {
+          "name": "LAM Mei Ling",
+          "role": "Director, gives instructions and pays invoices",
+          "ch": "WeChat",
+          "lang": "tc",
+          "billing": true,
+          "sal": {
+            "en": "Mrs Lam",
+            "tc": "林太",
+            "sc": "林太太"
+          }
+        },
+        {
+          "name": "LAM Kwok Keung",
+          "role": "Director",
+          "ch": "WeChat",
+          "lang": "tc"
+        }
+      ],
+      "filings": [
+        [
+          "NAR1",
+          "Annual return 2025",
+          "2025-10-10"
+        ],
+        [
+          "NM1",
+          "Registration of charge",
+          "2020-02-24"
+        ],
+        [
+          "ND2A",
+          "Change of company secretary",
+          "2019-07-01"
+        ]
+      ],
+      "eacct": "10 Oct 2025"
+    },
+    {
+      "id": "c5",
+      "name": {
+        "en": "Peak Harbour Investments Limited",
+        "tc": "峰港投資有限公司",
+        "sc": "峰港投资有限公司"
+      },
+      "cr": "2650918",
+      "inc": "2018-03-06",
+      "fye": [
+        12,
+        31
+      ],
+      "br": "2027-03-05",
+      "risk": "Low",
+      "kyc": "2025-04-10",
+      "contact": {
+        "en": "Mr Leung",
+        "tc": "梁生",
+        "sc": "梁先生"
+      },
+      "contactName": "LEUNG Chi Wai",
+      "channel": "Email",
+      "lang": "en",
+      "office": "18/F, Harbourline House, 2 Pedder Lane, Central, Hong Kong",
+      "directors": [
+        "p6"
+      ],
+      "people": [
+        "p6"
+      ],
+      "status": "Active",
+      "staff": "u2",
+      "type": "Private company limited by shares",
+      "jur": "Hong Kong",
+      "op": "Dormant",
+      "group": "",
+      "listedSub": false,
+      "officeZh": "香港中環畢打巷2號海港大廈18樓",
+      "biz": {
+        "en": "Dormant (formerly property investment)",
+        "zh": "暫無業務（前物業投資）"
+      },
+      "docLang": "English",
+      "brNo": "68201145",
+      "brTerm": 1,
+      "branches": [],
+      "accTo": "2024-12-31",
+      "lastAGM": "",
+      "lastAR": "2026-04-12",
+      "auditor": "Not required while dormant",
+      "banks": [],
+      "shares": [
+        [
+          "Ordinary",
+          "HKD",
+          100,
+          100,
+          "Yes"
+        ]
+      ],
+      "members": [
+        [
+          "LEUNG Chi Wai",
+          "Ordinary",
+          100
+        ]
+      ],
+      "moves": [
+        [
+          "2018-03-06",
+          "Allotment on incorporation",
+          "100 ordinary shares to LEUNG Chi Wai"
+        ]
+      ],
+      "appointed": {
+        "p6": "2018-03-06"
+      },
+      "secSince": "2018-03-06",
+      "sc": [
+        [
+          "LEUNG Chi Wai",
+          "Holds more than 25% of the issued shares (100%)",
+          "2018-03-06"
+        ]
+      ],
+      "dr": "Harbourline Corporate Services Limited (TCSP licensee)",
+      "regsAt": "Registered office",
+      "scrAt": "Registered office",
+      "charges": [],
+      "contacts": [
+        {
+          "name": "LEUNG Chi Wai",
+          "role": "Director and sole shareholder",
+          "ch": "Email, cw.leung@example.com",
+          "lang": "en",
+          "billing": true,
+          "sal": {
+            "en": "Mr Leung",
+            "tc": "梁生",
+            "sc": "梁先生"
+          }
+        }
+      ],
+      "filings": [
+        [
+          "NAR1",
+          "Annual return 2026",
+          "2026-04-12"
+        ],
+        [
+          "Dormancy",
+          "Special resolution declaring the company dormant",
+          "2025-01-15"
+        ]
+      ],
+      "eacct": "12 Apr 2026",
+      "terms": 0
+    }
+  ],
+  "people": {
+    "p1": {
+      "name": "CHAN Tai Man",
+      "zh": "陳大文",
+      "kyc": true,
+      "role": "Director, shareholder"
+    },
+    "p2": {
+      "name": "LEE Siu Ling",
+      "zh": "李小玲",
+      "kyc": true,
+      "role": "Shareholder"
+    },
+    "p3": {
+      "name": "HO Wing Yan",
+      "zh": "何詠欣",
+      "kyc": true,
+      "role": "Director, shareholder"
+    },
+    "p4": {
+      "name": "LAM Kwok Keung",
+      "zh": "林國強",
+      "kyc": true,
+      "role": "Director, shareholder"
+    },
+    "p5": {
+      "name": "LAM Mei Ling",
+      "zh": "林美玲",
+      "kyc": true,
+      "role": "Director"
+    },
+    "p6": {
+      "name": "LEUNG Chi Wai",
+      "zh": "梁志偉",
+      "kyc": true,
+      "role": "Director, shareholder"
+    }
+  },
+  "users": {
+    "u1": {
+      "name": "Karen Yip",
+      "ini": "KY",
+      "title": "Senior Company Secretary"
+    },
+    "u2": {
+      "name": "Mary Chan",
+      "ini": "MC",
+      "title": "Company Secretarial Officer"
+    },
+    "u3": {
+      "name": "Daniel Ho",
+      "ini": "DH",
+      "title": "Assistant Company Secretary"
+    }
+  }
+}

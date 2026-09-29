@@ -1,0 +1,528 @@
+{
+  "fullName": {
+    "label": {
+      "en": "Full name as shown on ID",
+      "tc": "全名（與身份證明文件相同）",
+      "sc": "全名（与身份证明文件相同）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "full name",
+      "english name",
+      "name",
+      "全名",
+      "英文姓名",
+      "姓名"
+    ],
+    "fileKeywords": []
+  },
+  "chiName": {
+    "label": {
+      "en": "Chinese name (if any)",
+      "tc": "中文姓名（如有）",
+      "sc": "中文姓名（如有）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "chinese name",
+      "中文姓名",
+      "中文名"
+    ],
+    "fileKeywords": []
+  },
+  "idNo": {
+    "label": {
+      "en": "HKID or passport number, with issuing country",
+      "tc": "香港身份證或護照號碼及簽發國家／地區",
+      "sc": "香港身份证或护照号码及签发国家／地区"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "hkid",
+      "passport no",
+      "passport",
+      "id number",
+      "身份證",
+      "身份证",
+      "護照",
+      "护照"
+    ],
+    "fileKeywords": []
+  },
+  "resAddr": {
+    "label": {
+      "en": "Residential address",
+      "tc": "住址",
+      "sc": "住址"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "residential address",
+      "home address",
+      "住址"
+    ],
+    "fileKeywords": []
+  },
+  "corrAddr": {
+    "label": {
+      "en": "Correspondence address (shown on the public register)",
+      "tc": "通訊地址（會載於公眾紀錄）",
+      "sc": "通讯地址（会载于公众记录）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "correspondence address",
+      "通訊地址",
+      "通讯地址"
+    ],
+    "fileKeywords": []
+  },
+  "contactInfo": {
+    "label": {
+      "en": "Email and mobile number",
+      "tc": "電郵及手提電話號碼",
+      "sc": "电邮及手机号码"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "email and mobile",
+      "email",
+      "mobile",
+      "phone",
+      "電郵",
+      "电邮",
+      "電話",
+      "电话"
+    ],
+    "fileKeywords": []
+  },
+  "effDate": {
+    "label": {
+      "en": "Effective date",
+      "tc": "生效日期",
+      "sc": "生效日期"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "effective date",
+      "date of appointment",
+      "start date",
+      "effective",
+      "生效日期",
+      "生效"
+    ],
+    "fileKeywords": []
+  },
+  "idCopy": {
+    "label": {
+      "en": "Copy of HKID or passport",
+      "tc": "香港身份證或護照副本",
+      "sc": "香港身份证或护照副本"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "hkid",
+      "passport",
+      "id_"
+    ]
+  },
+  "addrProof": {
+    "label": {
+      "en": "Address proof dated within the last 3 months",
+      "tc": "最近三個月內的住址證明",
+      "sc": "最近三个月内的住址证明"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "address",
+      "utility",
+      "electricity",
+      "bill",
+      "statement"
+    ]
+  },
+  "selfie": {
+    "label": {
+      "en": "Identity check with selfie (through the secure link)",
+      "tc": "自拍身份核實（經安全連結完成）",
+      "sc": "自拍身份核实（经安全链接完成）"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "identity check",
+      "selfie"
+    ]
+  },
+  "resignLetter": {
+    "label": {
+      "en": "Signed resignation letter",
+      "tc": "已簽署的辭職信",
+      "sc": "已签署的辞职信"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "resign"
+    ]
+  },
+  "lastDay": {
+    "label": {
+      "en": "Last day in office",
+      "tc": "最後任職日期",
+      "sc": "最后任职日期"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "last day",
+      "cessation",
+      "最後任職",
+      "最后任职"
+    ],
+    "fileKeywords": []
+  },
+  "replacement": {
+    "label": {
+      "en": "Replacement director, if no individual director would remain",
+      "tc": "接任董事人選（如辭任後再無個人董事）",
+      "sc": "接任董事人选（如辞任后再无个人董事）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "replacement",
+      "接任"
+    ],
+    "fileKeywords": []
+  },
+  "changeDetail": {
+    "label": {
+      "en": "What has changed (old and new details)",
+      "tc": "變更內容（新舊資料）",
+      "sc": "变更内容（新旧资料）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "change",
+      "變更",
+      "变更"
+    ],
+    "fileKeywords": []
+  },
+  "supportDoc": {
+    "label": {
+      "en": "Supporting document for the change",
+      "tc": "變更的證明文件",
+      "sc": "变更的证明文件"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "passport",
+      "address",
+      "proof",
+      "certificate",
+      "deed"
+    ]
+  },
+  "secDetails": {
+    "label": {
+      "en": "New secretary: name, Hong Kong address and ID or company number",
+      "tc": "新公司秘書：姓名、香港地址及身份證明或公司編號",
+      "sc": "新公司秘书：姓名、香港地址及身份证明或公司编号"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "secretary",
+      "秘書",
+      "秘书"
+    ],
+    "fileKeywords": []
+  },
+  "newAddr": {
+    "label": {
+      "en": "New registered office address in Hong Kong",
+      "tc": "新的香港註冊辦事處地址",
+      "sc": "新的香港注册办事处地址"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "new address",
+      "new registered office",
+      "registered office",
+      "address",
+      "新地址",
+      "註冊辦事處",
+      "注册办事处"
+    ],
+    "fileKeywords": []
+  },
+  "premises": {
+    "label": {
+      "en": "Tenancy agreement or landlord consent for the new address",
+      "tc": "新地址的租約或業主同意書",
+      "sc": "新地址的租约或业主同意书"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "tenancy",
+      "lease",
+      "landlord"
+    ]
+  },
+  "newName": {
+    "label": {
+      "en": "Proposed new name (English and/or Chinese), with a backup",
+      "tc": "擬用新名稱（英文及／或中文）及後備名稱",
+      "sc": "拟用新名称（英文及／或中文）及备选名称"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "new name",
+      "proposed name",
+      "新名稱",
+      "新名称"
+    ],
+    "fileKeywords": []
+  },
+  "approvalRoute": {
+    "label": {
+      "en": "Members to sign a written resolution, or hold a general meeting",
+      "tc": "股東簽署書面決議，或召開股東大會",
+      "sc": "股东签署书面决议，或召开股东大会"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "approval",
+      "written resolution",
+      "書面決議",
+      "书面决议"
+    ],
+    "fileKeywords": []
+  },
+  "propName": {
+    "label": {
+      "en": "Proposed company name (English and/or Chinese), with two backups",
+      "tc": "擬用公司名稱（英文及／或中文）及兩個後備名稱",
+      "sc": "拟用公司名称（英文及／或中文）及两个备选名称"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "company name",
+      "proposed name",
+      "公司名稱",
+      "公司名称"
+    ],
+    "fileKeywords": []
+  },
+  "business": {
+    "label": {
+      "en": "Nature of business",
+      "tc": "業務性質",
+      "sc": "业务性质"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "nature of business",
+      "business",
+      "業務",
+      "业务"
+    ],
+    "fileKeywords": []
+  },
+  "founders": {
+    "label": {
+      "en": "Founder members and number of shares each",
+      "tc": "創辦成員及各自認購股數",
+      "sc": "创办成员及各自认购股数"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "founder",
+      "shareholders",
+      "shareholder",
+      "股東",
+      "股东"
+    ],
+    "fileKeywords": []
+  },
+  "capital": {
+    "label": {
+      "en": "Share capital to be paid up",
+      "tc": "擬繳足股本",
+      "sc": "拟缴足股本"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "share capital",
+      "capital",
+      "股本"
+    ],
+    "fileKeywords": []
+  },
+  "directorsList": {
+    "label": {
+      "en": "Directors (at least one individual)",
+      "tc": "董事（最少一名為個人）",
+      "sc": "董事（最少一名为个人）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "directors",
+      "director",
+      "董事"
+    ],
+    "fileKeywords": []
+  },
+  "scList": {
+    "label": {
+      "en": "Significant controllers (holding over 25%)",
+      "tc": "重要控制人（持有超過25%）",
+      "sc": "重要控制人（持有超过25%）"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "significant controllers",
+      "significant controller",
+      "controllers",
+      "controller",
+      "控制人"
+    ],
+    "fileKeywords": []
+  },
+  "funds": {
+    "label": {
+      "en": "Source of funds and source of wealth",
+      "tc": "資金及財富來源",
+      "sc": "资金及财富来源"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "source of funds",
+      "source of wealth",
+      "資金來源",
+      "资金来源",
+      "資金",
+      "资金"
+    ],
+    "fileKeywords": []
+  },
+  "engagement": {
+    "label": {
+      "en": "Signed engagement letter",
+      "tc": "已簽署的委聘書",
+      "sc": "已签署的委聘书"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "engagement"
+    ]
+  },
+  "prevRecords": {
+    "label": {
+      "en": "Statutory records from your previous secretary (registers, minutes, share certificates)",
+      "tc": "前任公司秘書移交的法定紀錄（登記冊、會議紀錄、股票）",
+      "sc": "前任公司秘书移交的法定记录（登记册、会议记录、股票）"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "records",
+      "handover",
+      "minutes"
+    ]
+  },
+  "changesSince": {
+    "label": {
+      "en": "Any changes in shareholders, directors or addresses since the last return",
+      "tc": "自上次申報以來股東、董事或地址有否變更",
+      "sc": "自上次申报以来股东、董事或地址有否变更"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "changes",
+      "change",
+      "no change",
+      "變動",
+      "变动",
+      "變更",
+      "变更"
+    ],
+    "fileKeywords": []
+  },
+  "accounts": {
+    "label": {
+      "en": "Audited financial statements",
+      "tc": "經審計的財務報表",
+      "sc": "经审计的财务报表"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "audited",
+      "financial",
+      "accounts"
+    ]
+  },
+  "auditor": {
+    "label": {
+      "en": "Auditor to be reappointed, and fee arrangement",
+      "tc": "續聘的核數師及收費安排",
+      "sc": "续聘的审计师及收费安排"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "auditor",
+      "核數師",
+      "审计师"
+    ],
+    "fileKeywords": []
+  },
+  "brTerm": {
+    "label": {
+      "en": "Renew for 1 year or 3 years",
+      "tc": "續期一年或三年",
+      "sc": "续期一年或三年"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "renew",
+      "renewal",
+      "續期",
+      "续期"
+    ],
+    "fileKeywords": []
+  },
+  "scConfirm": {
+    "label": {
+      "en": "Confirmation that significant controllers are unchanged",
+      "tc": "確認重要控制人沒有變更",
+      "sc": "确认重要控制人没有变更"
+    },
+    "kind": "data",
+    "fieldSynonyms": [
+      "significant controller",
+      "controller",
+      "控制人"
+    ],
+    "fileKeywords": []
+  },
+  "kycUpdate": {
+    "label": {
+      "en": "Updated ID or address proof where ours has expired",
+      "tc": "更新已過期的身份或住址證明",
+      "sc": "更新已过期的身份或住址证明"
+    },
+    "kind": "document",
+    "fieldSynonyms": [],
+    "fileKeywords": [
+      "hkid",
+      "passport",
+      "address",
+      "proof"
+    ]
+  }
+}

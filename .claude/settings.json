@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "kb=\"$CLAUDE_PROJECT_DIR/crv-kb\"; if [ ! -d \"$kb/.git\" ]; then echo \"CRV knowledge base not found at ./crv-kb. Ask the user before cloning git@github.com:magnusahmad/crv-kb.git there.\"; elif ! git -C \"$kb\" pull --rebase --autostash -q >/dev/null 2>&1; then echo \"CRV knowledge base at ./crv-kb could not be updated (offline, conflict, or a branch without upstream). It may be stale.\"; fi; exit 0",
+            "timeout": 20,
+            "statusMessage": "Updating CRV knowledge base"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Separate repo checked out in place
+crv-kb/
+
+# OS / tooling
+.DS_Store
+node_modules/
+dist/
+coverage/
+*.log
+.claude/settings.local.json
