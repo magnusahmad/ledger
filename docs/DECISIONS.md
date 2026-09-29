@@ -36,3 +36,17 @@ Decisions made during the claude.ai design phase (September 2026), newest last.
     - **Hours-saved measurement is a product requirement.** Per-step timings are needed before heads of terms and to prove margin uplift after acquisition.
 
     This replaces #17's "one deployment per firm" proposal.
+
+## 29 September 2026, build requirements session (owner)
+
+21. **Build the end-to-end investor demo and close the CSA parity gaps.** Scope and plan in `docs/BUILD_SPEC.md` and `docs/MILESTONES.md`.
+22. **Product LLM runs on OpenRouter, `google/gemini-3.8-flash`, for now.** Used only by the product at runtime (intent, extraction, translation, drafting). The build, coding agents and reviewer agents never use OpenRouter. Replaces `PRODUCT_SPEC.md` §8's Anthropic API default for this phase.
+23. **Client intent is understood only by the LLM.** No keyword rules or classic NLP for "what the client means"; the prototype's `triggerKeywords` are replaced by a natural-language `whenToUse` per playbook. The playbook flow that follows can be rule-based, but the agent re-reviews requirements whenever task data changes (spec §4.2).
+24. **Single tenant, single user for this build.** Every table keeps `firm_id`, but RLS policies, login and roles are deferred. This is a deliberate, temporary exception to the `AGENTS.md` non-negotiable; RLS must land before any second firm or design-partner data. Residency and PDPO also deferred.
+25. **Email: Gmail API (OAuth) primary, AgentMail fallback,** behind one mail interface; Outlook (Graph) later.
+26. **Runs on the founder's laptop.** Next.js, worker and Postgres (Homebrew) locally; inbound email and bank deposits are polled, so no public URL.
+27. **Airwallex: bank-transfer deposits to the Global Account, matched on invoice number and amount.** The demo uses the sandbox deposit simulation.
+28. **Xero through the official Xero MCP server,** with Harbourline as MCP client doing deterministic invoice and payment sync. The LLM doesn't decide accounting writes.
+29. **Unknown senders become prospects** with the onboarding playbook added to their request.
+30. **In-house e-signature** (email OTP, stamped PDF, audit certificate) behind a provider interface.
+31. **Jurisdictions: Mainland China, Macau and Taiwan get records plus core playbooks;** offshore (BVI, Cayman, Seychelles) later. Companies Registry forms are the official fillable PDFs filled in. Screening via OpenSanctions. Demo firm identity: Caine Road Corporate Services Limited (fictional). Automation: internal steps run automatically; every client-facing send, register change and filing record needs a human click.
