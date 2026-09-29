@@ -36,6 +36,8 @@ Total time about 8 minutes. The founder drives Harbourline on the laptop, shared
 
 ## Fallbacks
 
+- **Rehearsal stops at intake:** the command prints the stored provider/triage reason and exits unsuccessfully. For an OpenRouter 403 saying the model is unavailable in your region, check account/model availability; if it persists, choose a supported model with `LLM_MODEL=<model-id> npm run demo:rehearse`. This is a one-run override; put it in `.env` only after validating the replacement. A successful rehearsal requires every created task to reach Done with no pending approvals.
+- **Rehearsal reports a superseded approval:** another task changed the company facts. The script returns to the fresh preparation/signing/approval pass; it never applies the rejected preview. Other approval failures still stop the rehearsal.
 - **Gmail not delivering:** switch to AgentMail (`MAIL_PROVIDER=agentmail`) or use Demo panel → Deliver email and type the investor's request.
 - **No Wi-Fi:** the product AI needs OpenRouter. Tether to a phone. As a last resort, run `npm run demo:rehearse` beforehand and show a completed task from a seeded run.
 - **Airwallex sandbox down:** unset the Airwallex keys and restart; the demo bank behaves the same.

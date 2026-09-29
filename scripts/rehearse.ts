@@ -15,18 +15,20 @@ import { seedDemo } from "@/db/seed-demo";
 import { pollMail } from "@/channels/mail-poller";
 import { pollBank } from "@/domain/payments";
 import { runJobs } from "@/domain/jobs";
-import { approveProposal, pendingProposals } from "@/domain/proposals";
+import { approveProposal, pendingProposals, getProposal } from "@/domain/proposals";
 import { getTask, tasksForRequest } from "@/domain/engine";
 import { portalUpload, portalView } from "@/domain/portal";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
 import { invoice, request as requestT } from "@/db/schema";
 import { simplePdf } from "@/documents/simple-pdf";
+import { requireRehearsalRequest, assertRehearsalComplete, runRehearsal, approveCurrentRehearsalProposal } from "./rehearsal-checks";
 
+async function rehearse() {
 const URL = "postgres://localhost/harbourline_eval";
 const t0 = Date.now();
 const log = (s: string) => console.log(`${((Date.now() - t0) / 1000).toFixed(1).padStart(6)}s  ${s}`);
 const c = new Client({ connectionString: URL }); await c.connect();
-await c.query("DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;"); await c.end();
+try { await c.query("DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;"); } finally { await c.end(); }
 await runMigrations(URL);
 const mail = new FakeMail("desk@caineroad.example");
 const ctx = { ...makeRuntimeCtx({ DATABASE_URL: URL }), storage: new MemoryStorage(), mail, bank: new FakeBank(), accounting: new FakeAccounting() };
@@ -35,9 +37,17 @@ log(`seeded; LLM ${ctx.config.llmMode} ${ctx.config.LLM_MODEL} (${ctx.config.LLM
 
 async function approveAll(kind: string, edits: (p: Awaited<ReturnType<typeof pendingProposals>>[number]) => Record<string, unknown> = () => ({})) {
   const ps = await pendingProposals(ctx, { kind: kind as never });
-  for (const p of ps) { await approveProposal(ctx, p.id, { edits: edits(p), shownAt: new Date(Date.now() - 20_000) }); log(`approved ${kind}: ${p.title}`); }
+  let approved = 0;
+  for (const p of ps) {
+    const applied = await approveCurrentRehearsalProposal(
+      async () => { await approveProposal(ctx, p.id, { edits: edits(p), shownAt: new Date(Date.now() - 20_000) }); },
+      async () => (await getProposal(ctx, p.id)).status === "superseded",
+    );
+    if (applied) { approved++; log(`approved ${kind}: ${p.title}`); }
+    else log(`superseded ${kind}: ${p.title}; fresh preparation will be reviewed on the next pass`);
+  }
   await runJobs(ctx);
-  return ps.length;
+  return approved;
 }
 const investor = { email: "sam.lee@venture.example", name: "Sam Lee" };
 
@@ -46,7 +56,7 @@ mail.deliver({ from: investor, subject: "Company secretary for our HK company", 
 await pollMail(ctx); log("email read");
 const pend = await pendingProposals(ctx);
 log(`intray: ${pend.map((p) => `${p.kind} "${p.title}"`).join("; ")}`);
-const reqId = pend.find((p) => p.kind === "send_message")!.requestId!;
+const reqId = requireRehearsalRequest(pend, ctx.config.LLM_MODEL);
 const tasks = await tasksForRequest(ctx, reqId);
 log(`tasks: ${tasks.map((t) => t.playbookId).join(", ")}`);
 await approveAll("send_message");
@@ -123,7 +133,10 @@ for (let round = 0; round < 6; round++) {
 for (const t of tasks) { const x = await getTask(ctx, t.id); log(`FINAL ${x.title}: ${x.status}`); }
 const left = await pendingProposals(ctx);
 if (left.length) log(`still pending: ${left.map((p) => `${p.kind}: ${p.title}`).join("; ")}`);
+assertRehearsalComplete(await Promise.all(tasks.map(t => getTask(ctx, t.id))), left);
 const cl = await ctx.db.query.client.findFirst({ where: (x, { eq }) => eq(x.id, tasks[0].clientId) });
 log(`client now: ${cl?.nameEn} (${cl?.lifecycle}), registered office ${cl?.regOfficeEn}`);
 log(`emails sent: ${mail.sent().length}; Xero invoices ${ctx.accounting.invoices.size}, payments ${ctx.accounting.payments.length}`);
-await closePools();
+}
+
+process.exitCode = await runRehearsal(rehearse, closePools, message => console.error(message));
