@@ -14,6 +14,8 @@ import { FakeBank } from "@/integrations/bank/fake";
 import { FakeAccounting } from "@/integrations/accounting/fake";
 import { FakeScreening } from "@/integrations/screening/fake";
 import { FileList } from "@/integrations/json-store";
+import { AirwallexBank } from "@/integrations/bank/airwallex";
+import { XeroMcpAccounting } from "@/integrations/accounting/xero-mcp";
 import { LazyMail } from "@/integrations/mail/lazy";
 import { GmailMail, gmailOAuthClient } from "@/integrations/mail/gmail";
 import { AgentMailMail } from "@/integrations/mail/agentmail";
@@ -66,8 +68,16 @@ function makeMail(config: Config): MailProvider {
   if (config.mailProvider === "agentmail") return new AgentMailMail(config.AGENTMAIL_API_KEY!, config.AGENTMAIL_INBOX!);
   return new FakeMail("desk@caineroad.example", new FileList(path.join(STORAGE_ROOT, "fake/inbox.json")), new FileList(path.join(STORAGE_ROOT, "fake/outbox.json")));
 }
-function makeBank(_config: Config): BankProvider {
+function makeBank(config: Config): BankProvider {
+  if (config.bankProvider === "airwallex") return new AirwallexBank({ clientId: config.AIRWALLEX_CLIENT_ID!, apiKey: config.AIRWALLEX_API_KEY!, baseUrl: config.AIRWALLEX_BASE_URL, globalAccountId: config.AIRWALLEX_GLOBAL_ACCOUNT_ID });
   return new FakeBank(new FileList(path.join(STORAGE_ROOT, "fake/deposits.json")));
 }
-function makeAccounting(_config: Config): AccountingProvider { return new FakeAccounting(); }
+function makeAccounting(config: Config): AccountingProvider {
+  if (config.accountingProvider === "xero") {
+    const env: Record<string, string> = {};
+    for (const k of ["XERO_CLIENT_ID", "XERO_CLIENT_SECRET", "XERO_CLIENT_BEARER_TOKEN", "XERO_SCOPES"] as const) { const v = (config as Record<string, unknown>)[k] ?? process.env[k]; if (v) env[k] = String(v); }
+    return new XeroMcpAccounting({ env, salesAccountCode: config.XERO_SALES_ACCOUNT_CODE, bankAccountCode: config.XERO_BANK_ACCOUNT_CODE });
+  }
+  return new FakeAccounting();
+}
 function makeScreening(_config: Config): ScreeningProvider { return new FakeScreening(); }
