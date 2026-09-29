@@ -31,6 +31,7 @@ h3 { font-size: 13px; font-weight: 500; color: var(--muted); margin: 18px 0 8px;
 .user span { font-size: 12.5px; color: var(--muted); }
 .topbar { display: none; }
 main { padding: 32px 44px 72px; max-width: 1200px; width: 100%; min-width: 0; }
+.top > * { min-width: 0; max-width: 100%; }
 .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 26px; flex-wrap: wrap; }
 .sub { color: var(--muted); margin: 4px 0 0; font-size: 14px; }
 .back { color: var(--muted); font-size: 13.5px; text-decoration: none; display: inline-block; margin-bottom: 10px; }
@@ -48,6 +49,8 @@ main { padding: 32px 44px 72px; max-width: 1200px; width: 100%; min-width: 0; }
 .btn.sec2 { background: var(--surface); color: var(--ink); border-color: var(--line2); }
 .btn.sec2:hover { background: var(--hover); }
 .btn.danger { background: var(--surface); color: var(--red); border-color: var(--line2); }
+.btn { max-width: 100%; }
+@media (max-width: 560px) { .btn { white-space: normal; text-align: center; } }
 .btn.sm { padding: 5px 11px; font-size: 13.5px; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .txt { background: none; border: 0; padding: 0; color: var(--ink2); cursor: pointer; text-decoration: underline; text-decoration-color: var(--line2); text-underline-offset: 3px; font-size: inherit; }

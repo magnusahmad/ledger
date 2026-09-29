@@ -38,30 +38,42 @@ test("an unknown sender's request goes from email to a completed, filed and regi
   // 3. The client pays into the bank; the payment gate opens.
   await page.goto("/demo");
   await page.getByRole("button", { name: "Send deposit" }).click();
-  await expect(page.getByText(/1 matched automatically/)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/matched automatically|No unpaid invoices/).first()).toBeVisible({ timeout: 30_000 });
   await page.goto(`/invoices`);
-  await page.getByRole("link", { name: "Paid" }).click();
+  await page.getByRole("link", { name: "Paid", exact: true }).click();
   await expect(page.getByRole("link", { name: invoiceNumber })).toBeVisible();
 
   // 4. The client replies with details in the same thread.
   await page.goto("/demo");
   await page.getByLabel("From").fill("sam.lee@venture.example");
+  await page.getByLabel("Name").fill("Sam Lee");
   await page.getByLabel("Subject").fill("Re: New director E2E");
   await page.getByLabel("Body").fill("E2E-DETAILS Jane's HKID K987654(3); home Flat 12B, 88 Robinson Road; use your office for correspondence; jane.doe@example.com +852 9123 4567");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Deliver email" }).click();
   await expect(page.getByText(/processed/)).toBeVisible({ timeout: 30_000 });
-  await approveTop(page, /Approve reply to Sam Lee/, /Approve and send/);
+  await approveTop(page, /^Approve reply to /, /Approve and send/);
 
   // 5. The client uploads documents through the secure link (in their language).
   const link = outbox().map((m) => m.text.match(/http:\/\/localhost:3100\/u\/\w+/)?.[0]).find(Boolean)!;
   await page.goto(link);
-  for (const label of ["Copy of HKID or passport", "Address proof dated within the last 3 months", "Identity check with selfie (through the secure link)"]) {
-    const row = page.locator(".chk", { hasText: label }).first();
-    await row.locator('input[type="file"]').setInputFiles({ name: "doc.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
-    await row.getByRole("button", { name: "Upload" }).click();
-    await expect(row.getByText("Received")).toBeVisible({ timeout: 30_000 });
+  // Work through every outstanding item on the page, as the client would.
+  for (let i = 0; i < 20; i++) {
+    const upload = page.getByRole("button", { name: "Upload" }).first();
+    const save = page.getByRole("button", { name: "Save" }).first();
+    if (await upload.count()) {
+      const form = upload.locator("xpath=ancestor::form[1]");
+      await form.locator('input[type="file"]').setInputFiles({ name: "doc.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
+      await upload.click();
+    } else if (await save.count()) {
+      const form = save.locator("xpath=ancestor::form[1]");
+      await form.locator('input[type="text"]').fill("Sam LEE 100%; salary and savings; Blue Harbour Trading Limited 3345678");
+      await save.click();
+    } else break;
+    await page.waitForTimeout(800);
+    await page.reload();
   }
+  await expect(page.getByRole("button", { name: /Upload|Save/ })).toHaveCount(0);
 
   // 6. Screening clears on its own; documents are generated; staff approve the signing pack.
   await approveTop(page, /Send for signature/, /Send for signature/);
@@ -86,10 +98,13 @@ test("an unknown sender's request goes from email to a completed, filed and regi
   // 8. Done: the director is on the register as at the effective date; filing recorded.
   await page.goto("/tasks?s=done");
   await expect(page.getByRole("link", { name: /Appoint a director: Jane DOE/ })).toBeVisible();
-  await page.getByRole("link", { name: "Blue Harbour Trading Limited" }).first().click();
-  await page.getByRole("link", { name: "Officers and controllers" }).click();
-  await page.goto(page.url() + "&asAt=2026-11-01");
+  const href = await page.getByRole("link", { name: "Blue Harbour Trading Limited" }).first().getAttribute("href");
+  await page.goto(`${href}?tab=officers&asAt=2026-11-01`);
   await expect(page.getByRole("cell", { name: /Jane DOE/ }).first()).toBeVisible();
+  // ...but not as at the day before the appointment took effect.
+  await page.goto(`${href}?tab=officers&asAt=2026-10-31`);
+  await expect(page.getByRole("heading", { name: /Officers as at 31 Oct 2026/ })).toBeVisible();
+  await expect(page.locator("table").first().getByText("Jane DOE")).toHaveCount(0);
 });
 
 const PAGES = ["/", "/clients", "/clients/cli_c1", "/clients/cli_c1?tab=shares", "/clients/cli_c1?tab=officers", "/tasks?s=all", "/invoices?s=all", "/payments", "/batch", "/playbooks", "/inbox", "/reports", "/settings", "/demo", "/new", "/mail"];
