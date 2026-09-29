@@ -1,0 +1,140 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { desc, eq } from "drizzle-orm";
+import { getCtx } from "@/server/ctx";
+import { getTask, outstanding, stepData } from "@/domain/engine";
+import { getPlaybook } from "@/domain/playbooks";
+import { itemLabel } from "@/domain/labels";
+import { pendingProposals } from "@/domain/proposals";
+import { envelopeStatus } from "@/domain/signing";
+import { timeSavedForTask } from "@/domain/time-saved";
+import { client, document, request as requestT, invoice } from "@/db/schema";
+import { taskTimeline } from "@/server/queries";
+import { ActionForm } from "@/components/ActionForm";
+import { tickAction, manualStepAction } from "@/server/actions";
+import { DeadlineStamp, Pill, ago, fmt } from "@/components/ui";
+import { LiveRefresh } from "@/components/LiveRefresh";
+import { money } from "@/domain/labels";
+
+const ICON: Record<string, string> = { needed: "○", received: "●", on_file: "✓", not_needed: "–" };
+
+export default async function TaskPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const ctx = getCtx();
+  const t = await getTask(ctx, id).catch(() => null);
+  if (!t) notFound();
+  const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
+  const cl = (await ctx.db.query.client.findFirst({ where: eq(client.id, t.clientId) }))!;
+  const person = t.personId ? await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, t.personId!) }) : null;
+  const props = await pendingProposals(ctx, { taskId: t.id });
+  const docs = await ctx.db.select().from(document).where(eq(document.taskId, t.id)).orderBy(desc(document.createdAt));
+  const envs = await envelopeStatus(ctx, t.id);
+  const tl = await taskTimeline(ctx, t.id);
+  const saved = await timeSavedForTask(ctx, t.id);
+  const req = t.requestId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, t.requestId) }) : null;
+  const inv = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
+  const cur = t._steps[t.stepIndex];
+  const out = outstanding(t);
+  return (
+    <>
+      <div className="top">
+        <div>
+          <Link href={`/clients/${cl.id}`} className="back">← {cl.nameEn}</Link>
+          <h1>{t.title}</h1>
+          <p className="sub">{pb.name.en}{pb.forms ? ` · ${pb.forms}` : ""} · {t.status === "open" ? cur?.label : t.status === "done" ? "Completed" : "Cancelled"}{person ? ` · ${person.nameEn}` : ""}</p>
+        </div>
+        <div className="row"><LiveRefresh /><DeadlineStamp dueDate={t.status === "open" ? t.dueDate : null} today={ctx.clock.today()} /></div>
+      </div>
+      {props.length > 0 && <div className="banner blue">Waiting for you: {props.map((p, i) => <span key={p.id}>{i > 0 && " · "}<Link href={`/review/${p.id}`}>{p.title}</Link></span>)}</div>}
+      <div className="cols">
+        <div className="stack">
+          <div className="card">
+            <h2>Steps</h2>
+            <ol className="steps">
+              {t._steps.map((s, i) => {
+                const sd = stepData(t, i);
+                const state = t.status === "done" || i < t.stepIndex ? (sd.skipped || (s.kind === "pay" && t.onCredit) ? "skip" : "done") : i === t.stepIndex && t.status === "open" ? "cur" : "";
+                return (
+                  <li key={i} className={`step ${state}`}><span className="dot" aria-hidden /><div><span className="lbl">{s.label}</span>
+                    {state === "skip" && <span className="small muted"> · {s.kind === "pay" ? "skipped: credit terms" : String(sd.skipped ?? "skipped")}</span>}
+                    {typeof sd.reference === "string" && <span className="small muted"> · ref {sd.reference}</span>}
+                    {state === "cur" && s.kind === "task" && (
+                      <ActionForm action={manualStepAction.bind(null, t.id)} submit="Mark done" tone="secondary">
+                        {s.instructions && <p className="small muted" style={{ margin: "4px 0" }}>{s.instructions}</p>}
+                        <input type="text" name="note" placeholder="Note (optional)" style={{ marginTop: 6 }} />
+                      </ActionForm>
+                    )}
+                    {state === "cur" && s.kind === "collect" && out.length > 0 && <div className="small muted">Waiting for {out.length} item(s) from the client</div>}
+                    {state === "cur" && s.kind === "pay" && inv && <div className="small muted">Waiting for {money(inv.totalCents - inv.paidCents)} against {inv.number}</div>}
+                  </div></li>
+                );
+              })}
+            </ol>
+          </div>
+          <div className="card">
+            <div className="sec-h"><h2>Checklist</h2>{req && <a className="small" href={`/u/${req.uploadToken}`} target="_blank">Client’s upload link</a>}</div>
+            {t.checklist.map((e, i) => (
+              <div key={i} className="chk">
+                <span className="ic" aria-hidden>{ICON[e.status]}</span>
+                <span>{itemLabel(e.key, "en", t.params)}{e.optional ? <span className="muted"> (optional)</span> : null}
+                  {e.value && !["idNo", "resAddr"].includes(e.key) && <div className="small muted">{e.value}</div>}
+                  {e.documentId && <div className="small"><a href={`/api/docs/${e.documentId}`} target="_blank">View document</a></div>}
+                  {e.reason && <div className="small muted">{e.reason}</div>}
+                </span>
+                <span>{e.status === "needed" && t.status === "open" ? (
+                  <details className="more"><summary>Tick</summary>
+                    <ActionForm action={tickAction.bind(null, t.id, e.key)} submit="Mark received" tone="secondary"><input type="text" name="value" placeholder="Value (optional)" style={{ marginTop: 6, minWidth: 180 }} /></ActionForm>
+                  </details>
+                ) : <span className="small muted">{e.status === "on_file" ? "On file" : e.status === "received" ? "Received" : e.status === "not_needed" ? "Not needed" : "To request"}</span>}</span>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <h2>Documents</h2>
+            {docs.length === 0 ? <p className="empty">Documents appear here once details are collected.</p> : (
+              <ul className="list">{docs.map((d) => (
+                <li key={d.id} className="item"><div className="main"><a className="t" href={`/api/docs/${d.id}`} target="_blank">{d.title}</a><div className="m">{d.source === "generated" ? "Prepared by Harbourline" : d.source === "signed" ? "Signed copy" : d.source === "upload" ? "Uploaded by client" : d.source === "email" ? "From email" : d.source} · {ago(d.createdAt)}</div></div>{d.source === "signed" && <Pill tone="ok">Signed</Pill>}</li>
+              ))}</ul>
+            )}
+            {envs.map((e) => (
+              <div key={e.id} style={{ marginTop: 12 }}>
+                <h3>Signatures</h3>
+                {e.signers.map((s) => <div key={s.email} className="chk"><span className="ic">{s.signedAt ? "●" : "○"}</span><span>{s.name} <span className="muted small">{s.email}</span></span><span className="small muted">{s.signedAt ? `Signed ${ago(s.signedAt)}` : e.status === "draft" ? "Not sent yet" : "Waiting"}</span></div>)}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="stack">
+          <div className="card">
+            <h2>Time saved</h2>
+            <div className="grid2">
+              <div className="stat"><b>{Math.round(saved.baselineMinutes)} min</b><span>typical staff time for this work so far</span></div>
+              <div className="stat"><b>{saved.staffMinutes} min</b><span>your time on {saved.approvals} approval(s)</span></div>
+            </div>
+            {saved.items.length > 0 && <details className="more" style={{ marginTop: 10 }}><summary>What Harbourline did</summary><ul className="small">{saved.items.map((x, i) => <li key={i}>{x.label} <span className="muted">({x.minutes} min)</span></li>)}</ul></details>}
+          </div>
+          <div className="card">
+            <h2>Details</h2>
+            <dl className="kv small">
+              <dt>Client</dt><dd><Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link></dd>
+              {person && <><dt>Person</dt><dd>{person.nameEn}{person.nameZh ? ` ${person.nameZh}` : ""}</dd></>}
+              <dt>Effective</dt><dd>{t.effectiveDate ? fmt(t.effectiveDate) : "—"}</dd>
+              <dt>Deadline</dt><dd>{t.dueDate ? `${fmt(t.dueDate)}` : "—"}{pb.deadline.kind !== "none" && <div className="muted">{pb.deadline.rule}</div>}</dd>
+              <dt>Invoice</dt><dd>{inv ? <Link href={`/invoices/${inv.id}`}>{inv.number}</Link> : "—"} {inv && <Pill tone={inv.status === "paid" ? "ok" : "amber"}>{inv.status}</Pill>}</dd>
+              <dt>Terms</dt><dd>{t.onCredit ? "Credit terms" : "Upfront"}</dd>
+            </dl>
+            <details className="more" style={{ marginTop: 10 }}><summary>Compliance notes</summary><ul className="small">{pb.complianceNotes.map((n, i) => <li key={i}>{n}</li>)}</ul><p className="small muted">{pb.verifyNote}</p></details>
+          </div>
+          <div className="card">
+            <h2>Timeline</h2>
+            <ul className="timeline">
+              {tl.ev.map((e) => (
+                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{e.summary}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : "Karen Yip"}</div></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

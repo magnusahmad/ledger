@@ -16,7 +16,8 @@ const PERSON_FIELD: Record<string, string> = { fullName: "nameEn", chiName: "nam
 onApprove("send_message", async (ctx, p, opts) => {
   const messageId = p.payload.messageId as string;
   const m = (await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) }))!;
-  const edits = opts.edits as { subject?: string; text?: string; to?: string[] } | undefined;
+  const raw = opts.edits as { subject?: string; text?: string; to?: string | string[] } | undefined;
+  const edits = raw ? { ...raw, to: typeof raw.to === "string" ? raw.to.split(/[,;\s]+/).filter(Boolean) : raw.to } : undefined;
   if (edits?.text && opts.editChars === undefined) opts.editChars = editDistance(m.text ?? "", edits.text);
   const inv = await invoiceForRequest(ctx, (p.payload.requestId as string | null) ?? null);
   const attachInvoice = inv && inv.status === "draft" && (m.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;

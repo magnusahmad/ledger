@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently -k -n web,worker \"next dev\" \"tsx watch --env-file-if-exists=.env src/worker/main.ts\"",
+    "dev": "concurrently -k -n web,worker -c blue,green \"next dev\" \"tsx watch --env-file-if-exists=.env src/worker/main.ts\"",
     "dev:web": "next dev",
     "worker": "tsx --env-file-if-exists=.env src/worker/main.ts",
     "build": "next build",
@@ -38,6 +38,7 @@
     "pg-boss": "^12.35.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
