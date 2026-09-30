@@ -1,19 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
 import { getTask, outstanding, stepData } from "@/domain/engine";
 import { getPlaybook } from "@/domain/playbooks";
 import { itemLabel, itemKind } from "@/domain/labels";
 import { pendingProposals } from "@/domain/proposals";
 import { envelopeStatus } from "@/domain/signing";
-import { client, document, request as requestT, invoice } from "@/db/schema";
+import { client, document, request as requestT, invoice, taskAction } from "@/db/schema";
 import { taskTimeline } from "@/server/queries";
 import { ActionForm } from "@/components/ActionForm";
-import { tickAction, manualStepAction } from "@/server/actions";
+import { tickAction, manualStepAction, addStepAction, completeStepAction, dropStepAction, holdAction, releaseHoldAction, followedUpAction } from "@/server/actions";
 import { DeadlineStamp, Pill, StatusPill, ago, fmt } from "@/components/ui";
 import { ChecklistTick } from "@/components/ChecklistTick";
-import { documentSourceLabel, stepStatus, timelineText, valueText } from "@/lib/display";
+import { ActionButton } from "@/components/ActionForm";
+import { documentSourceLabel, stepStatus, timelineText, valueText, waitingLabel } from "@/lib/display";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { money } from "@/domain/labels";
 
@@ -35,16 +36,50 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   const inv = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
   const cur = t._steps[t.stepIndex];
   const out = outstanding(t);
+  const steps = await ctx.db.select().from(taskAction).where(eq(taskAction.taskId, t.id)).orderBy(asc(taskAction.createdAt));
+  const openSteps = steps.filter((a) => a.status === "open");
+  const today = ctx.clock.today();
+  const waitingSelect = (def: string) => <select name="waitingOn" defaultValue={def}><option value="us">Us</option><option value="client">The client</option><option value="third_party">A third party</option></select>;
   return (
     <>
       <div className="top">
         <div>
           <Link href="/tasks" className="back">← Tasks</Link>
           <h1>{t.title}</h1>
-          <p className="sub"><Link className="lnk" href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{[pb.forms !== "None" && pb.forms, stepStatus(cur, t.status)].filter(Boolean).map((x) => ` · ${x}`).join("")}</p>
+          <p className="sub"><Link className="lnk" href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{[pb.forms !== "None" && pb.forms, t.holdReason && t.status === "open" ? "On hold" : stepStatus(cur, t.status)].filter(Boolean).map((x) => ` · ${x}`).join("")}</p>
         </div>
-        <div className="row"><LiveRefresh /><DeadlineStamp dueDate={t.status === "open" ? t.dueDate : null} today={ctx.clock.today()} /></div>
+        <div className="row"><LiveRefresh /><DeadlineStamp dueDate={t.status === "open" ? t.dueDate : null} today={ctx.clock.today()} />
+          {t.status === "open" && !t.holdReason && (
+            <details className="pop"><summary className="btn sm sec2">Put on hold</summary>
+              <div className="card pop-body">
+                <ActionForm action={holdAction.bind(null, t.id)} submit="Put on hold">
+                  <div className="fld"><label className="f" htmlFor="hold-reason">Why</label><input id="hold-reason" type="text" name="reason" required placeholder="e.g. Waiting for the outgoing secretary’s minute book" /></div>
+                  <div className="grid2" style={{ marginTop: 12 }}>
+                    <div><label className="f">Waiting on</label>{waitingSelect("third_party")}</div>
+                    <div><label className="f" htmlFor="hold-fu">Follow up on</label><input id="hold-fu" type="date" name="followUpOn" required /></div>
+                  </div>
+                </ActionForm>
+              </div>
+            </details>
+          )}
+        </div>
       </div>
+      {t.holdReason && t.status === "open" && (
+        <div className="banner amber hold">
+          <div><b>On hold</b> since {fmt(t.holdSince)}: {t.holdReason}. Waiting on {waitingLabel(t.holdWaitingOn).toLowerCase()}. {t.holdFollowUpOn && (t.holdFollowUpOn < today ? <b>Follow-up overdue since {fmt(t.holdFollowUpOn)}.</b> : t.holdFollowUpOn === today ? <b>Follow up today.</b> : <>Follow up on {fmt(t.holdFollowUpOn)}.</>)}</div>
+          <div className="row" style={{ marginTop: 10, alignItems: "flex-start" }}>
+            <ActionForm action={releaseHoldAction.bind(null, t.id)} submit="Release hold" />
+            <details className="pop"><summary className="btn sec2">Followed up</summary>
+              <div className="card pop-body" style={{ left: 0, right: "auto" }}>
+                <ActionForm action={followedUpAction.bind(null, "hold", t.id)} submit="Save">
+                  <div className="fld"><label className="f" htmlFor="fu-note">What they said</label><input id="fu-note" type="text" name="note" /></div>
+                  <div className="fld"><label className="f" htmlFor="fu-next">Next follow-up</label><input id="fu-next" type="date" name="next" required /></div>
+                </ActionForm>
+              </div>
+            </details>
+          </div>
+        </div>
+      )}
       {props.length > 0 && <div className="banner blue">Needs your approval: {props.map((p, i) => <span key={p.id}>{i > 0 && " · "}<Link href={`/review/${p.id}`}>{p.title}</Link></span>)}</div>}
       <div className="cols">
         <div className="stack">
@@ -58,6 +93,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                   <li key={i} className={`step ${state}`}><span className="dot" aria-hidden /><div><span className="lbl">{s.label}</span>
                     {state === "skip" && <span className="small muted"> · {s.kind === "pay" ? "skipped: credit terms" : String(sd.skipped ?? "skipped")}</span>}
                     {typeof sd.reference === "string" && <span className="small muted"> · ref {sd.reference}</span>}
+                    {openSteps.filter((a) => a.beforeStep != null && a.beforeStep === i).map((a) => <div key={a.id} className="small" style={{ color: "var(--amber)" }}>Waits for: {a.title}</div>)}
                     {state === "cur" && s.kind === "task" && (
                       <ActionForm action={manualStepAction.bind(null, t.id)} submit="Mark done" tone="secondary">
                         {s.instructions && <p className="small muted" style={{ margin: "4px 0" }}>{s.instructions}</p>}
@@ -86,6 +122,58 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                   : <span className="small muted">{e.status === "on_file" ? "On file" : e.status === "received" ? "Received" : e.status === "not_needed" ? "Not needed" : "To request"}</span>}</span>
               </div>
             ))}
+          </div>
+          <div className="card">
+            <div className="sec-h"><h2>Off-platform steps</h2></div>
+            {steps.length === 0 && <p className="empty" style={{ paddingTop: 0 }}>Anything done outside Harbourline, such as stamping, a notary or chasing a bank.</p>}
+            <ul className="list">
+              {steps.map((a) => (
+                <li key={a.id} className="item" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div className="main">
+                    <div className="t" style={a.status !== "open" ? { color: "var(--muted)", fontWeight: 400 } : undefined}>{a.status === "done" ? "✓ " : a.status === "cancelled" ? "– " : ""}{a.title}</div>
+                    <div className="m">{a.status === "open"
+                      ? [`Waiting on ${waitingLabel(a.waitingOn).toLowerCase()}`, a.dueDate && `due ${fmt(a.dueDate)}`, a.followUpOn && (a.followUpOn <= today ? `follow-up due ${fmt(a.followUpOn)}` : `follow up ${fmt(a.followUpOn)}`), a.beforeStep != null && `before “${t._steps[a.beforeStep]?.label}”`].filter(Boolean).join(" · ")
+                      : a.status === "done" ? [`Done ${fmt(a.completedAt)}`, a.proofReference && `ref ${a.proofReference}`, a.proofNote].filter(Boolean).join(" · ") : "Dropped"}
+                      {a.proofDocumentId && <> · <a className="lnk" href={`/api/docs/${a.proofDocumentId}`} target="_blank">Proof</a></>}</div>
+                  </div>
+                  {a.status === "open" && t.status === "open" && (
+                    <details className="more" style={{ flexBasis: "100%" }}><summary>Mark done or follow up</summary>
+                      <div className="grid2" style={{ marginTop: 10 }}>
+                        <ActionForm action={completeStepAction.bind(null, a.id)} submit="Mark done">
+                          <p className="small muted" style={{ margin: "0 0 8px" }}>Proof: a reference, a note or a document.</p>
+                          <input type="text" name="reference" placeholder="Reference, e.g. Stamp Office number" aria-label="Reference" />
+                          <input type="text" name="note" placeholder="Note" aria-label="Note" style={{ marginTop: 8 }} />
+                          <input type="file" name="file" aria-label="Proof document" style={{ marginTop: 8 }} />
+                        </ActionForm>
+                        <div>
+                          <ActionForm action={followedUpAction.bind(null, "step", a.id)} submit="Followed up" tone="secondary">
+                            <p className="small muted" style={{ margin: "0 0 8px" }}>Chased them? Set the next check.</p>
+                            <input type="text" name="note" placeholder="What they said" aria-label="What they said" />
+                            <input type="date" name="next" required aria-label="Next follow-up" style={{ marginTop: 8 }} />
+                          </ActionForm>
+                          <div style={{ marginTop: 12 }}><ActionButton action={dropStepAction.bind(null, a.id)} confirm="Drop this step?">No longer needed</ActionButton></div>
+                        </div>
+                      </div>
+                    </details>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {t.status === "open" && (
+              <details className="more" style={{ marginTop: 12 }}><summary>Add an off-platform step</summary>
+                <div style={{ marginTop: 10 }}>
+                  <ActionForm action={addStepAction.bind(null, t.id)} submit="Add step" resetOnSuccess>
+                    <div className="fld"><label className="f" htmlFor="ops-title">What needs doing</label><input id="ops-title" type="text" name="title" required placeholder="e.g. Stamp the instrument of transfer at the IRD Stamp Office" /></div>
+                    <div className="grid2" style={{ marginTop: 12 }}>
+                      <div><label className="f">Waiting on</label>{waitingSelect("us")}</div>
+                      <div><label className="f" htmlFor="ops-before">Must be done before</label><select id="ops-before" name="beforeStep" defaultValue=""><option value="">No particular step</option>{t._steps.map((s, i) => i > t.stepIndex ? <option key={i} value={i}>{s.label}</option> : null)}</select></div>
+                      <div><label className="f" htmlFor="ops-due">Due</label><input id="ops-due" type="date" name="dueDate" /></div>
+                      <div><label className="f" htmlFor="ops-fu">Follow up on</label><input id="ops-fu" type="date" name="followUpOn" /></div>
+                    </div>
+                  </ActionForm>
+                </div>
+              </details>
+            )}
           </div>
           <div className="card">
             <h2>Documents</h2>

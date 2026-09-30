@@ -325,9 +325,37 @@ export const task = pgTable("task", {
   dueDate: date("due_date"),
   onCredit: boolean("on_credit").notNull().default(false),
   periodKey: text("period_key"),
+  // On hold: the task doesn't move on by itself until released (waiting on a third party, a dispute...).
+  holdReason: text("hold_reason"),
+  holdWaitingOn: text("hold_waiting_on").$type<"client" | "third_party" | "us">(),
+  holdPartyId: text("hold_party_id"),
+  holdSince: date("hold_since"),
+  holdFollowUpOn: date("hold_follow_up_on"),
   createdAt: createdAt(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 }, (t) => [index("task_client_idx").on(t.clientId)]);
+
+/** Work done outside Harbourline for a task (Stamp Office, notary, bank, court...), with proof when done. */
+export const taskAction = pgTable("task_action", {
+  id: text("id").primaryKey(),
+  firmId: firmId(),
+  taskId: text("task_id").notNull(),
+  title: text("title").notNull(),
+  waitingOn: text("waiting_on").$type<"us" | "client" | "third_party">().notNull(),
+  ownerId: text("owner_id"),
+  partyId: text("party_id"),
+  dueDate: date("due_date"),
+  followUpOn: date("follow_up_on"),
+  /** The task can't enter this step (playbook index) until this is done. */
+  beforeStep: integer("before_step"),
+  status: text("status").$type<"open" | "done" | "cancelled">().notNull().default("open"),
+  proofNote: text("proof_note"),
+  proofReference: text("proof_reference"),
+  proofDocumentId: text("proof_document_id"),
+  completedBy: text("completed_by"),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+}, (t) => [index("task_action_task_idx").on(t.taskId)]);
 
 export const taskEvent = pgTable("task_event", {
   id: text("id").primaryKey(),

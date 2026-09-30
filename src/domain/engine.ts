@@ -1,12 +1,9 @@
 // The task engine: deterministic step progression over playbook data.
 // Understanding what the client means is the agent layer's job (src/agent); this module
 // only decides what happens next given the task's state.
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, lte } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import {
-  businessRegistration, cddRecord, client as clientT, invoice, person as personT, request as requestT,
-  task as taskT, taskEvent, proposal, signEnvelope, type ChecklistEntry,
-} from "@/db/schema";
+import { businessRegistration, cddRecord, client as clientT, invoice, person as personT, request as requestT, task as taskT, taskEvent, proposal, signEnvelope, taskAction, type ChecklistEntry } from "@/db/schema";
 import type { PlaybookDef, StepDef, StepKind } from "./playbook-types";
 import { getPlaybook } from "./playbooks";
 import { addDays, addMonths, isIsoDate } from "./dates";
@@ -281,11 +278,20 @@ export async function assertTaskReady(ctx: Ctx, taskId: string, kind: StepKind) 
   return t;
 }
 
+/** Who a task is waiting on, for lists and Today. A hold overrides the current step. */
+export function waitingOnFor(t: Pick<Task, "status" | "holdReason">, step: StepDef | null | undefined) {
+  if (t.status !== "open") return null;
+  if (t.holdReason) return "hold";
+  return step?.kind === "pay" ? "payment" : step?.kind === "collect" ? "client" : step?.kind === "sign" ? "signatures" : step?.human ? "you" : "harbourline";
+}
+
 /** Moves the task forward through every step whose completion condition holds. */
 export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps: StepDef[] }> {
   for (let guard = 0; guard < 40; guard++) {
     const t = await getTask(ctx, taskId);
     if (t.status !== "open") return t;
+    // On hold: nothing moves until staff release it.
+    if (t.holdReason) return t;
     const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
 
     // Entry check: new outstanding items after collection send the task back to collect
@@ -305,6 +311,9 @@ export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps
     if ((cur.kind === "collect" || REOPENABLE.includes(cur.kind)) && (await taskBlockers(ctx, taskId)).length) return t;
     const c = await stepCompletion(ctx, t, cur, t.stepIndex, pb);
     if (!c.done) return t;
+    // An open off-platform step ordered before the next step keeps the task where it is.
+    const blocking = await ctx.db.select({ id: taskAction.id }).from(taskAction).where(and(eq(taskAction.taskId, taskId), eq(taskAction.status, "open"), lte(taskAction.beforeStep, t.stepIndex + 1)));
+    if (blocking.length) return t;
     await logEvent(ctx, taskId, c.skipped ? "step.skipped" : "step.completed", c.skipped ?? `Done: ${cur.label}`, { step: t.stepIndex, kind: cur.kind });
     const next = t.stepIndex + 1;
     await ctx.db.update(taskT).set({ stepIndex: next }).where(eq(taskT.id, taskId));

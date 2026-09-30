@@ -18,6 +18,7 @@ import { logMailItem } from "@/domain/mail-items";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { portalSubmit } from "@/domain/portal";
 import { startManualRequest, type ManualItem } from "@/domain/manual";
+import { addOffPlatformStep, cancelOffPlatformStep, completeOffPlatformStep, followedUp, putOnHold, releaseHold, type WaitingOn } from "@/domain/off-platform";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
 import { contact, invoice, message, type Lang } from "@/db/schema";
 import { resetDemoData } from "@/domain/demo";
@@ -86,6 +87,36 @@ export async function manualRequestAction(_prev: ActionResult | null, form: Form
     revalidatePath("/", "layout");
     return { ok: true, redirectTo: r.proposalId ? `/review/${r.proposalId}` : `/tasks/${r.taskIds[0]}` };
   } catch (e) { return fail(e); }
+}
+
+// ---------- Off-platform steps and holds ----------
+const str = (f: FormData, k: string) => String(f.get(k) ?? "");
+export async function addStepAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const before = str(form, "beforeStep");
+    await addOffPlatformStep(getCtx(), taskId, { title: str(form, "title"), waitingOn: (str(form, "waitingOn") || "us") as WaitingOn, partyId: str(form, "partyId") || null, dueDate: str(form, "dueDate") || null, followUpOn: str(form, "followUpOn") || null, beforeStep: before === "" ? null : Number(before) });
+    return done("Added");
+  } catch (e) { return fail(e); }
+}
+export async function completeStepAction(actionId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const f = form.get("file");
+    const file = f instanceof File && f.size ? { filename: f.name, mime: f.type || "application/octet-stream", content: Buffer.from(await f.arrayBuffer()) } : null;
+    await completeOffPlatformStep(getCtx(), actionId, { note: str(form, "note"), reference: str(form, "reference"), file });
+    return done();
+  } catch (e) { return fail(e); }
+}
+export async function dropStepAction(actionId: string): Promise<ActionResult> {
+  try { await cancelOffPlatformStep(getCtx(), actionId, ""); return done(); } catch (e) { return fail(e); }
+}
+export async function holdAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try { await putOnHold(getCtx(), taskId, { reason: str(form, "reason"), waitingOn: (str(form, "waitingOn") || "third_party") as WaitingOn, partyId: str(form, "partyId") || null, followUpOn: str(form, "followUpOn") }); return done(); } catch (e) { return fail(e); }
+}
+export async function releaseHoldAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try { await releaseHold(getCtx(), taskId, str(form, "note")); return done(); } catch (e) { return fail(e); }
+}
+export async function followedUpAction(kind: "step" | "hold", id: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try { await followedUp(getCtx(), { kind, id, nextFollowUpOn: str(form, "next"), note: str(form, "note") }); return done("Noted"); } catch (e) { return fail(e); }
 }
 
 export async function tickAction(taskId: string, key: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {

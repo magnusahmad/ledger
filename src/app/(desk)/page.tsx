@@ -8,7 +8,8 @@ import { ActionForm } from "@/components/ActionForm";
 import { batchAction } from "@/server/actions";
 import { message } from "@/db/schema";
 import { money } from "@/domain/labels";
-import { plural } from "@/lib/display";
+import { plural, waitingLabel } from "@/lib/display";
+import { outsideWork } from "@/domain/off-platform";
 
 const KIND_LABEL: Record<string, string> = {
   send_message: "Reply to approve", record_filing: "Record filing", register_change: "Register update", send_signing: "Signing pack",
@@ -21,6 +22,7 @@ export default async function Today() {
   const ctx = getCtx();
   const d = await todayData(ctx);
   const today = ctx.clock.today();
+  const outside = await outsideWork(ctx);
   const reading = await ctx.db.select().from(message).where(and(eq(message.firmId, ctx.firmId), eq(message.direction, "in"), isNull(message.processedAt)));
   return (
     <>
@@ -69,6 +71,21 @@ export default async function Today() {
                     <input type="hidden" name="playbookId" value={x.playbookId} /><input type="hidden" name="clientId" value={x.clientId} /><input type="hidden" name="periodYear" value={x.periodYear} />
                   </ActionForm>
                 </div>
+              </li>
+            ))}
+          </ul></div>
+        </section>
+      )}
+
+      {outside.length > 0 && (
+        <section className="sec" aria-labelledby="out">
+          <div className="sec-h"><h2 id="out">Outside the platform</h2><span className="small muted">Off-platform steps and tasks on hold</span></div>
+          <div className="card tight"><ul className="list">
+            {outside.map((r) => (
+              <li key={`${r.kind}-${r.id}`} className="item">
+                <div className="main"><Link href={`/tasks/${r.taskId}`} className="t">{r.kind === "hold" ? `On hold: ${r.title}` : r.title}</Link>
+                  <div className="m">{r.clientName} · {r.taskTitle} · Waiting on {waitingLabel(r.waitingOn).toLowerCase()}</div></div>
+                <div className="row">{r.followUpDue ? <Pill tone="amber">{(r.followUpOn ?? r.dueDate)! < today ? "Follow-up overdue" : "Follow up today"}</Pill> : (r.followUpOn || r.dueDate) ? <span className="small muted">{r.followUpOn ? `Follow up ${fmt(r.followUpOn)}` : `Due ${fmt(r.dueDate)}`}</span> : null}</div>
               </li>
             ))}
           </ul></div>
