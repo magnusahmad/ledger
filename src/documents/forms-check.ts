@@ -11,7 +11,7 @@ type Manifest = Record<string, { url: string; sha256: string; specification: str
 export function formCheckSummary(r: { checked: number; changed: string[]; errors: string[] }) {
   const changed = r.changed.length ? `Changed on cr.gov.hk: ${r.changed.join(", ")}. Re-map these forms before filing.` : "";
   if (r.errors.length) return `Check incomplete: could not verify ${r.errors.length} of ${r.checked} forms (${r.errors.join("; ")}).${changed ? ` ${changed}` : ""}`;
-  return changed || `All ${r.checked} forms match the manifest.`;
+  return changed || `All ${r.checked} forms match the current versions.`;
 }
 
 export function formsManifest(): Manifest {

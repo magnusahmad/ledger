@@ -5,7 +5,7 @@ import { appUser, firm } from "@/db/schema";
 export const DEMO_FIRM = {
   legalName: "Caine Road Corporate Services Limited",
   legalNameZh: "堅道企業服務有限公司",
-  tcspLicence: "TC009999 (fictional)",
+  tcspLicence: "TC009999", // fictional
   address: "18/F, 88 Caine Road, Mid-Levels, Hong Kong",
   email: "desk@caineroad.example",
   phone: "+852 3000 0000",

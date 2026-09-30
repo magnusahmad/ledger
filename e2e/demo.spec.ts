@@ -57,25 +57,19 @@ test("an unknown sender's request goes from email to a completed, filed and regi
   // 5. The client uploads documents through the secure link (in their language).
   const link = outbox().map((m) => m.text.match(/http:\/\/localhost:3100\/u\/\w+/)?.[0]).find(Boolean)!;
   await page.goto(link);
-  // Work through every outstanding item on the page, as the client would.
-  for (let i = 0; i < 20; i++) {
-    const upload = page.getByRole("button", { name: "Upload" }).first();
-    const save = page.getByRole("button", { name: "Save" }).first();
-    if (await upload.count()) {
-      const form = upload.locator("xpath=ancestor::form[1]");
-      await form.locator('input[type="file"]').setInputFiles({ name: "doc.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
-      await Promise.all([page.waitForResponse(r => r.request().method() === "POST").then(r => r.finished()), upload.click()]);
-    } else if (await save.count()) {
-      const form = save.locator("xpath=ancestor::form[1]");
-      await form.locator('input[type="text"]').fill("Sam LEE 100%; salary and savings; Blue Harbour Trading Limited 3345678");
-      await Promise.all([page.waitForResponse(r => r.request().method() === "POST").then(r => r.finished()), save.click()]);
-    } else break;
-    // Upload completion can prepare a full signing pack; do not cancel its UI
-    // transition by reloading after an arbitrary short delay.
-    await expect(page.getByRole("button", { name: "Working…" })).toHaveCount(0);
+  // Fill in everything outstanding and send it in one go, as the client would.
+  for (let i = 0; i < 5; i++) {
+    const files = page.locator('form input[type="file"]');
+    const texts = page.locator('form input[type="text"]');
+    if (!(await files.count()) && !(await texts.count())) break;
+    for (let f = 0; f < await files.count(); f++) await files.nth(f).setInputFiles({ name: "doc.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 demo") });
+    for (let t = 0; t < await texts.count(); t++) await texts.nth(t).fill("Sam LEE 100%; salary and savings; Blue Harbour Trading Limited 3345678");
+    await page.getByRole("button", { name: "Send" }).click();
+    // Sending can prepare a full signing pack; wait for it rather than reloading early.
+    await expect(page.getByText(/Received\. Thank you\.|We have everything we need/)).toBeVisible({ timeout: 60_000 });
     await page.reload();
   }
-  await expect(page.getByRole("button", { name: /Upload|Save/ })).toHaveCount(0);
+  await expect(page.locator('form input[type="file"], form input[type="text"]')).toHaveCount(0);
 
   // 6. Screening clears on its own; documents are generated; staff approve the signing pack.
   await approveTop(page, /Send for signature/, /Send for signature/);

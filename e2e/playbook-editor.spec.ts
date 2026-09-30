@@ -5,7 +5,8 @@ test("staff edit a bilingual playbook safely at all four widths", async ({ page 
   page.on("pageerror", error => errors.push(error.message));
   await page.goto("/playbooks");
   const row = page.locator("li.item").filter({ has: page.locator('[id="definition-hk.changeOffice"]') });
-  const editor = row.locator("details").filter({ has: page.locator('textarea') });
+  await row.locator("details.pb-row > summary").click();
+  const editor = row.locator("details.pb-edit");
   await editor.locator("summary").click();
   const input = editor.locator("textarea");
   const original = JSON.parse(await input.inputValue());
@@ -42,7 +43,7 @@ test("an incomplete official-form check stays visibly unverified at every width"
     await page.goto("/playbooks");
     await expect(page.getByText(/Check incomplete: could not verify/)).toBeVisible();
     await expect(page.getByText("Not verified", { exact: true })).toHaveCount(Object.keys(manifest).length);
-    await expect(page.getByText("Verified unchanged", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Current", { exact: true })).toHaveCount(0);
     for (const width of [375, 768, 1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

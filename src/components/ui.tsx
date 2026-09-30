@@ -1,15 +1,22 @@
 // Small presentational helpers shared by server components.
 import type { ReactNode } from "react";
+import { statusLabel, when } from "@/lib/display";
 
 export function Pill({ tone, children }: { tone?: "amber" | "red" | "ok" | "blue"; children: ReactNode }) {
   return <span className={`pill${tone ? ` ${tone}` : ""}`}>{children}</span>;
 }
 
-/** The one decorative signature element: a red seal for deadlines within 30 days (限 due, 逾 overdue). */
-export function DeadlineStamp({ dueDate, today }: { dueDate: string | null; today: string }) {
+/** A status as a coloured pill with a sentence-case label. */
+export function StatusPill({ status }: { status: string }) {
+  return <Pill tone={STATUS_TONE[status]}>{statusLabel(status)}</Pill>;
+}
+
+/** The one decorative signature element: a red seal for deadlines within 30 days (限 due, 逾 overdue).
+ *  Further out it shows the date, or nothing when `nearOnly` (the row already shows the date). */
+export function DeadlineStamp({ dueDate, today, nearOnly }: { dueDate: string | null; today: string; nearOnly?: boolean }) {
   if (!dueDate) return null;
   const days = Math.round((new Date(dueDate + "T00:00:00Z").getTime() - new Date(today + "T00:00:00Z").getTime()) / 86400000);
-  if (days > 30) return <span className="small muted">Due {fmt(dueDate)}</span>;
+  if (days > 30) return nearOnly ? null : <span className="small muted">Due {fmt(dueDate)}</span>;
   return (
     <span className="row" style={{ gap: 6 }} title={days < 0 ? `Overdue by ${-days} day(s)` : `Due in ${days} day(s)`}>
       <span className="seal" aria-hidden>{days < 0 ? "逾" : "限"}</span>
@@ -27,12 +34,7 @@ export function fmt(d: string | Date | null | undefined, withTime = false) {
 }
 
 export function ago(d: Date | string | null | undefined) {
-  if (!d) return "";
-  const s = Math.round((Date.now() - new Date(d).getTime()) / 1000);
-  if (s < 60) return `${Math.max(s, 1)}s ago`;
-  if (s < 3600) return `${Math.round(s / 60)}m ago`;
-  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
-  return `${Math.round(s / 86400)}d ago`;
+  return when(d);
 }
 
 export const STATUS_TONE: Record<string, "amber" | "red" | "ok" | "blue" | undefined> = {

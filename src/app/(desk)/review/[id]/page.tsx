@@ -9,11 +9,18 @@ import { attachment, client, document, invoice, invoiceLine, message, request as
 import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
 import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
 import { ActionButton } from "@/components/ActionForm";
-import { Pill, ago, fmt } from "@/components/ui";
+import { StatusPill, ago, fmt } from "@/components/ui";
+import { languageLabel, plural, sentence, valueText } from "@/lib/display";
+import { listPlaybooks } from "@/domain/playbooks";
 import type { Intake } from "@/agent/schemas";
 
 const STATUS_ICON: Record<string, string> = { needed: "○", received: "●", on_file: "✓", not_needed: "–" };
 const STATUS_TEXT: Record<string, string> = { needed: "To request", received: "Received", on_file: "On file", not_needed: "Not needed" };
+
+function checklistSummary(list: { status: string }[]) {
+  const n = (st: string) => list.filter((e) => e.status === st).length;
+  return [n("needed") && `${n("needed")} to request`, n("received") && `${n("received")} already given`, n("on_file") && `${n("on_file")} on file`].filter(Boolean).join(" · ");
+}
 
 export default async function Review({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,6 +61,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     const tasks = [] as Awaited<ReturnType<typeof getTask>>[];
     for (const tid of (p.payload.taskIds as string[]) ?? []) tasks.push(await getTask(ctx, tid));
     if (!tasks.length && reqId) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
+    const pbNames = new Map((await listPlaybooks(ctx)).map((x) => [x.id, x.name.en]));
     const attachInvoice = inv && inv.status === "draft" && (draft.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
     return (
       <>
@@ -74,43 +82,44 @@ export default async function Review({ params }: { params: Promise<{ id: string 
           <div className="stack">
             {source && (
               <div className="card">
-                <h2>What the client sent</h2>
+                <h2>From the client</h2>
                 <p className="small muted" style={{ marginTop: -4 }}>{source.fromName ?? ""} &lt;{source.fromAddr}&gt; · {fmt(source.at, true)}</p>
                 <div className="draft" style={{ maxHeight: 220 }}>{source.text}</div>
                 {srcAtts.length > 0 && <p className="small">Attachments: {srcAtts.map((a) => <a key={a.id} href={`/api/docs/${a.documentId}`} target="_blank" style={{ marginRight: 8 }}>{a.filename}</a>)}</p>}
                 {it && (
                   <>
-                    <h3>What Harbourline understood</h3>
+                    <h3>Understood as</h3>
                     <p className="small" style={{ margin: 0 }}>{it.summary}</p>
-                    <ul className="small" style={{ paddingLeft: 18, margin: "6px 0 0" }}>
-                      {it.actions.map((a, i) => <li key={i}>{a.type.replace(/_/g, " ")}{a.playbookId ? `: ${a.playbookId}` : ""}{a.description ? ` — ${a.description}` : ""} <span className="muted">({Math.round(a.confidence * 100)}%)</span></li>)}
-                    </ul>
-                    <p className="small muted" style={{ marginBottom: 0 }}>Client: {it.client.kind === "new_prospect" ? "new prospect" : it.client.kind} · replying in {it.language === "en" ? "English" : it.language === "tc" ? "Traditional Chinese" : "Simplified Chinese"}</p>
+                    {(it.actions.filter((a) => a.playbookId).length > 1 || it.actions.some((a) => a.playbookId && a.confidence < 0.7)) && <ul className="small" style={{ paddingLeft: 18, margin: "6px 0 0" }}>
+                      {it.actions.filter((a) => a.playbookId).map((a, i) => <li key={i}>{pbNames.get(a.playbookId!) ?? a.playbookId}{a.confidence < 0.7 && <span style={{ color: "var(--amber)" }}> · uncertain, please check</span>}</li>)}
+                    </ul>}
+                    <p className="small muted" style={{ marginBottom: 0 }}>{it.client.kind === "new_prospect" ? "New prospect" : it.client.kind === "existing" ? "Existing client" : "Client not identified"} · Replying in {languageLabel(it.language)}</p>
                   </>
                 )}
               </div>
             )}
             {tasks.map((t) => (
               <div className="card" key={t.id}>
-                <div className="sec-h"><h2><Link href={`/tasks/${t.id}`}>{t.title}</Link></h2>{t.dueDate && <span className="small muted">Deadline {fmt(t.dueDate)}</span>}</div>
+                <div className="sec-h"><h2><Link href={`/tasks/${t.id}`}>{t.title}</Link></h2>{t.dueDate && <span className="small muted">Due {fmt(t.dueDate)}</span>}</div>
+                <p className="small muted" style={{ margin: "-4px 0 6px" }}>{checklistSummary(t.checklist)}</p>
                 <div>
                   {t.checklist.map((e, i) => (
-                    <div key={i} className="chk"><span className="ic" aria-hidden>{STATUS_ICON[e.status]}</span><span>{itemLabel(e.key, "en", t.params)}{e.value && !["idNo", "resAddr"].includes(e.key) && e.status !== "on_file" ? <span className="muted">: {e.value}</span> : null}</span><span className="small muted">{STATUS_TEXT[e.status]}</span></div>
+                    <div key={i} className="chk"><span className="ic" aria-hidden>{STATUS_ICON[e.status]}</span><span>{itemLabel(e.key, "en", t.params)}{e.value && !["idNo", "resAddr"].includes(e.key) && e.status !== "on_file" ? <span className="muted">: {valueText(e.value)}</span> : null}</span><span className="small muted">{e.status === "needed" ? "" : STATUS_TEXT[e.status]}</span></div>
                   ))}
                 </div>
               </div>
             ))}
             {inv && (
               <div className="card">
-                <div className="sec-h"><h2>Invoice</h2><Pill tone={inv.status === "draft" ? undefined : "amber"}>{inv.status}</Pill></div>
+                <div className="sec-h"><h2>Invoice</h2><StatusPill status={inv.status} /></div>
                 {inv.status === "draft" ? <InlineEdit action={invoiceNumberAction.bind(null, inv.id)} name="number" value={inv.number} label="Invoice number" /> : <p className="mono">{inv.number}</p>}
                 <table className="tbl" style={{ marginTop: 8 }}><tbody>
                   {lines.map((l) => (
-                    <tr key={l.id}><td>{l.description}{l.kind === "disbursement" && <div className="small muted">Disbursement</div>}</td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inv.status === "draft" ? <InlineEdit action={lineAmountAction.bind(null, l.id)} name="amount" value={(l.amountCents / 100).toFixed(0)} label="Amount (HK$)" prefix="HK$" /> : money(l.amountCents)}</td></tr>
+                    <tr key={l.id}><td>{l.description}{l.kind === "disbursement" && <div className="small muted">Disbursement</div>}</td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inv.status === "draft" ? <InlineEdit action={lineAmountAction.bind(null, l.id)} name="amount" value={(l.amountCents / 100).toFixed(0)} display={money(l.amountCents)} label="Amount (HK$)" /> : money(l.amountCents)}</td></tr>
                   ))}
                   <tr><td><b>Total</b></td><td style={{ textAlign: "right" }}><b>{money(inv.totalCents)}</b></td></tr>
                 </tbody></table>
-                <p className="small muted" style={{ marginBottom: 0 }}>{inv.termsDays ? `${inv.termsDays} days credit: work starts now` : "Payable upfront: work starts once paid"}. Creating it in Xero on send.</p>
+                <p className="small muted" style={{ marginBottom: 0 }}>{inv.termsDays ? `${inv.termsDays} days credit. Work starts now.` : "Payable upfront. Work starts once paid."}</p>
               </div>
             )}
           </div>
@@ -154,7 +163,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}
       <h3>Documents</h3><ul className="small">{docs.map((d) => <li key={d.id}><a href={`/api/docs/${d.id}`} target="_blank">{d.title}</a></li>)}</ul>
       <ReviewForm action={approve} submit="Send for signature" redirectTo="/">
-        {signers.map((s) => (<div key={s.personId} className="fld"><label className="f" htmlFor={`e-${s.personId}`}>{s.name} · {s.role} · signs {s.docIds.length} document(s)</label><input id={`e-${s.personId}`} type="email" name={`email:${s.personId}`} defaultValue={s.email ?? ""} required /></div>))}
+        {signers.map((s) => (<div key={s.personId} className="fld"><label className="f" htmlFor={`e-${s.personId}`}>{s.name} · {s.role} · {plural(s.docIds.length, "document")}</label><input id={`e-${s.personId}`} type="email" name={`email:${s.personId}`} defaultValue={s.email ?? ""} required /></div>))}
         <p className="small muted">Each signer gets a personal link and confirms a 6-digit code sent to their email.</p>
       </ReviewForm>
     </div></>);

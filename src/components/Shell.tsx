@@ -13,47 +13,31 @@ const NAV: { href: string; label: string; count?: keyof Counts; hot?: boolean }[
   { href: "/invoices", label: "Invoices", count: "unpaid" },
   { href: "/payments", label: "Payments", count: "unmatched" },
   { href: "/batch", label: "Batch" },
-  { href: "/mail", label: "Registered office mail" },
+  { href: "/mail", label: "Mail" },
   { href: "/playbooks", label: "Playbooks" },
-  { href: "/reports", label: "Time saved" },
   { href: "/settings", label: "Settings" },
 ];
 
-export function Shell({ counts, clients, children }: { counts: Counts; clients: { id: string; nameEn: string }[]; children: ReactNode }) {
+export function Shell({ counts, children }: { counts: Counts; children: ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
-  const [showClients, setShowClients] = useState(false);
   const active = (h: string) => (h === "/" ? path === "/" : path.startsWith(h));
   return (
     <div className="app">
       <header className="topbar">
         <button className="menu-btn" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}>☰</button>
         <Link href="/" className="brand" style={{ padding: 0 }}>Harbourline Desk</Link>
-        <Link href="/" className="cnt hot" aria-label={`${counts.pending} items need you`}>{counts.pending}</Link>
+        {counts.pending > 0 ? <Link href="/" className="cnt hot" aria-label={`${counts.pending} items need you`}>{counts.pending}</Link> : <span />}
       </header>
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
       <nav className={`rail${open ? " open" : ""}`} aria-label="Main" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }}>
         <Link href="/" className="brand">Harbourline Desk<small>Caine Road Corporate Services</small></Link>
         <div className="nav">
           {NAV.map((n) => (
-            <div key={n.href}>
-              <Link href={n.href} className="nb" aria-current={active(n.href) ? "page" : undefined}>
-                <span>{n.label}</span>
-                {n.count && counts[n.count] > 0 && <span className={`cnt${n.hot ? " hot" : ""}`}>{counts[n.count]}</span>}
-                {n.href === "/clients" && (
-                  <button className="txt small" style={{ textDecoration: "none" }} aria-expanded={showClients} aria-label="Show clients" onClick={(e) => { e.preventDefault(); setShowClients(!showClients); }}>{showClients ? "▾" : "▸"}</button>
-                )}
-              </Link>
-              {n.href === "/clients" && showClients && (
-                <div style={{ margin: "2px 0 6px 18px", paddingLeft: 8, borderLeft: "1px solid var(--line)" }}>
-                  {clients.map((c) => (
-                    <Link key={c.id} href={`/clients/${c.id}`} className="nb small" style={{ padding: "4px 8px", fontSize: 13.5 }} aria-current={path.startsWith(`/clients/${c.id}`) ? "page" : undefined}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nameEn}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Link key={n.href} href={n.href} className="nb" aria-current={active(n.href) ? "page" : undefined}>
+              <span>{n.label}</span>
+              {n.count && counts[n.count] > 0 && <span className={`cnt${n.hot ? " hot" : ""}`}>{counts[n.count]}</span>}
+            </Link>
           ))}
         </div>
         <div className="user"><div className="av">KY</div><div><b>Karen Yip</b><span>Senior Company Secretary</span></div></div>

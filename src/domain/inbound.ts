@@ -242,7 +242,14 @@ async function namePropsect(ctx: Ctx, clientId: string, intake: Intake) {
   const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) });
   if (!cl || cl.lifecycle !== "prospect") return;
   const patch: Partial<typeof clientT.$inferInsert> = {};
-  if (intake.client.companyName && /\(new prospect\)$/.test(cl.nameEn)) patch.nameEn = intake.client.companyName.trim();
+  const jd = (cl.jurisdictionData ?? {}) as Record<string, unknown>;
+  // Placeholder names: the sender's name (flagged), or the older "(new prospect)" suffix.
+  if (intake.client.companyName && (jd.provisionalName || /\(new prospect\)$/.test(cl.nameEn))) {
+    patch.nameEn = intake.client.companyName.trim();
+    const rest = { ...jd };
+    delete rest.provisionalName;
+    patch.jurisdictionData = rest;
+  }
   if (intake.client.companyNumber && !cl.companyNumber) patch.companyNumber = intake.client.companyNumber.trim();
   if (Object.keys(patch).length) {
     await ctx.db.update(clientT).set(patch).where(eq(clientT.id, clientId));
@@ -262,9 +269,10 @@ async function markProcessed(ctx: Ctx, messageId: string, data: { intake?: unkno
 }
 
 async function createProspect(ctx: Ctx, intake: Intake, msg: typeof message.$inferSelect) {
-  const name = intake.client.companyName?.trim() || `${intake.client.senderName ?? msg.fromName ?? msg.fromAddr} (new prospect)`;
+  const company = intake.client.companyName?.trim();
+  const name = company || (intake.client.senderName ?? msg.fromName ?? msg.fromAddr ?? "New prospect");
   const cl = await createClient(ctx, {
-    nameEn: name, lifecycle: "prospect", operatingStatus: intake.actions.some((a) => a.playbookId === "hk.incorporation") ? "not_incorporated" : "operating",
+    nameEn: name, jurisdictionData: company ? {} : { provisionalName: true }, lifecycle: "prospect", operatingStatus: intake.actions.some((a) => a.playbookId === "hk.incorporation") ? "not_incorporated" : "operating",
     companyNumber: intake.client.companyNumber, messageLang: intake.language, staffId: ctx.userId, jurisdiction: "HK",
   });
   const person = msg.fromAddr ? await resolvePerson(ctx, cl.id, { nameEn: intake.client.senderName ?? msg.fromName ?? msg.fromAddr, email: msg.fromAddr }) : null;

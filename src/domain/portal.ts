@@ -32,7 +32,7 @@ export async function portalView(ctx: Ctx, token: string, langOverride?: Lang) {
     const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
     const person = t.personId ? await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, t.personId!) }) : null;
     out.push({
-      taskId: t.id, title: (pb.name[lang] ?? pb.name.en) + (person ? ` · ${person.nameZh && lang !== "en" ? person.nameZh : person.nameEn}` : ""),
+      taskId: t.id, title: (pb.name[lang] ?? pb.name.en) + (person && pb.category !== "New client onboarding" ? ` · ${person.nameZh && lang !== "en" ? person.nameZh : person.nameEn}` : ""),
       items: t.checklist.filter((e) => e.status === "needed" || e.status === "received").map((e) => ({
         key: e.key, personId: e.personId ?? null, label: itemLabel(e.key, lang, t.params), kind: itemKind(e.key, t.params),
         status: e.status, optional: !!e.optional, value: e.status === "received" && e.value && !["idNo", "resAddr"].includes(e.key) ? e.value : null,
@@ -111,4 +111,19 @@ export async function portalSubmitField(ctx: Ctx, token: string, f: { taskId: st
   const next = t.checklist.map((e) => e === entry ? { ...e, status: "received" as const, value: ["idNo", "resAddr"].includes(f.key) ? "Provided" : value, source: "Entered on the secure link" } : e);
   await setChecklist(ctx, t.id, next, `Client entered ${itemLabel(f.key)}`, "client");
   return advance(ctx, t.id);
+}
+
+/** One submission from the upload link: every filled detail and file at once. Blank items stay outstanding. */
+export async function portalSubmit(ctx: Ctx, token: string, s: { fields: { taskId: string; key: string; value: string }[]; files: { taskId: string; key: string; filename: string; mime: string; content: Buffer }[] }) {
+  const fields = s.fields.filter((f) => f.value.trim());
+  const files = s.files.filter((f) => f.content.length);
+  if (!fields.length && !files.length) throw new PortalError("Fill in at least one item before sending");
+  // Check everything belongs to this link's request before saving any of it.
+  for (const x of [...fields, ...files]) {
+    const { t } = await taskInRequest(ctx, token, x.taskId);
+    if (!t.checklist.some((e) => e.key === x.key && (!e.personId || e.personId === t.personId))) throw new PortalError("That item isn't needed for this task");
+  }
+  for (const f of fields) await portalSubmitField(ctx, token, f);
+  for (const f of files) await portalUpload(ctx, token, f);
+  return { saved: fields.length + files.length };
 }

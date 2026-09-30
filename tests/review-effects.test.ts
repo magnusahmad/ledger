@@ -6,6 +6,7 @@ import { planRegisterChanges, applyRegisterChanges } from "@/domain/register-eff
 import { getPersonProtected, getClient } from "@/domain/records";
 import { screenPerson, recordCdd } from "@/domain/screening";
 import { upcomingDeadlines } from "@/domain/deadlines";
+import { valueText } from "@/lib/display";
 let ctx: TestCtx;
 beforeEach(async () => { await resetDb(); ctx = makeCtx(); await seedDemo(ctx); });
 it("a particulars preview does not write protected fields and applying it uses the same proposed values", async () => {
@@ -56,10 +57,10 @@ it("a changed financial year end preserves prior periods and schedules the first
   const t = await startTask(ctx, { clientId: "cli_c1", playbookId: "hk.changeFye", extracted: { newFye: { value: "31 December, first period ends 2027-12-31" } } });
   await applyRegisterChanges(ctx, t.id);
   const agms = (await upcomingDeadlines(ctx, { clientId: "cli_c1", withinDays: 1000 })).filter(d => d.key === "AGM");
-  expect(agms.some(d => d.label.includes("2027-12-31") && d.dueDate === "2028-09-30")).toBe(true);
-  expect(agms.some(d => d.label.includes("2025-12-31") || d.label.includes("2026-12-31"))).toBe(false);
+  expect(agms.some(d => d.label.includes("31 Dec 2027") && d.dueDate === "2028-09-30")).toBe(true);
+  expect(agms.some(d => d.label.includes("31 Dec 2025") || d.label.includes("31 Dec 2026"))).toBe(false);
   const old = `2026-${String(original.fyeMonth).padStart(2, "0")}-${String(original.fyeDay).padStart(2, "0")}`;
-  expect(agms.some(d => d.label.includes(old))).toBe(true);
+  expect(agms.some(d => d.label.includes(valueText(old)))).toBe(true);
   const annual = await startTask(ctx, { clientId: "cli_c1", playbookId: "hk.agm", periodYear: 2027, periodKey: "AGM:2027-12-31" });
   expect(annual.dueDate).toBe("2028-09-30");
 });

@@ -82,6 +82,11 @@ describe("Deadline engine", () => {
     expect((await upcomingDeadlines(ctx, { clientId: "cli_c1", withinDays: 120 })).find((x) => x.key === "NAR1")).toBeUndefined();
   });
 
+  it("the AGM deadline names its financial year end as a date people read, not an ISO code", async () => {
+    const agm = (await upcomingDeadlines(ctx, { withinDays: 400 })).find((x) => x.key === "AGM");
+    expect(agm?.label).toMatch(/^AGM and accounts for year ended \d{1,2} [A-Z][a-z]{2} \d{4}$/);
+  });
+
   it("a dormant company has no AGM deadline but still has its annual return", async () => {
     const all = await upcomingDeadlines(ctx, { clientId: "cli_c5", withinDays: 400 });
     expect(all.map((d) => d.key)).not.toContain("AGM");

@@ -173,7 +173,8 @@ export async function startTask(ctx: Ctx, t: {
   const [row] = await ctx.db.insert(taskT).values({
     id: ctx.ids.next("tsk"), firmId: ctx.firmId, requestId: t.requestId ?? null, clientId: t.clientId,
     playbookId: pb.id, playbookVersion: pb.version,
-    title: t.title ?? (personName ? `${pb.name.en}: ${personName}` : pb.name.en),
+    // Onboarding checks the instructing person for KYC; they aren't what the task is about.
+    title: t.title ?? (personName && pb.category !== "New client onboarding" ? `${pb.name.en}: ${personName}` : pb.name.en),
     personId: t.personId ?? null, assigneeId: t.assigneeId ?? cl.staffId ?? ctx.userId,
     checklist, extracted, params: t.params ?? {}, effectiveDate,
     dueDate: await computeDueDate(ctx, pb, t.clientId, effectiveDate, t.periodYear, t.periodKey),

@@ -13,15 +13,15 @@ export default async function Reports() {
   const firm = await firmTimeSaved(ctx);
   return (
     <>
-      <div className="top"><div><h1>Time saved</h1><p className="sub">Modelled opportunities from TIME_SAVED_VS_CSA.md §3a alongside recorded approval time. These are estimates, not measured savings. Document generation, register updates and screening parity are excluded.</p></div></div>
+      <div className="top"><div><Link href="/settings" className="back">← Settings</Link><h1>Time saved</h1><p className="sub">Estimated manual work Harbourline handled, set against the time staff spent on approvals.</p></div></div>
       <div className="grid3">
-        <div className="card stat"><b>{Math.round(base)} min</b><span>modelled manual work</span></div>
-        <div className="card stat"><b>{firm.approvals ? firm.staffMinutes : "—"} min</b><span>recorded approval time (partial)</span></div>
-        <div className="card stat"><b>Not measured</b><span>overall productivity improvement</span></div>
+        <div className="card stat"><b>{Math.round(base)} min</b><span>Estimated manual work</span></div>
+        <div className="card stat"><b>{firm.approvals ? `${firm.staffMinutes} min` : "—"}</b><span>Recorded approval time</span></div>
+        <div className="card stat"><b>{firm.approvals}</b><span>Approvals</span></div>
       </div>
-      <p className="small muted">Manual work, filing outside the app and time away from approval screens are not yet captured. Shared request reviews are divided across their tasks and counted once in the firm total. {firm.approvals} approvals logged; {firm.editChars.toLocaleString()} characters edited in drafts before sending.</p>
-      <div className="card tight scroll-x" style={{ marginTop: 16 }}><table className="tbl"><thead><tr><th>Task</th><th>Estimate</th><th>Approval time</th><th>AI calls</th></tr></thead>
-        <tbody>{rows.map(({ t, s }) => <tr key={t.id}><td><Link href={`/tasks/${t.id}`}>{t.title}</Link></td><td>{Math.round(s.baselineMinutes)} min</td><td>{s.hasMeasurements ? `${s.staffMinutes} min` : "Not measured"}</td><td>{s.aiCalls}</td></tr>)}</tbody></table>
+      <p className="small muted">Estimates, not measured savings. Work outside approval screens, such as filing on e-Registry, is not captured. Document generation, register updates and screening are not counted. {firm.editChars.toLocaleString()} characters edited in drafts before sending.</p>
+      <div className="card tight scroll-x" style={{ marginTop: 16 }}><table className="tbl"><thead><tr><th>Task</th><th>Estimated manual work</th><th>Approval time</th></tr></thead>
+        <tbody>{rows.map(({ t, s }) => <tr key={t.id}><td><Link href={`/tasks/${t.id}`}>{t.title}</Link></td><td>{Math.round(s.baselineMinutes)} min</td><td>{s.hasMeasurements ? `${s.staffMinutes} min` : "—"}</td></tr>)}</tbody></table>
         {rows.length === 0 && <p className="empty">Nothing measured yet.</p>}</div>
     </>
   );

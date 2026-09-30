@@ -1,4 +1,5 @@
 import "server-only";
+import { stepStatus } from "@/lib/display";
 import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import {
@@ -46,7 +47,7 @@ export async function taskRows(ctx: Ctx, where: { status?: "open" | "done" | "ca
     const inv = t.requestId ? await ctx.db.select({ i: invoice }).from(requestT).innerJoin(invoice, eq(invoice.id, requestT.invoiceId)).where(eq(requestT.id, t.requestId)).then((r) => r[0]?.i ?? null) : null;
     const waitingOn = t.status !== "open" ? null
       : step?.kind === "pay" ? "payment" : step?.kind === "collect" ? "client" : step?.kind === "sign" ? "signatures" : step?.human ? "you" : "harbourline";
-    out.push({ ...t, clientName: c.nameEn, clientNameZh: c.nameTc, stepLabel: step?.label ?? (t.status === "done" ? "Done" : t.status), stepKind: step?.kind ?? null, waitingOn, outstanding: outstanding(full).map((e) => itemLabel(e.key, "en", t.params)), invoice: inv ? { number: inv.number, status: inv.status, total: money(inv.totalCents, inv.currency) } : null, stepCount: full._steps.length });
+    out.push({ ...t, clientName: c.nameEn, clientNameZh: c.nameTc, stepLabel: stepStatus(step, t.status), stepKind: step?.kind ?? null, waitingOn, outstanding: outstanding(full).map((e) => itemLabel(e.key, "en", t.params)), invoice: inv ? { number: inv.number, status: inv.status, total: money(inv.totalCents, inv.currency) } : null, stepCount: full._steps.length });
   }
   return out;
 }

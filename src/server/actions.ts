@@ -16,7 +16,7 @@ import { runReminders } from "@/domain/reminders";
 import { batchStart } from "@/domain/batch";
 import { logMailItem } from "@/domain/mail-items";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
-import { portalUpload, portalSubmitField } from "@/domain/portal";
+import { portalSubmit } from "@/domain/portal";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
 import { contact, invoice, message, type Lang } from "@/db/schema";
 import { resetDemoData } from "@/domain/demo";
@@ -157,16 +157,18 @@ export async function workerTickAction(): Promise<ActionResult> {
 }
 
 // ---------- Public: upload link ----------
-export async function portalUploadAction(token: string, taskId: string, key: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+export async function portalSubmitAction(token: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   try {
-    const f = form.get("file") as File | null;
-    if (!f || !f.size) throw new Error("Choose a file");
-    await portalUpload(getCtx(), token, { taskId, key, filename: f.name, mime: f.type || "application/octet-stream", content: Buffer.from(await f.arrayBuffer()) });
-    return done("Received, thank you");
+    const fields: { taskId: string; key: string; value: string }[] = [];
+    const files: { taskId: string; key: string; filename: string; mime: string; content: Buffer }[] = [];
+    for (const [name, v] of form.entries()) {
+      const [kind, taskId, key] = name.split(":");
+      if (kind === "v" && typeof v === "string") fields.push({ taskId, key, value: v });
+      if (kind === "f" && typeof v !== "string" && v.size) files.push({ taskId, key, filename: v.name, mime: v.type || "application/octet-stream", content: Buffer.from(await v.arrayBuffer()) });
+    }
+    await portalSubmit(getCtx(), token, { fields, files });
+    return done();
   } catch (e) { return fail(e); }
-}
-export async function portalFieldAction(token: string, taskId: string, key: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
-  try { await portalSubmitField(getCtx(), token, { taskId, key, value: String(form.get("value") ?? "") }); return done("Saved, thank you"); } catch (e) { return fail(e); }
 }
 
 // ---------- Public: signing ----------
