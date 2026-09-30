@@ -392,7 +392,7 @@ export const taskEvent = pgTable("task_event", {
 export type ProposalKind =
   | "send_message" | "change_request" | "cancel_task" | "revise_invoice" | "register_change"
   | "record_filing" | "triage" | "conflict" | "match_payment" | "screening_review" | "custom_plan"
-  | "send_signing" | "new_request" | "mailbox_update";
+  | "send_signing" | "new_request" | "mailbox_update" | "start_enforcement";
 
 export const proposal = pgTable("proposal", {
   id: text("id").primaryKey(),

@@ -194,8 +194,10 @@ export async function logMailAction(_prev: ActionResult | null, form: FormData):
   try {
     const f = form.get("file") as File | null;
     if (!f || !f.size) throw new Error("Choose a scan");
-    await logMailItem(getCtx(), { filename: f.name, mime: f.type || "application/pdf", content: Buffer.from(await f.arrayBuffer()), receivedOn: String(form.get("receivedOn") || new Date().toISOString().slice(0, 10)) });
-    return done("Letter logged; the client notification is in your intray");
+    const ctx = getCtx();
+    const row = await logMailItem(ctx, { filename: f.name, mime: f.type || "application/pdf", content: Buffer.from(await f.arrayBuffer()), receivedOn: String(form.get("receivedOn") || new Date().toISOString().slice(0, 10)) });
+    const p = row.proposalId ? await getProposal(ctx, row.proposalId).catch(() => null) : null;
+    return done(p?.kind === "start_enforcement" ? "Logged. This is an enforcement letter: start the work from Today." : row.clientId ? "Logged. The client notice is on Today for approval." : "Logged. Say whose letter it is on Today.");
   } catch (e) { return fail(e); }
 }
 

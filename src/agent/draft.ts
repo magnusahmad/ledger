@@ -9,7 +9,7 @@ import { DRAFT_SYSTEM } from "./prompts";
 export type ReplyFacts = {
   language: Lang;
   /** "meeting": confirms what was agreed in person or by phone, rather than answering a message. */
-  context?: "message" | "meeting" | "costs" | "chase";
+  context?: "message" | "meeting" | "costs" | "chase" | "letter";
   recipientName: string;
   clientName: string;
   signOff: string;
@@ -60,6 +60,7 @@ const T = {
     thanksMeeting: "Thank you for meeting with us. As agreed, we will take care of the following.",
     thanksCosts: "We have paid the following on your behalf. Please find our invoice attached.",
     thanksChase: "A quick reminder: we still need a few things from you to complete the following.",
+    thanksLetter: "We have received the attached letter for the company. Here is what needs to happen next.",
     newReq: (t: string) => `${t}:`,
     need: "To get this done, please send us:",
     onFile: "We already hold on file (no need to send again):",
@@ -84,6 +85,7 @@ const T = {
     thanksMeeting: "多謝您抽空與我們會面。按我們商討的安排，我們會跟進以下事項。",
     thanksCosts: "我們已代您支付以下費用，隨函附上發票。",
     thanksChase: "溫馨提示：為完成以下事項，我們仍需您提供部分資料。",
+    thanksLetter: "我們收到隨附給公司的信件，以下是接下來需要處理的事項。",
     newReq: (t: string) => `${t}：`,
     need: "為辦理此事，請提供：",
     onFile: "我們已存檔以下資料（毋須再次提供）：",
@@ -108,6 +110,7 @@ const T = {
     thanksMeeting: "感谢您抽空与我们会面。按我们商定的安排，我们会跟进以下事项。",
     thanksCosts: "我们已代您支付以下费用，随函附上发票。",
     thanksChase: "温馨提示：为完成以下事项，我们仍需您提供部分资料。",
+    thanksLetter: "我们收到随附给公司的信件，以下是接下来需要处理的事项。",
     newReq: (t: string) => `${t}：`,
     need: "为办理此事，请提供：",
     onFile: "我们已存档以下资料（无须再次提供）：",
@@ -130,7 +133,7 @@ const T = {
 
 export function templateEmail(f: ReplyFacts): { subject: string; body: string } {
   const t = T[f.language] ?? T.en;
-  const out: string[] = [t.hi(f.recipientName), f.context === "meeting" ? t.thanksMeeting : f.context === "costs" ? t.thanksCosts : f.context === "chase" ? t.thanksChase : t.thanks];
+  const out: string[] = [t.hi(f.recipientName), f.context === "meeting" ? t.thanksMeeting : f.context === "costs" ? t.thanksCosts : f.context === "chase" ? t.thanksChase : f.context === "letter" ? t.thanksLetter : t.thanks];
   const list = (xs: string[]) => xs.map((x) => `- ${x}`).join("\n");
   for (const r of f.newRequests) {
     const block = [t.newReq(r.title)];

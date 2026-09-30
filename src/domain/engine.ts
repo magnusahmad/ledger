@@ -157,6 +157,8 @@ export async function startTask(ctx: Ctx, t: {
   requestId?: string | null; clientId: string; playbookId: string; personId?: string | null;
   extracted?: Extracted; params?: Record<string, unknown>; assigneeId?: string | null; periodKey?: string | null; periodYear?: number;
   title?: string;
+  /** A hard deadline from outside the playbook, e.g. the hearing date on a summons. */
+  dueDate?: string | null;
 }): Promise<Task> {
   const pb = await getPlaybook(ctx, t.playbookId);
   const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, t.clientId) });
@@ -174,7 +176,7 @@ export async function startTask(ctx: Ctx, t: {
     title: t.title ?? (personName && pb.category !== "New client onboarding" ? `${pb.name.en}: ${personName}` : pb.name.en),
     personId: t.personId ?? null, assigneeId: t.assigneeId ?? cl.staffId ?? ctx.userId,
     checklist, extracted, params: t.params ?? {}, effectiveDate,
-    dueDate: await computeDueDate(ctx, pb, t.clientId, effectiveDate, t.periodYear, t.periodKey),
+    dueDate: t.dueDate ?? await computeDueDate(ctx, pb, t.clientId, effectiveDate, t.periodYear, t.periodKey),
     onCredit: cl.paymentTermsDays > 0, periodKey: t.periodKey ?? null, createdAt: ctx.clock.now(),
   }).returning();
   await logEvent(ctx, row.id, "task.created", `Opened from playbook "${pb.name.en}"`, { playbookId: pb.id, version: pb.version });

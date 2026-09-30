@@ -79,6 +79,7 @@ export type DeadlineRule =
   | { kind: "fye"; months: number; rule: string }
   | { kind: "br_expiry"; rule: string }
   | { kind: "fixed_annual"; month: number; day: number; rule: string }
+  | { kind: "letter_date"; rule: string } // the hearing or reply-by date on the letter that started the task
   | { kind: "none"; rule?: string };
 
 export type PlaybookDef = {

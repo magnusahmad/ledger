@@ -104,6 +104,14 @@ export const MailItemZ = z.object({
   summaryEn: z.string(),
   urgency: z.enum(["normal", "urgent"]),
   actionNeeded: z.string().nullable(),
+  /** Set when the letter is enforcement: late-filing notice, warning letter or summons. */
+  enforcement: z.object({
+    kind: z.enum(["late_filing", "warning_letter", "summons"]),
+    dueDate: z.string().nullable(),
+    form: z.string().nullable(),
+    reference: z.string().nullable(),
+    amountHkd: z.number().nullable(),
+  }).nullable().optional(),
 });
 
 /** What a staff reply sent from the mailbox commits the firm to, as suggested task changes. */

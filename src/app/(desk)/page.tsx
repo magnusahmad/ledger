@@ -14,9 +14,9 @@ import { outsideWork } from "@/domain/off-platform";
 const KIND_LABEL: Record<string, string> = {
   send_message: "Reply to approve", record_filing: "Record filing", register_change: "Register update", send_signing: "Signing pack",
   match_payment: "Payment to check", screening_review: "Screening hit", conflict: "Conflicting details", custom_plan: "One-off plan",
-  cancel_task: "Cancellation", mailbox_update: "Mailbox reply", triage: "Needs a look", change_request: "Change of scope", revise_invoice: "Invoice revision", new_request: "New request",
+  cancel_task: "Cancellation", mailbox_update: "Mailbox reply", start_enforcement: "Enforcement", triage: "Needs a look", change_request: "Change of scope", revise_invoice: "Invoice revision", new_request: "New request",
 };
-const KIND_TONE: Record<string, "amber" | "red" | "blue" | "ok" | undefined> = { screening_review: "red", conflict: "amber", triage: "amber", match_payment: "amber", send_message: "blue" };
+const KIND_TONE: Record<string, "amber" | "red" | "blue" | "ok" | undefined> = { start_enforcement: "red", screening_review: "red", conflict: "amber", triage: "amber", match_payment: "amber", send_message: "blue" };
 
 export default async function Today() {
   const ctx = getCtx();
