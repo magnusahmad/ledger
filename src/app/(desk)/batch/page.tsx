@@ -47,7 +47,7 @@ export default async function Batch({ searchParams }: { searchParams: Promise<{ 
               <div><label className="f" htmlFor="personId">Director</label><select id="personId" name="personId" required defaultValue=""><option value="" disabled>Choose a director</option>{people.filter(p => p.kind === "individual").map(p => <option key={p.id} value={p.id}>{p.nameEn}{p.nameZh ? ` · ${p.nameZh}` : ""}</option>)}</select></div>
               <div><label className="f" htmlFor="effectiveDate">Effective date</label><input id="effectiveDate" type="date" name="effectiveDate" required defaultValue={ctx.clock.today()} /></div>
             </div>
-            {clients.filter(c => c.jurisdiction === "HK" && c.lifecycle !== "prospect" && c.operatingStatus !== "not_incorporated").map(c => <label className="chk" key={c.id}><input type="checkbox" name="clientId" value={c.id} /><span>{c.nameEn}{c.nameTc && <div className="small muted">{c.nameTc}</div>}</span></label>)}
+            {clients.filter(c => c.jurisdiction === "HK" && c.lifecycle !== "prospect" && c.lifecycle !== "archived" && c.operatingStatus !== "not_incorporated").map(c => <label className="chk" key={c.id}><input type="checkbox" name="clientId" value={c.id} /><span>{c.nameEn}{c.nameTc && <div className="small muted">{c.nameTc}</div>}</span></label>)}
           </ActionForm>
         </div>
       </section>

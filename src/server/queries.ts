@@ -32,7 +32,7 @@ export async function liveVersion(ctx: Ctx) {
 }
 
 export async function clientNames(ctx: Ctx) {
-  const rows = await ctx.db.select({ id: client.id, nameEn: client.nameEn, nameTc: client.nameTc, lifecycle: client.lifecycle, jurisdiction: client.jurisdiction }).from(client).where(eq(client.firmId, ctx.firmId)).orderBy(asc(client.nameEn));
+  const rows = await ctx.db.select({ id: client.id, nameEn: client.nameEn, nameTc: client.nameTc, lifecycle: client.lifecycle, jurisdiction: client.jurisdiction }).from(client).where(and(eq(client.firmId, ctx.firmId), ne(client.lifecycle, "archived"))).orderBy(asc(client.nameEn));
   return rows;
 }
 

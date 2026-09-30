@@ -14,6 +14,7 @@ import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { AgentError } from "@/agent/call";
 import type { Intake, IntakeAction } from "@/agent/schemas";
 import { findClientsBySenderEmail } from "./lookup";
+import { handleThirdPartyMail } from "./third-parties";
 import { addContact, createClient, getPersonProtected, updatePerson } from "./records";
 import { resolvePerson } from "./people";
 import { advance, createRequest, getTask, logEvent, outstanding, setChecklist, startTask, tasksForRequest, type Extracted, type Task } from "./engine";
@@ -86,6 +87,8 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   if (!msg) throw new Error("Message not found");
   const conv = (await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, msg.conversationId) }))!;
   const result: ProcessResult = { messageId, clientId: null, requestId: null, taskIds: [], proposalIds: [] };
+  // Mail from a known third party (bank, law firm, official...) is logged on their tasks, not read as an instruction.
+  if (await handleThirdPartyMail(ctx, msg)) return result;
   const atts = await ctx.db.select().from(attachment).where(eq(attachment.messageId, messageId));
 
   const matches = msg.fromAddr ? await findClientsBySenderEmail(ctx, msg.fromAddr) : [];
