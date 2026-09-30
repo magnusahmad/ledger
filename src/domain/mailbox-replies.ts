@@ -15,18 +15,20 @@ import { callAgent, AgentError } from "@/agent/call";
 import { MailboxReviewZ, type MailboxReview } from "@/agent/schemas";
 import { MAILBOX_REVIEW_SYSTEM } from "@/agent/prompts";
 import { playbookCatalogue } from "@/agent/context";
+import { deliveryEvidence } from "./delivery-evidence";
 
 export async function recordMailboxReply(ctx: Ctx, m: InboundMail) {
   const row = await ingestMessage(ctx, { ...m, channel: "email", direction: "out" });
   if (row.duplicate) return { messageId: row.id, recorded: false, withdrawn: [] as string[] };
 
   // Withdraw drafts on this thread that were waiting for approval.
-  const drafts = await ctx.db.select().from(message).where(and(eq(message.conversationId, row.conversationId), eq(message.status, "draft")));
+  const drafts = await ctx.db.select().from(message).where(and(eq(message.firmId, ctx.firmId), eq(message.conversationId, row.conversationId), eq(message.status, "draft")));
   const withdrawn: string[] = [];
   for (const d of drafts) {
     if (!d.proposalId) continue;
-    const p = await ctx.db.query.proposal.findFirst({ where: and(eq(proposal.id, d.proposalId), eq(proposal.status, "pending")) });
+    const p = await ctx.db.query.proposal.findFirst({ where: and(eq(proposal.firmId, ctx.firmId), eq(proposal.id, d.proposalId), eq(proposal.status, "pending")) });
     if (!p) continue;
+    if (p.payload.purpose === "request" && p.payload.replaces) continue;
     await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now(), payload: { ...p.payload, supersededBy: "mailbox_reply", replyMessageId: row.id } }).where(eq(proposal.id, p.id));
     await ctx.db.update(message).set({ status: "failed", error: "Replied from the mailbox instead" }).where(eq(message.id, d.id));
     withdrawn.push(p.id);
@@ -37,11 +39,20 @@ export async function recordMailboxReply(ctx: Ctx, m: InboundMail) {
       const who = d.toAddrs[0] ? (await ctx.db.query.contact.findFirst({ where: (c, { and, eq }) => and(eq(c.email, d.toAddrs[0]), eq(c.clientId, p.clientId ?? "")) }))?.name ?? d.toAddrs[0] : "the client";
       const np = await createProposal(ctx, {
         kind: "send_message", title: `Still to send: invoice and upload link to ${who}`,
-        summary: "The reply sent from the mailbox didn't go through Harbourline, so the invoice and upload link weren't sent. Edit this draft to follow on from that reply.",
+        summary: "A reply was sent from the mailbox. Check what was delivered, then send anything still needed or mark the sending step done.",
         clientId: p.clientId, requestId: p.requestId, payload: { ...p.payload, messageId: copy.id, replaces: p.id },
       });
       await ctx.db.update(message).set({ proposalId: np.id }).where(eq(message.id, copy.id));
     }
+  }
+
+  const pending = await ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.kind, "send_message"), eq(proposal.status, "pending")));
+  for (const p of pending) {
+    if (p.payload.purpose !== "request" || !p.requestId) continue;
+    const draft = await ctx.db.query.message.findFirst({ where: and(eq(message.id, p.payload.messageId as string), eq(message.firmId, ctx.firmId)) });
+    if (!draft) continue;
+    const evidence = await deliveryEvidence(ctx, p.requestId, draft.toAddrs);
+    await ctx.db.update(proposal).set({ payload: { ...p.payload, deliveryEvidence: evidence }, ...(evidence.invoiceFound && evidence.uploadLinkFound ? { title: "Check sending: invoice and upload link", summary: "Review the sent email evidence and mark done to confirm delivery." } : {}) }).where(eq(proposal.id, p.id));
   }
 
   // Note it on the thread's open tasks.

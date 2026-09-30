@@ -9,6 +9,7 @@ import { getTask, tasksForRequest } from "@/domain/engine";
 import { client, invoice, job, message } from "@/db/schema";
 import { stripQuoted, parseRaw, buildRaw } from "@/integrations/mail/mime";
 import { sendMessage } from "@/domain/outbound";
+import { AirwallexBank } from "@/integrations/bank/airwallex";
 
 let ctx: TestCtx;
 beforeEach(async () => {
@@ -20,6 +21,43 @@ beforeEach(async () => {
 const appoint = () => intake({ actions: [action({ type: "start_request", playbookId: "hk.appointDirector", person: { mode: "new", personId: null, nameEn: "WONG Ka Man", nameZh: null, email: null }, fields: [{ key: "effDate", value: "2026-10-15", quote: null }] })] });
 
 describe("Email channel", () => {
+  it("a request email with an invalid Airwallex account ID creates an actionable triage card and sends no payment instructions", async () => {
+    const calls: string[] = [];
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: "acct_wrongAccountId", fetch: (async (url) => {
+      calls.push(String(url));
+      return String(url).includes("/login") ? Response.json({ token: "t" }) : Response.json({ code: "invalid_argument", message: "Invalid UUID string" }, { status: 400 });
+    }) as typeof fetch });
+    ctx.llm.on("intake", appoint());
+    ctx.llm.on("draft", goodDraft);
+    ctx.mail.deliver({ from: { email: "director@kbtrading.example", name: "CHAN" }, subject: "New director", text: "Please appoint WONG Ka Man." });
+    const r = await pollMail({ ...ctx, bank });
+    expect(r.errors[0]).toMatch(/AIRWALLEX_GLOBAL_ACCOUNT_ID.*UUID/);
+    expect((await pendingProposals(ctx, { kind: "triage" }))[0].summary).toMatch(/GET \/api\/v1\/global_accounts/);
+    expect(await pendingProposals(ctx, { kind: "send_message" })).toHaveLength(0);
+    expect(ctx.mail.sent()).toHaveLength(0);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("a request email with a valid Airwallex Global Account UUID drafts its invoice and bank details for staff approval", async () => {
+    const id = "7f687fe6-dcf4-4462-92fa-80335301d9d2";
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: id, fetch: (async (url) => {
+      if (String(url).endsWith("/authentication/login")) return Response.json({ token: "t" });
+      if (String(url).endsWith(`/global_accounts/${id}`)) return Response.json({ account_name: "Demo firm", account_number: "12345678", institution: { name: "DBS Bank" } });
+      return new Response("Unexpected route", { status: 404 });
+    }) as typeof fetch });
+    ctx.llm.on("intake", appoint());
+    ctx.llm.on("draft", goodDraft);
+    ctx.mail.deliver({ from: { email: "director@kbtrading.example", name: "CHAN" }, subject: "New director", text: "Please appoint WONG Ka Man." });
+    const r = await pollMail({ ...ctx, bank });
+    expect(r.errors).toEqual([]);
+    const [p] = await pendingProposals(ctx, { kind: "send_message" });
+    expect(p).toMatchObject({ clientId: "cli_c1", status: "pending" });
+    const draft = await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) });
+    expect(draft?.intake).toMatchObject({ facts: { invoice: { paymentInstructions: "Account name: Demo firm\nBank: DBS Bank\nAccount number: 12345678" } } });
+    expect(await ctx.db.query.invoice.findFirst({ where: eq(invoice.requestId, p.requestId!) })).toMatchObject({ status: "draft" });
+    expect(ctx.mail.sent()).toHaveLength(0);
+  });
+
   it("an email from the demo test address is matched to the showcase client and lands in the intray", async () => {
     ctx.llm.on("intake", appoint());
     ctx.llm.on("draft", goodDraft);
@@ -138,6 +176,24 @@ describe("Email channel", () => {
     const r = await pollMail(ctx);
     expect(r.processed).toBe(1);
     expect((await pendingProposals(ctx)).map((p) => p.kind)).toEqual(["triage"]);
+  });
+
+  it("a processing failure leaves Reading, retains the error for staff review, and is not processed twice", async () => {
+    ctx.llm.on("intake", appoint());
+    ctx.llm.on("draft", goodDraft);
+    ctx.bank.accountDetails = async () => { throw new Error("Bank account is not configured correctly"); };
+    ctx.mail.deliver({ providerMessageId: "bank-failure-1", from: { email: "director@kbtrading.example", name: "CHAN" }, subject: "New director", text: "Please appoint WONG Ka Man." });
+    const result = await pollMail(ctx);
+    expect(result.errors).toHaveLength(1);
+    const [card] = await pendingProposals(ctx, { kind: "triage" });
+    const failed = await ctx.db.query.message.findFirst({ where: eq(message.id, card.payload.messageId as string) });
+    expect(failed?.processedAt).toEqual(ctx.clock.now());
+    expect(failed?.error).toBe("Bank account is not configured correctly");
+    expect(ctx.mail.sent()).toHaveLength(0);
+    await ctx.db.delete((await import("@/db/schema")).kv);
+    expect((await pollMail(ctx)).processed).toBe(0);
+    expect(ctx.llm.callsFor("intake")).toHaveLength(1);
+    expect(await pendingProposals(ctx, { kind: "triage" })).toHaveLength(1);
   });
 });
 

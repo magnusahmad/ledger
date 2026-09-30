@@ -14,6 +14,28 @@ function fakeFetch(routes: Record<string, (init?: RequestInit) => unknown>) {
 }
 
 describe("Airwallex adapter (recorded API shapes)", () => {
+  it.each(["acct_wrongAccountId", "ga_1", "not-a-uuid"])("payment instructions reject an invalid Global Account ID (%s) before calling Airwallex", async (globalAccountId) => {
+    const { f, calls } = fakeFetch({ "/authentication/login": () => ({ token: "t" }), "/global_accounts/": () => ({ account_name: "Demo firm", account_number: "12345678" }) });
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId, fetch: f });
+    await expect(bank.accountDetails()).rejects.toThrow(/AIRWALLEX_GLOBAL_ACCOUNT_ID.*UUID.*GET \/api\/v1\/global_accounts/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("sandbox deposit simulation rejects an invalid Global Account ID before calling Airwallex", async () => {
+    const { f, calls } = fakeFetch({ "/authentication/login": () => ({ token: "t" }), "/simulation/deposit/create": () => ({ id: "dep_9", amount: 1500 }) });
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: "acct_wrongAccountId", fetch: f });
+    await expect(bank.simulateDeposit({ amountCents: 150000, currency: "HKD", reference: "CRCS-2026-0007", payerName: "Investor" })).rejects.toThrow(/AIRWALLEX_GLOBAL_ACCOUNT_ID.*UUID/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("payment instructions retrieve the configured Global Account UUID and preserve bank routing details", async () => {
+    const id = "7f687fe6-dcf4-4462-92fa-80335301d9d2";
+    const { f, calls } = fakeFetch({ "/authentication/login": () => ({ token: "t" }), [`/global_accounts/${id}`]: () => ({ account_name: "Demo firm", account_number: "12345678", institution: { name: "DBS Bank" }, swift_code: "DHBKHKHH", routing_codes: [{ type: "bank_code", value: "016" }, { type: "branch_code", value: "478" }] }) });
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: id, fetch: f });
+    expect(await bank.accountDetails()).toEqual({ "Account name": "Demo firm", Bank: "DBS Bank", "Account number": "12345678", SWIFT: "DHBKHKHH", "bank code": "016", "branch code": "478" });
+    expect(calls.at(-1)?.url).toBe(`https://x/api/v1/global_accounts/${id}`);
+  });
+
   it("logs in once, reuses the token, and maps settled deposits to cents", async () => {
     const { f, calls } = fakeFetch({
       "/authentication/login": () => ({ token: "tok-1", expires_at: new Date(Date.now() + 1800_000).toISOString() }),
@@ -33,10 +55,10 @@ describe("Airwallex adapter (recorded API shapes)", () => {
 
   it("a simulated sandbox deposit sends the invoice number as the reference to the configured Global Account", async () => {
     const { f, calls } = fakeFetch({ "/authentication/login": () => ({ token: "t" }), "/simulation/deposit/create": (init) => ({ id: "dep_9", ...JSON.parse(String(init!.body)), create_time: "2026-09-29T03:00:00Z" }) });
-    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: "ga_1", fetch: f });
+    const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: "7f687fe6-dcf4-4462-92fa-80335301d9d2", fetch: f });
     const d = await bank.simulateDeposit({ amountCents: 150000, currency: "HKD", reference: "CRCS-2026-0007", payerName: "Investor" });
     const body = JSON.parse(String(calls[1].init!.body));
-    expect(body).toMatchObject({ global_account_id: "ga_1", amount: 1500, reference: "CRCS-2026-0007", payer_name: "Investor" });
+    expect(body).toMatchObject({ global_account_id: "7f687fe6-dcf4-4462-92fa-80335301d9d2", amount: 1500, reference: "CRCS-2026-0007", payer_name: "Investor" });
     expect(d).toMatchObject({ amountCents: 150000, providerTxId: "dep_9" });
   });
 

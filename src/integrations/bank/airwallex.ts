@@ -11,6 +11,14 @@ export class AirwallexBank implements BankProvider {
   constructor(private o: { clientId: string; apiKey: string; baseUrl: string; globalAccountId?: string | null; fetch?: Fetch }) {}
   private f(): Fetch { return this.o.fetch ?? fetch; }
 
+  private globalAccountId(): string {
+    const id = this.o.globalAccountId;
+    if (!id || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) {
+      throw new Error("AIRWALLEX_GLOBAL_ACCOUNT_ID must be a Global Account UUID. Use the id returned by GET /api/v1/global_accounts, not an acct_ account ID or bank account number.");
+    }
+    return id;
+  }
+
   private async auth(): Promise<string> {
     if (this.token && this.token.expires > Date.now() + 60_000) return this.token.value;
     const r = await this.f()(`${this.o.baseUrl}/api/v1/authentication/login`, { method: "POST", headers: { "x-client-id": this.o.clientId, "x-api-key": this.o.apiKey, "Content-Type": "application/json" } });
@@ -35,8 +43,9 @@ export class AirwallexBank implements BankProvider {
 
   async simulateDeposit(d: { amountCents: number; currency: string; reference: string; payerName: string }): Promise<BankDeposit | null> {
     if (!this.o.globalAccountId) throw new Error("Set AIRWALLEX_GLOBAL_ACCOUNT_ID to simulate deposits");
+    const globalAccountId = this.globalAccountId();
     const j = await this.call<Record<string, unknown>>("POST", "/api/v1/simulation/deposit/create", {
-      global_account_id: this.o.globalAccountId, amount: d.amountCents / 100, currency: d.currency, reference: d.reference,
+      global_account_id: globalAccountId, amount: d.amountCents / 100, currency: d.currency, reference: d.reference,
       payer_name: d.payerName, payer_bankname: "HSBC Hong Kong", payer_country: "HK", status: "SETTLED",
     });
     return mapDeposit(j);
@@ -44,7 +53,7 @@ export class AirwallexBank implements BankProvider {
 
   async accountDetails(): Promise<Record<string, string>> {
     if (!this.o.globalAccountId) return { "Account name": "Caine Road Corporate Services Limited", Note: "Airwallex Global Account not configured" };
-    const a = await this.call<Record<string, unknown>>("GET", `/api/v1/global_accounts/${this.o.globalAccountId}`);
+    const a = await this.call<Record<string, unknown>>("GET", `/api/v1/global_accounts/${this.globalAccountId()}`);
     const inst = (a.institution ?? {}) as Record<string, string>;
     const out: Record<string, string> = {
       "Account name": String(a.account_name ?? ""),

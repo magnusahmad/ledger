@@ -3,6 +3,8 @@ import type { Ctx } from "@/lib/ctx";
 import { ingestMessage, processInbound } from "@/domain/inbound";
 import { kvGet, kvSet, withLease } from "@/domain/kv";
 import { recordMailboxReply } from "@/domain/mailbox-replies";
+import { and, eq } from "drizzle-orm";
+import { message } from "@/db/schema";
 
 export async function pollMail(ctx: Ctx): Promise<{ fetched: number; processed: number; errors: string[] }> {
   return (await withLease(ctx, "mail", 300, () => pollMailUnlocked(ctx))) ?? { fetched: 0, processed: 0, errors: [] };
@@ -28,6 +30,8 @@ async function pollMailUnlocked(ctx: Ctx): Promise<{ fetched: number; processed:
       errors.push(`${row.id}: ${(e as Error).message}`);
       const { createProposal } = await import("@/domain/proposals");
       await createProposal(ctx, { kind: "triage", title: `Couldn't process a message from ${m.from.name ?? m.from.email}`, summary: (e as Error).message.slice(0, 300), payload: { messageId: row.id } });
+      await ctx.db.update(message).set({ processedAt: ctx.clock.now(), error: (e as Error).message })
+        .where(and(eq(message.firmId, ctx.firmId), eq(message.id, row.id)));
     }
     processed++;
   }

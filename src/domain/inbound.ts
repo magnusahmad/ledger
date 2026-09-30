@@ -3,7 +3,7 @@
 // as a proposal), and draft one reply for approval.
 import { and, asc, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { sameValue } from "./names";
+import { knownPersonName, sameValue } from "./names";
 import type { InboundMail } from "@/integrations/types";
 import { attachment, client as clientT, conversation, document, message, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
@@ -334,7 +334,8 @@ export async function writePersonParticulars(ctx: Ctx, personId: string, ex: Ext
   for (const [key, field] of Object.entries(PERSON_FIELD)) {
     const v = ex[key]?.value;
     if (!v) continue;
-    const onFile = (p as Record<string, unknown>)[field] as string | null;
+    const stored = (p as Record<string, unknown>)[field] as string | null;
+    const onFile = field === "nameEn" ? knownPersonName(stored) : stored;
     if (!onFile) { patch[field] = v; continue; }
     if (!sameValue(onFile, v)) {
       conflicts.push(key);

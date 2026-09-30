@@ -1,15 +1,18 @@
 // Invoice PDF on the firm's letterhead with bilingual headings and payment instructions.
-import { eq, asc } from "drizzle-orm";
+import { and, eq, asc } from "drizzle-orm";
 import { PDFDocument, rgb, type PDFFont } from "pdf-lib";
 import type { Ctx } from "@/lib/ctx";
-import { client, invoice, invoiceLine } from "@/db/schema";
+import { client, document, invoice, invoiceLine } from "@/db/schema";
+import { Crypto } from "@/lib/crypto";
+import { invoiceContentFingerprint } from "@/domain/delivery-evidence";
 import { getFirm } from "@/domain/firm";
 import { money } from "@/domain/labels";
 import { fmtDate } from "@/domain/dates";
 import { embedFonts } from "./fonts";
 
 export async function renderInvoicePdf(ctx: Ctx, invoiceId: string): Promise<Buffer> {
-  const inv = (await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, invoiceId) }))!;
+  const inv = await ctx.db.query.invoice.findFirst({ where: and(eq(invoice.id, invoiceId), eq(invoice.firmId, ctx.firmId)) });
+  if (!inv) throw new Error("Invoice not found");
   const lines = await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, invoiceId)).orderBy(asc(invoiceLine.sort));
   const cl = (await ctx.db.query.client.findFirst({ where: eq(client.id, inv.clientId) }))!;
   const firm = await getFirm(ctx);
@@ -48,5 +51,9 @@ export async function renderInvoicePdf(ctx: Ctx, invoiceId: string): Promise<Buf
   text("Payment 付款方法", 56, y, 10, bold); y -= 16;
   text("Please quote the invoice number as the payment reference. 請以發票號碼作為付款參考。", 56, y, 9, regular, muted); y -= 16;
   for (const [k, v] of Object.entries(bank)) { text(`${k}: ${v}`, 56, y, 9); y -= 13; }
-  return Buffer.from(await doc.save());
+  const pdf = Buffer.from(await doc.save());
+  const id = ctx.ids.next("doc"), key = `${ctx.firmId}/invoices/${id}.pdf`;
+  await ctx.storage.put(key, pdf);
+  await ctx.db.insert(document).values({ id, firmId: ctx.firmId, clientId: inv.clientId, kind: "invoice", title: `${inv.number}.pdf`, storageKey: key, mime: "application/pdf", sha256: Crypto.sha256(pdf), source: "generated", requirementKey: `invoice:${inv.id}`, extractedText: invoiceContentFingerprint({ ...inv, lines }), createdAt: ctx.clock.now() });
+  return pdf;
 }

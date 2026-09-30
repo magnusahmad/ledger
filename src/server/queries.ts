@@ -26,6 +26,8 @@ export async function liveVersion(ctx: Ctx) {
     (select coalesce(max(decided_at), 'epoch') from proposal where firm_id = ${ctx.firmId})::text as d,
     (select coalesce(max(at), 'epoch') from task_event where firm_id = ${ctx.firmId})::text as e,
     (select coalesce(max(at), 'epoch') from message where firm_id = ${ctx.firmId})::text as m,
+    (select coalesce(max(processed_at), 'epoch') from message where firm_id = ${ctx.firmId})::text as mp,
+    (select count(*) from message where firm_id = ${ctx.firmId} and direction = 'in' and processed_at is null)::text as reading,
     (select count(*) from job where firm_id = ${ctx.firmId} and status = 'queued')::text as j`);
   const row = r.rows[0] as Record<string, string>;
   return Object.values(row).join("|");

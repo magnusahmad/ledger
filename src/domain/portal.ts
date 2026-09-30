@@ -2,7 +2,7 @@
 // client's language, accepts files and typed details, and ticks the checklist.
 import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { sameValue } from "./names";
+import { knownPersonName, sameValue } from "./names";
 import { client as clientT, document, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
 import { advance, getTask, logEvent, outstanding, setChecklist, tasksForRequest } from "./engine";
@@ -71,7 +71,7 @@ export async function portalUpload(ctx: Ctx, token: string, u: { taskId: string;
     const want = t.checklist.filter((e) => e.personId === t.personId && PERSON_FIELD[e.key]).map((e) => e.key);
     try {
       const ex = await extractFromDocument(ctx, { taskId: t.id, forKey: u.key, wantKeys: want, filename: u.filename, mime: u.mime, content: u.content,
-        onFile: Object.fromEntries(Object.entries(PERSON_FIELD).map(([k, f]) => [k, (person as Record<string, unknown>)[f] as string | null])) });
+        onFile: Object.fromEntries(Object.entries(PERSON_FIELD).map(([k, f]) => [k, f === "nameEn" ? knownPersonName(person.nameEn) : (person as Record<string, unknown>)[f] as string | null])) });
       await applyExtraction(ctx, t.id, t.personId, ex.fields, u.filename);
     } catch (e) { if (!(e instanceof AgentError)) throw e; await logEvent(ctx, t.id, "extract.failed", `Couldn't read ${u.filename}; staff can enter the details`); }
   }
@@ -86,7 +86,8 @@ async function applyExtraction(ctx: Ctx, taskId: string, personId: string, field
   for (const f of fields) {
     const field = PERSON_FIELD[f.key];
     if (!field || !f.value) continue;
-    const onFile = (person as Record<string, unknown>)[field] as string | null;
+    const stored = (person as Record<string, unknown>)[field] as string | null;
+    const onFile = field === "nameEn" ? knownPersonName(stored) : stored;
     if (onFile && !sameValue(onFile, f.value)) {
       await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(f.key)} for ${person.nameEn}`, summary: `Our records and ${source} differ.`, clientId: t.clientId, taskId, payload: { taskId, key: f.key, onFile: ["idNo", "resAddr"].includes(f.key) ? "(protected value on file)" : onFile, incoming: f.value, personId, question: `Please confirm your ${itemLabel(f.key).toLowerCase()}.` } });
       continue;

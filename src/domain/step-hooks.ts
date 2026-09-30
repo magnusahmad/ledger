@@ -13,6 +13,7 @@ import type { ReplyFacts } from "@/agent/draft";
 import { getPlaybook } from "./playbooks";
 import { validRegisterDate } from "@/documents/register-export";
 import { approvalState, assertApprovalState, expireApproval } from "./approval-state";
+import { completeSending } from "./sending";
 
 onEnterStep("generate", async (ctx, task, _step, idx) => {
   try {
@@ -115,6 +116,10 @@ onJob("draft.confirmation", async (ctx, { taskId }) => {
 export async function completeManualStep(ctx: Ctx, taskId: string, note?: string) {
   const t = await getTask(ctx, taskId);
   const step = t._steps[t.stepIndex];
+  if (t.status === "open" && (step?.kind === "send" || step?.kind === "confirm")) {
+    await completeSending(ctx, [taskId], step.kind === "send" ? t.requestId : null, note);
+    return getTask(ctx, taskId);
+  }
   if (step?.kind !== "task") throw new Error("The current step isn't a manual step");
   await markStepState(ctx, taskId, "task", { done: true, note: note ?? null });
   await logEvent(ctx, taskId, "step.manual_done", `${step.label}${note ? `: ${note}` : ""}`, {}, ctx.userId);

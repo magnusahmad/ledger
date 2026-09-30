@@ -11,10 +11,16 @@ import { renderInvoicePdf } from "@/documents/invoice-pdf";
 import { enqueue } from "./jobs";
 import { invoiceLine, invoice, document } from "@/db/schema";
 import { valueText } from "@/lib/display";
+import { completeSending } from "./sending";
 
 const PERSON_FIELD: Record<string, string> = { fullName: "nameEn", chiName: "nameZh", idNo: "idNumber", resAddr: "residentialAddress", corrAddr: "correspondenceAddress" };
 
 onApprove("send_message", async (ctx, p, opts) => {
+  if (opts.edits?.completedOutside === "on") {
+    const mark = p.payload.markStep as { taskId: string } | undefined;
+    await completeSending(ctx, mark ? [mark.taskId] : (p.payload.taskIds as string[] ?? []), !mark && p.payload.purpose === "request" ? p.requestId : null, String(opts.edits.note ?? ""), p.id, p.payload.invoiceId as string | undefined);
+    return;
+  }
   const messageId = p.payload.messageId as string;
   const m = (await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) }))!;
   const raw = opts.edits as { subject?: string; text?: string; to?: string | string[] } | undefined;

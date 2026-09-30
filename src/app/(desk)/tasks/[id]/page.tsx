@@ -100,8 +100,10 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                     {state === "skip" && <span className="small muted"> · {s.kind === "pay" ? "skipped: credit terms" : String(sd.skipped ?? "skipped")}</span>}
                     {typeof sd.reference === "string" && <span className="small muted"> · ref {sd.reference}</span>}
                     {openSteps.filter((a) => a.beforeStep != null && a.beforeStep === i).map((a) => <div key={a.id} className="small" style={{ color: "var(--amber)" }}>Waits for: {a.title}</div>)}
-                    {state === "cur" && s.kind === "task" && (
+                    {state === "cur" && ["task", "send", "confirm"].includes(s.kind) && (
                       <ActionForm action={manualStepAction.bind(null, t.id)} submit="Mark done" tone="secondary">
+                        {s.kind === "send" && <p className="small muted">Confirm the request details and any invoice have been delivered by any medium. This marks any draft invoice sent and completes sending for the linked tasks.</p>}
+                        {s.kind === "confirm" && <p className="small muted">Confirm the client has been told the work is complete by any medium.</p>}
                         {s.instructions && <p className="small muted" style={{ margin: "4px 0" }}>{s.instructions}</p>}
                         <input type="text" name="note" placeholder="Note (optional)" style={{ marginTop: 6 }} />
                       </ActionForm>

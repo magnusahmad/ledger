@@ -8,7 +8,8 @@ import { itemLabel, money } from "@/domain/labels";
 import { attachment, client, document, invoice, invoiceLine, message, request as requestT } from "@/db/schema";
 import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
 import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
-import { ActionButton } from "@/components/ActionForm";
+import { ActionButton, ActionForm } from "@/components/ActionForm";
+import { deliveryEvidence } from "@/domain/delivery-evidence";
 import { DeadlineStamp, StatusPill, ago, fmt } from "@/components/ui";
 import { languageLabel, plural, sentence, valueText } from "@/lib/display";
 import { getPlaybook, listPlaybooks } from "@/domain/playbooks";
@@ -74,6 +75,9 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     const extraDocIds = (p.payload.attachDocumentIds as string[] | undefined) ?? [];
     const extraDocs = extraDocIds.length ? await ctx.db.select().from(document).where(inArray(document.id, extraDocIds)) : [];
     const attachInvoice = inv && inv.status === "draft" && (draft.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
+    const evidence = reqId && inv && p.payload.purpose === "request" ? await deliveryEvidence(ctx, reqId, draft.toAddrs) : null;
+    const evidenceIds = [...new Set([evidence?.invoiceMessageId, evidence?.uploadMessageId].filter((id): id is string => !!id))];
+    const evidenceMessages = evidenceIds.length ? await ctx.db.select().from(message).where(inArray(message.id, evidenceIds)) : [];
     return (
       <>
         {header}
@@ -83,7 +87,9 @@ export default async function Review({ params }: { params: Promise<{ id: string 
             <div className="card">
               <div className="sec-h"><h2>Reply</h2><RedraftButtons proposalId={p.id} current={(draft.language as "en" | "tc" | "sc") ?? "en"} /></div>
               {p.payload.purpose === "chase" && <div className={`banner ${p.payload.escalation ? "red" : "amber"}`}>{p.payload.escalation ? "Escalation: the deadline is close or earlier reminders went unanswered. A call to the client has been added to the task." : "Reminder: the client hasn’t sent what’s outstanding yet."}</div>}
-              {!!p.payload.replaces && <div className="banner amber">Someone replied to this client from the mailbox, so this didn’t go out. It still carries the invoice and upload link. Edit it to follow on from that reply.</div>}
+              {!!p.payload.replaces && <div className="banner amber">Someone replied from the mailbox. Check what was delivered, then send anything still needed or mark the sending step done.</div>}
+              {evidence && <p className="small muted">Sent email check: {evidence.invoiceFound ? "current invoice attachment found" : "current invoice attachment not found"}; {evidence.uploadLinkFound ? "upload link found" : "upload link not found"}. Staff confirmation is still required.</p>}
+              {evidenceMessages.map(m => <p className="small" key={m.id}><Link className="lnk" href={`/inbox/${m.conversationId}`}>View sent email: {m.subject ?? "Reply"}</Link></p>)}
               {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the standard template. Check the wording before sending.</div>}
               <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">
                 <div className="fld"><label className="f" htmlFor="to">To</label><input id="to" type="email" name="to" defaultValue={draft.toAddrs.join(", ")} /></div>
@@ -91,6 +97,14 @@ export default async function Review({ params }: { params: Promise<{ id: string 
                 <div className="fld"><label className="f" htmlFor="text">Message</label><textarea id="text" name="text" defaultValue={draft.text ?? ""} style={{ minHeight: 360 }} lang={draft.language === "en" ? "en" : draft.language === "sc" ? "zh-Hans" : "zh-Hant"} /></div>
                 {(attachInvoice || extraDocs.length > 0) && <p className="small muted" style={{ marginTop: 10 }}>Attached: {[attachInvoice && <a key="inv" className="lnk" href={`/api/invoices/${inv!.id}/pdf`} target="_blank">{inv!.number}.pdf</a>, ...extraDocs.map((d) => <a key={d.id} className="lnk" href={`/api/docs/${d.id}`} target="_blank">{d.title}</a>)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && ", "}{x}</span>)}</p>}
               </ReviewForm>
+              <div style={{ marginTop: 24 }}>
+                <h3>Handled elsewhere?</h3>
+                <p className="small muted">Mark done after delivering this message{attachInvoice ? ", the invoice and upload details" : ""} by any medium. This records completion{attachInvoice ? " and marks the invoice sent" : ""}.</p>
+                <ActionForm action={approve} submit="Mark done" tone="secondary">
+                  <input type="hidden" name="completedOutside" value="on" />
+                  <div className="fld"><label className="f" htmlFor="outside-note">Note (optional)</label><input id="outside-note" name="note" placeholder="e.g. sent by WeChat" /></div>
+                </ActionForm>
+              </div>
             </div>
           </div>
           <div className="stack">

@@ -8,6 +8,7 @@ import type { PlaybookDef, StepDef, StepKind } from "./playbook-types";
 import { getPlaybook } from "./playbooks";
 import { addDays, addMonths, isIsoDate } from "./dates";
 import { financialYearEnds } from "./fye-periods";
+import { knownPersonName } from "./names";
 
 export type Task = typeof taskT.$inferSelect & { checklist: (ChecklistEntry & { optional?: boolean })[]; _steps?: StepDef[] };
 export type Extracted = Record<string, { value: string; source?: string | null; confidence?: number | null; documentId?: string | null }>;
@@ -59,7 +60,7 @@ async function personPrefill(ctx: Ctx, personId: string): Promise<Record<string,
   const p = await ctx.db.query.person.findFirst({ where: eq(personT.id, personId) });
   if (!p) return {};
   return {
-    fullName: p.nameEn || null,
+    fullName: knownPersonName(p.nameEn),
     chiName: p.nameZh || null,
     idNo: p.idNumberEnc ? "On file" : null,
     resAddr: p.residentialAddressEnc ? "On file" : null,
