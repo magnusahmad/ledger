@@ -1,5 +1,6 @@
 "use client";
 import { useActionState, useEffect, useState, useRef, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { ActionResult } from "@/server/actions";
 
 type Action = (prev: ActionResult | null, form: FormData) => Promise<ActionResult>;
@@ -11,7 +12,9 @@ export function ActionForm({ action, children, submit, tone, className, confirm,
   const [state, run, pending] = useActionState(action, null);
   const [shownAt] = useState(() => new Date().toISOString());
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
   useEffect(() => { if (state?.ok && resetOnSuccess) formRef.current?.reset(); }, [state, resetOnSuccess]);
+  useEffect(() => { if (state?.ok && state.redirectTo) router.push(state.redirectTo); }, [state, router]);
   return (
     <form ref={formRef} action={run} className={className} onSubmit={(e) => { if (confirm && !window.confirm(confirm)) e.preventDefault(); }}>
       {stampShownAt && <input type="hidden" name="shownAt" value={shownAt} />}

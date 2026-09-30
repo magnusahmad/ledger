@@ -9,7 +9,7 @@ import { DRAFT_SYSTEM } from "./prompts";
 export type ReplyFacts = {
   language: Lang;
   /** "meeting": confirms what was agreed in person or by phone, rather than answering a message. */
-  context?: "message" | "meeting";
+  context?: "message" | "meeting" | "costs";
   recipientName: string;
   clientName: string;
   signOff: string;
@@ -58,6 +58,7 @@ const T = {
     hi: (n: string) => `Dear ${n},`,
     thanks: "Thank you for your message.",
     thanksMeeting: "Thank you for meeting with us. As agreed, we will take care of the following.",
+    thanksCosts: "We have paid the following on your behalf. Please find our invoice attached.",
     newReq: (t: string) => `${t}:`,
     need: "To get this done, please send us:",
     onFile: "We already hold on file (no need to send again):",
@@ -80,6 +81,7 @@ const T = {
     hi: (n: string) => `${n}您好：`,
     thanks: "多謝您的訊息。",
     thanksMeeting: "多謝您抽空與我們會面。按我們商討的安排，我們會跟進以下事項。",
+    thanksCosts: "我們已代您支付以下費用，隨函附上發票。",
     newReq: (t: string) => `${t}：`,
     need: "為辦理此事，請提供：",
     onFile: "我們已存檔以下資料（毋須再次提供）：",
@@ -102,6 +104,7 @@ const T = {
     hi: (n: string) => `${n}您好：`,
     thanks: "感谢您的信息。",
     thanksMeeting: "感谢您抽空与我们会面。按我们商定的安排，我们会跟进以下事项。",
+    thanksCosts: "我们已代您支付以下费用，随函附上发票。",
     newReq: (t: string) => `${t}：`,
     need: "为办理此事，请提供：",
     onFile: "我们已存档以下资料（无须再次提供）：",
@@ -124,7 +127,7 @@ const T = {
 
 export function templateEmail(f: ReplyFacts): { subject: string; body: string } {
   const t = T[f.language] ?? T.en;
-  const out: string[] = [t.hi(f.recipientName), f.context === "meeting" ? t.thanksMeeting : t.thanks];
+  const out: string[] = [t.hi(f.recipientName), f.context === "meeting" ? t.thanksMeeting : f.context === "costs" ? t.thanksCosts : t.thanks];
   const list = (xs: string[]) => xs.map((x) => `- ${x}`).join("\n");
   for (const r of f.newRequests) {
     const block = [t.newReq(r.title)];
