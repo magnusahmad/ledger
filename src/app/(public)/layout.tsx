@@ -1,4 +1,8 @@
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+import { getCtx } from "@/server/ctx";
+import { syncDemoClock } from "@/domain/demo-clock";
+
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  await syncDemoClock(getCtx());
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <header style={{ background: "var(--surface)", borderBottom: "1px solid var(--line)", padding: "14px 16px" }}>

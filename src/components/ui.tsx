@@ -34,7 +34,9 @@ export function fmt(d: string | Date | null | undefined, withTime = false) {
 }
 
 export function ago(d: Date | string | null | undefined) {
-  return when(d);
+  // Server components share the process clock, which follows the demo clock when it's moved.
+  const clock = (globalThis as { __hlClock?: { now(): Date } }).__hlClock;
+  return when(d, clock?.now() ?? new Date());
 }
 
 export const STATUS_TONE: Record<string, "amber" | "red" | "ok" | "blue" | undefined> = {

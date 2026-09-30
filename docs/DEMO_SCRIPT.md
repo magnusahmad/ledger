@@ -34,6 +34,10 @@ Total time about 8 minutes. The founder drives Harbourline on the laptop, shared
 
 **9. Close (30 s).** Open **Settings → Reports → Time saved** and **Playbooks**: 46 configured playbooks across Hong Kong, Mainland China, Macau and Taiwan; supported official CR forms mapped and version-checked; batch start for the annual cycle. Approval timing is partial. Explain the modelled coordination saving and supported workflow limits in `REVIEW_LOG.md`; do not present it as measured whole-task productivity or verified execution of every playbook.
 
+## Showing time passing
+
+To show reminders, escalation or deadlines approaching, use Demo panel → **3. Time passes** → **Jump ahead** (1 to 60 days). The app's date moves forward and the reminder and escalation checks run straight away: a client who owes items gets a "Reminder" card on Today, and one with a deadline within 14 days gets an "Escalation" card plus "Call the client" on the task. **Back to today** returns the clock; **Reset demo data** afterwards, because anything created while ahead keeps its future dates.
+
 ## Fallbacks
 
 - **Rehearsal stops at intake:** the command prints the stored provider/triage reason and exits unsuccessfully. For an OpenRouter 403 saying the model is unavailable in your region, check account/model availability; if it persists, choose a supported model with `LLM_MODEL=<model-id> npm run demo:rehearse`. This is a one-run override; put it in `.env` only after validating the replacement. A successful rehearsal requires every created task to reach Done with no pending approvals.

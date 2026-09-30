@@ -7,6 +7,7 @@ import { pollBank } from "@/domain/payments";
 import { runJobs } from "@/domain/jobs";
 import { runReminders } from "@/domain/reminders";
 import { runChasers } from "@/domain/chasing";
+import { syncDemoClock } from "@/domain/demo-clock";
 import { checkForms } from "@/documents/forms-check";
 import { kvGet, kvSet } from "@/domain/kv";
 
@@ -16,6 +17,7 @@ let stopping = false;
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), "[worker]", ...a);
 
 async function tick() {
+  try { await syncDemoClock(ctx); } catch { /* keep the last offset */ }
   try {
     const m = await pollMail(ctx);
     if (m.processed) log(`mail: ${m.processed} processed${m.errors.length ? `, errors: ${m.errors.join("; ")}` : ""}`);

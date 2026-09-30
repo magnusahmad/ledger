@@ -29,7 +29,7 @@ export default async function Today() {
       <div className="top">
         <div>
           <h1>Today</h1>
-          <p className="sub">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} {d.proposals.length ? ` · ${d.proposals.length} thing${d.proposals.length > 1 ? "s" : ""} need${d.proposals.length > 1 ? "" : "s"} you` : ""}</p>
+          <p className="sub">{ctx.clock.now().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} {d.proposals.length ? ` · ${d.proposals.length} thing${d.proposals.length > 1 ? "s" : ""} need${d.proposals.length > 1 ? "" : "s"} you` : ""}</p>
         </div>
         <div className="row"><LiveRefresh /><Link href="/new" className="btn">New request</Link></div>
       </div>

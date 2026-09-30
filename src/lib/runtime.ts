@@ -2,7 +2,7 @@
 import path from "node:path";
 import { getDb } from "@/db/client";
 import { loadConfig, type Config } from "./config";
-import { systemClock } from "./clock";
+import { OffsetClock } from "./clock";
 import { randomIds } from "./ids";
 import { Crypto } from "./crypto";
 import type { Ctx } from "./ctx";
@@ -26,7 +26,7 @@ import { getSecret } from "@/domain/secrets";
 import { kvGet } from "@/domain/kv";
 import type { AccountingProvider, BankProvider, MailProvider, ScreeningProvider } from "@/integrations/types";
 
-const g = globalThis as unknown as { __hlAdapters?: Record<string, unknown> };
+const g = globalThis as unknown as { __hlAdapters?: Record<string, unknown>; __hlClock?: OffsetClock };
 
 export const STORAGE_ROOT = process.env.STORAGE_DIR ? path.resolve(process.env.STORAGE_DIR) : path.join(process.cwd(), "storage");
 
@@ -41,7 +41,7 @@ export function makeRuntimeCtx(overrides: Partial<Config> = {}): Ctx {
     db: getDb(config.DATABASE_URL),
     firmId: config.FIRM_ID,
     config,
-    clock: systemClock,
+    clock: (g.__hlClock ??= new OffsetClock()),
     ids: randomIds,
     crypto: new Crypto(config.APP_SECRET),
     llm,

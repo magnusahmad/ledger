@@ -31,6 +31,8 @@ const Env = z.object({
   OPENSANCTIONS_API_KEY: z.string().optional(),
   DEMO_EXISTING_CLIENT_EMAIL: z.string().optional(),
   POLL_INTERVAL_MS: z.coerce.number().default(5000),
+  /** Demo tools (demo panel actions such as the clock). Default: on except in production builds. */
+  DEMO_TOOLS: z.enum(["0", "1"]).optional(),
 });
 
 export type Config = z.infer<typeof Env> & {
@@ -39,6 +41,7 @@ export type Config = z.infer<typeof Env> & {
   bankProvider: "airwallex" | "fake";
   accountingProvider: "xero" | "fake";
   screeningProvider: "opensanctions-api" | "opensanctions-local" | "fake";
+  demoTools: boolean;
 };
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -55,5 +58,6 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     accountingProvider:
       (e.XERO_CLIENT_ID && e.XERO_CLIENT_SECRET) || e.XERO_CLIENT_BEARER_TOKEN ? "xero" : "fake",
     screeningProvider: e.SCREENING_PROVIDER ?? (e.OPENSANCTIONS_API_KEY ? "opensanctions-api" : "opensanctions-local"),
+    demoTools: e.DEMO_TOOLS ? e.DEMO_TOOLS === "1" : env.NODE_ENV !== "production",
   };
 }

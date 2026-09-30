@@ -20,6 +20,7 @@ import { portalSubmit } from "@/domain/portal";
 import { startManualRequest, type ManualItem } from "@/domain/manual";
 import { addCost } from "@/domain/costs";
 import { setChaseRules } from "@/domain/chasing";
+import { backToToday, fastForward } from "@/domain/demo-clock";
 import { addThirdParty, linkThirdParty, markSenderNotClient, type PartyRole } from "@/domain/third-parties";
 import { addOffPlatformStep, cancelOffPlatformStep, completeOffPlatformStep, followedUp, putOnHold, releaseHold, type WaitingOn } from "@/domain/off-platform";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
@@ -40,7 +41,9 @@ export async function approveAction(proposalId: string, _prev: ActionResult | nu
       if (k.startsWith("email:")) { edits.emails = { ...(edits.emails as object ?? {}), [k.slice(6)]: String(v) }; continue; }
       edits[k] = k === "feeHkd" ? Number(v) : String(v);
     }
-    const shownAt = form.get("shownAt") ? new Date(String(form.get("shownAt"))) : null;
+    // The browser stamps real time; shift it onto the app clock (the demo clock may be ahead).
+    const skew = ctx.clock.now().getTime() - Date.now();
+    const shownAt = form.get("shownAt") ? new Date(new Date(String(form.get("shownAt"))).getTime() + skew) : null;
     await approveProposal(ctx, proposalId, { edits, shownAt });
     await runJobs(ctx); // e.g. queue the Xero sync and confirmation drafts straight away
     return done("Done");
@@ -202,6 +205,18 @@ export async function logMailAction(_prev: ActionResult | null, form: FormData):
 }
 
 // ---------- Demo panel ----------
+export async function fastForwardAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const r = await fastForward(getCtx(), Number(form.get("days")));
+    revalidatePath("/", "layout");
+    const d = new Date(`${r.today}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    return { ok: true, message: `It's now ${d}. ${r.chases ? `${r.chases} reminder${r.chases === 1 ? "" : "s"} drafted` : "No reminders due"}${r.reminders ? `, ${r.reminders} invoice reminder${r.reminders === 1 ? "" : "s"}` : ""}.` };
+  } catch (e) { return fail(e); }
+}
+export async function backToTodayAction(): Promise<ActionResult> {
+  try { await backToToday(getCtx()); revalidatePath("/", "layout"); return { ok: true, message: "Back to today" }; } catch (e) { return fail(e); }
+}
+
 export async function simulatePaymentAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   const ctx = getCtx();
   try {

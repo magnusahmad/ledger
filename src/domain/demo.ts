@@ -7,6 +7,7 @@ import * as schema from "@/db/schema";
 import { seedDemo } from "@/db/seed-demo";
 
 export async function resetDemoData(ctx: Ctx) {
+  ctx.clock.setOffsetDays?.(0); // a jumped demo clock goes back to today with the data
   const tables = Object.values(schema)
     .filter((t) => typeof t === "object" && t !== null && Symbol.for("drizzle:Name") in (t as object))
     .map((t) => `"${(t as unknown as Record<symbol, string>)[Symbol.for("drizzle:Name")]}"`);

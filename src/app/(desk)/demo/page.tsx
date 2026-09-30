@@ -3,7 +3,8 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
 import { client, invoice, message, conversation } from "@/db/schema";
 import { ActionForm, ActionButton } from "@/components/ActionForm";
-import { simulatePaymentAction, simulateEmailAction, resetDemoAction, workerTickAction } from "@/server/actions";
+import { simulatePaymentAction, simulateEmailAction, resetDemoAction, workerTickAction, fastForwardAction, backToTodayAction } from "@/server/actions";
+import { demoClockOffset } from "@/domain/demo-clock";
 import { money } from "@/domain/labels";
 import { Pill } from "@/components/ui";
 import { LiveRefresh } from "@/components/LiveRefresh";
@@ -13,6 +14,8 @@ export default async function Demo() {
   const invs = await ctx.db.select({ i: invoice, c: client }).from(invoice).innerJoin(client, eq(client.id, invoice.clientId)).where(inArray(invoice.status, ["sent", "part_paid"])).orderBy(desc(invoice.createdAt));
   const lastOut = await ctx.db.select({ m: message, v: conversation }).from(message).innerJoin(conversation, eq(conversation.id, message.conversationId)).where(eq(message.status, "sent")).orderBy(desc(message.at)).limit(1);
   const fake = ctx.config.mailProvider === "fake";
+  const offset = await demoClockOffset(ctx);
+  const appToday = ctx.clock.now().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Hong_Kong" });
   const chan = await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, "per_p1") });
   const demoEmail = chan?.email ?? ctx.config.DEMO_EXISTING_CLIENT_EMAIL ?? "";
   return (
@@ -42,6 +45,16 @@ export default async function Demo() {
             </ActionForm>
           )}
         </div>
+      </div>
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>3. Time passes {offset > 0 && <Pill tone="amber">{offset} day{offset === 1 ? "" : "s"} ahead</Pill>}</h2>
+        {ctx.config.demoTools ? <>
+          <p className="small muted" style={{ marginTop: 0 }}>The app thinks today is <b>{appToday}</b>. Jumping ahead runs the reminder and escalation checks as of the new date, so quiet clients get chased and near deadlines escalate. Reset the demo data afterwards; anything created while ahead keeps its future dates.</p>
+          <div className="row" style={{ alignItems: "flex-end" }}>
+            <ActionForm action={fastForwardAction} submit="Jump ahead" className="row inline-form"><input type="number" name="days" min={1} max={60} defaultValue={5} aria-label="Days to jump" style={{ width: 90, flex: "none" }} /><span className="small muted">days</span></ActionForm>
+            {offset > 0 && <ActionButton action={backToTodayAction}>Back to today</ActionButton>}
+          </div>
+        </> : <p className="small muted" style={{ margin: 0 }}>Demo tools are off in this environment.</p>}
       </div>
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Reset</h2>
