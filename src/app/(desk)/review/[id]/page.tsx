@@ -80,6 +80,12 @@ export default async function Review({ params }: { params: Promise<{ id: string 
             </div>
           </div>
           <div className="stack">
+            {p.payload.origin === "manual" && req && (
+              <div className="card">
+                <h2>From a meeting or call</h2>
+                <p className="small" style={{ margin: 0 }}>{req.summary && req.summary !== "Taken in person" ? req.summary : "Started manually. No notes were added."}</p>
+              </div>
+            )}
             {source && (
               <div className="card">
                 <h2>From the client</h2>

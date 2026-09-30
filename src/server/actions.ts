@@ -17,12 +17,13 @@ import { batchStart } from "@/domain/batch";
 import { logMailItem } from "@/domain/mail-items";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { portalSubmit } from "@/domain/portal";
+import { startManualRequest, type ManualItem } from "@/domain/manual";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
 import { contact, invoice, message, type Lang } from "@/db/schema";
 import { resetDemoData } from "@/domain/demo";
 import { FakeMail } from "@/integrations/mail/fake";
 
-export type ActionResult = { ok: boolean; error?: string; message?: string };
+export type ActionResult = { ok: boolean; error?: string; message?: string; redirectTo?: string };
 const fail = (e: unknown): ActionResult => ({ ok: false, error: (e as Error).message });
 const done = (message?: string): ActionResult => { refresh(); return { ok: true, message }; };
 
@@ -75,6 +76,15 @@ export async function pasteRequestAction(_prev: ActionResult | null, form: FormD
     await processInbound(ctx, m.id);
     revalidatePath("/", "layout");
     return { ok: true, message: "Harbourline has read the message; the draft is in your intray." };
+  } catch (e) { return fail(e); }
+}
+
+export async function manualRequestAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const items = JSON.parse(String(form.get("items") ?? "[]")) as ManualItem[];
+    const r = await startManualRequest(getCtx(), { clientId: String(form.get("clientId") ?? ""), items, notes: String(form.get("notes") ?? ""), confirm: form.get("confirm") === "on" });
+    revalidatePath("/", "layout");
+    return { ok: true, redirectTo: r.proposalId ? `/review/${r.proposalId}` : `/tasks/${r.taskIds[0]}` };
   } catch (e) { return fail(e); }
 }
 

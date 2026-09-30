@@ -203,17 +203,7 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   // ----- Reply -----
   const needsReply = newTasks.length > 0 || facts.questions.length > 0 || facts.changes.length > 0 || facts.cancellations.length > 0 || touchedTasks.length > 0 || facts.clarifications.length > 0;
   if (needsReply) {
-    for (const t of newTasks) {
-      const tt = await getTask(ctx, t.id);
-      const pb = await getPlaybook(ctx, tt.playbookId, tt.playbookVersion);
-      facts.newRequests.push({
-        title: pbTitle(pb, intake.language) + (tt.personId ? ` (${(await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, tt.personId!) }))?.nameEn})` : ""),
-        needed: outstanding(tt).map((e) => itemLabel(e.key, intake.language, tt.params)),
-        onFile: tt.checklist.filter((e) => e.status === "on_file").map((e) => itemLabel(e.key, intake.language, tt.params)),
-        alreadyReceived: tt.checklist.filter((e) => e.status === "received").map((e) => `${itemLabel(e.key, intake.language, tt.params)}${e.value && !PROTECTED_KEYS.has(e.key) ? `: ${isIsoDate(e.value) ? fmtDate(e.value, intake.language) : e.value}` : ""}`),
-        deadline: tt.dueDate ? `${fmtDate(tt.dueDate, intake.language)} (${pb.deadline.kind !== "none" ? pb.deadline.rule : ""})` : null,
-      });
-    }
+    facts.newRequests.push(...await newRequestFacts(ctx, newTasks.map((t) => t.id), intake.language));
     for (const t of touchedTasks) {
       const tt = await getTask(ctx, t.id);
       const ttTitle = pbTitle(await getPlaybook(ctx, tt.playbookId, tt.playbookVersion), intake.language);
@@ -237,6 +227,23 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
 }
 
 // ---------- Helpers ----------
+/** What a reply says about each newly opened task: what we need, what we hold, what we already have. */
+export async function newRequestFacts(ctx: Ctx, taskIds: string[], lang: Lang): Promise<ReplyFacts["newRequests"]> {
+  const out: ReplyFacts["newRequests"] = [];
+  for (const id of taskIds) {
+    const tt = await getTask(ctx, id);
+    const pb = await getPlaybook(ctx, tt.playbookId, tt.playbookVersion);
+    out.push({
+      title: pbTitle(pb, lang) + (tt.personId && pb.category !== "New client onboarding" ? ` (${(await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, tt.personId!) }))?.nameEn})` : ""),
+      needed: outstanding(tt).map((e) => itemLabel(e.key, lang, tt.params)),
+      onFile: tt.checklist.filter((e) => e.status === "on_file").map((e) => itemLabel(e.key, lang, tt.params)),
+      alreadyReceived: tt.checklist.filter((e) => e.status === "received").map((e) => `${itemLabel(e.key, lang, tt.params)}${e.value && !PROTECTED_KEYS.has(e.key) ? `: ${isIsoDate(e.value) ? fmtDate(e.value, lang) : e.value}` : ""}`),
+      deadline: tt.dueDate ? `${fmtDate(tt.dueDate, lang)} (${pb.deadline.kind !== "none" ? pb.deadline.rule : ""})` : null,
+    });
+  }
+  return out;
+}
+
 /** A prospect first known only by the sender's name takes the company's name and number once given. */
 async function namePropsect(ctx: Ctx, clientId: string, intake: Intake) {
   const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) });
@@ -258,7 +265,7 @@ async function namePropsect(ctx: Ctx, clientId: string, intake: Intake) {
   }
 }
 
-function emptyFacts(language: Lang): ReplyFacts {
+export function emptyFacts(language: Lang): ReplyFacts {
   return { language, recipientName: "", clientName: "", signOff: "", newRequests: [], updates: [], changes: [], cancellations: [], questions: [], clarifications: [], invoice: null, uploadUrl: null };
 }
 
@@ -309,7 +316,7 @@ const PERSON_FIELD: Record<string, "nameEn" | "nameZh" | "idNumber" | "residenti
 };
 
 /** Returns keys that conflict with on-file values (these become conflict proposals). */
-async function writePersonParticulars(ctx: Ctx, personId: string, ex: Extracted, clientId: string, taskId?: string): Promise<string[]> {
+export async function writePersonParticulars(ctx: Ctx, personId: string, ex: Extracted, clientId: string, taskId?: string): Promise<string[]> {
   const p = await getPersonProtected(ctx, personId);
   const patch: Record<string, string> = {};
   const conflicts: string[] = [];
