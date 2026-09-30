@@ -9,9 +9,9 @@ import { attachment, client, document, invoice, invoiceLine, message, request as
 import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
 import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
 import { ActionButton } from "@/components/ActionForm";
-import { StatusPill, ago, fmt } from "@/components/ui";
+import { DeadlineStamp, StatusPill, ago, fmt } from "@/components/ui";
 import { languageLabel, plural, sentence, valueText } from "@/lib/display";
-import { listPlaybooks } from "@/domain/playbooks";
+import { getPlaybook, listPlaybooks } from "@/domain/playbooks";
 import type { Intake } from "@/agent/schemas";
 
 const STATUS_ICON: Record<string, string> = { needed: "○", received: "●", on_file: "✓", not_needed: "–" };
@@ -39,7 +39,9 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         <h1>{p.title}</h1>
         <p className="sub">{cl ? <><Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{cl.lifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{decided ? ` · ${p.status === "superseded" ? "Withdrawn" : sentence(p.status)}` : ""}</p>
       </div>
-      {!decided && <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>}
+      {!decided && (p.kind === "start_enforcement"
+        ? <ActionButton action={reject} tone="secondary" confirm="Don't start this work? The client will still get a draft telling them about the letter.">Only tell the client</ActionButton>
+        : <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>)}
     </div>
   );
   if (decided) {
@@ -69,6 +71,8 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     for (const tid of (p.payload.taskIds as string[]) ?? []) tasks.push(await getTask(ctx, tid));
     if (!tasks.length && reqId && !isCosts) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
     const pbNames = new Map((await listPlaybooks(ctx)).map((x) => [x.id, x.name.en]));
+    const extraDocIds = (p.payload.attachDocumentIds as string[] | undefined) ?? [];
+    const extraDocs = extraDocIds.length ? await ctx.db.select().from(document).where(inArray(document.id, extraDocIds)) : [];
     const attachInvoice = inv && inv.status === "draft" && (draft.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
     return (
       <>
@@ -85,11 +89,18 @@ export default async function Review({ params }: { params: Promise<{ id: string 
                 <div className="fld"><label className="f" htmlFor="to">To</label><input id="to" type="email" name="to" defaultValue={draft.toAddrs.join(", ")} /></div>
                 <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue={draft.subject ?? ""} /></div>
                 <div className="fld"><label className="f" htmlFor="text">Message</label><textarea id="text" name="text" defaultValue={draft.text ?? ""} style={{ minHeight: 360 }} lang={draft.language === "en" ? "en" : draft.language === "sc" ? "zh-Hans" : "zh-Hant"} /></div>
-                {attachInvoice && <p className="small muted" style={{ marginTop: 10 }}>Attached: <a href={`/api/invoices/${inv!.id}/pdf`} target="_blank">{inv!.number}.pdf</a></p>}
+                {(attachInvoice || extraDocs.length > 0) && <p className="small muted" style={{ marginTop: 10 }}>Attached: {[attachInvoice && <a key="inv" className="lnk" href={`/api/invoices/${inv!.id}/pdf`} target="_blank">{inv!.number}.pdf</a>, ...extraDocs.map((d) => <a key={d.id} className="lnk" href={`/api/docs/${d.id}`} target="_blank">{d.title}</a>)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && ", "}{x}</span>)}</p>}
               </ReviewForm>
             </div>
           </div>
           <div className="stack">
+            {p.payload.origin === "letter" && req && (
+              <div className="card">
+                <h2>From a letter</h2>
+                <p className="small" style={{ margin: 0 }}>{req.summary}</p>
+                {((p.payload.attachDocumentIds as string[] | undefined) ?? []).map((d) => <p key={d} className="small" style={{ marginBottom: 0 }}><a className="lnk" href={`/api/docs/${d}`} target="_blank">View the scan</a> · attached to the email</p>)}
+              </div>
+            )}
             {p.payload.origin === "manual" && req && (
               <div className="card">
                 <h2>From a meeting or call</h2>
@@ -199,6 +210,32 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         <ReviewForm action={approve} submit="Use the new value" redirectTo="/"><input type="hidden" name="accept" value="incoming" /></ReviewForm>
         <ReviewForm action={approve} submit="Keep what's on file" tone="secondary" redirectTo="/"><input type="hidden" name="accept" value="onFile" /></ReviewForm>
       </div></div></>);
+  }
+  if (p.kind === "start_enforcement") {
+    const pl = p.payload as { playbookId: string; dueDate: string | null; form: string | null; reference: string | null; amountHkd: number | null; letter: { documentId: string; sender: string; summary: string; receivedOn: string; actionNeeded: string | null } };
+    const pb = await getPlaybook(ctx, pl.playbookId);
+    return (<>{header}<div className="cols">
+      <div className="card">
+        <h2>{pb.name.en}</h2>
+        <p className="small muted" style={{ marginTop: -4 }}>{pb.description}</p>
+        <dl className="kv small">
+          <dt>Date that matters</dt><dd>{pl.dueDate ? <span className="row" style={{ gap: 8 }}>{fmt(pl.dueDate)}<DeadlineStamp dueDate={pl.dueDate} today={ctx.clock.today()} nearOnly /></span> : <span className="muted">Not stated; set it on the task</span>}<div className="muted">{pb.deadline.rule}</div></dd>
+          {pl.form && <><dt>Filing</dt><dd>{pl.form}</dd></>}
+          {pl.reference && <><dt>Reference</dt><dd>{pl.reference}</dd></>}
+          {pl.amountHkd != null && <><dt>Amount stated</dt><dd>{money(Math.round(pl.amountHkd * 100))}</dd></>}
+          <dt>Steps</dt><dd>{pb.steps.map((s) => s.label).join(" → ")}</dd>
+          <dt>Fee</dt><dd>{money(pb.feeCents)}</dd>
+        </dl>
+        <ReviewForm action={approve} submit="Start the response" redirectTo="/" />
+        <p className="small muted" style={{ marginBottom: 0 }}>Starting it drafts an email to the client explaining the letter, with the scan and the invoice, for you to approve.</p>
+      </div>
+      <div className="card">
+        <h2>The letter</h2>
+        <p className="small muted" style={{ marginTop: -4 }}>From {pl.letter.sender} · received {fmt(pl.letter.receivedOn)} · <a className="lnk" href={`/api/docs/${pl.letter.documentId}`} target="_blank">View the scan</a></p>
+        <p className="small">{pl.letter.summary}</p>
+        {pl.letter.actionNeeded && <p className="small" style={{ marginBottom: 0 }}><b>It asks for:</b> {pl.letter.actionNeeded}</p>}
+      </div>
+    </div></>);
   }
   if (p.kind === "mailbox_update") {
     const reply = await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) });

@@ -9,7 +9,8 @@ import { markInvoiceSent, voidInvoice, recalcTotal, applyRevision, type Revision
 import { updatePerson } from "./records";
 import { renderInvoicePdf } from "@/documents/invoice-pdf";
 import { enqueue } from "./jobs";
-import { invoiceLine, invoice } from "@/db/schema";
+import { invoiceLine, invoice, document } from "@/db/schema";
+import { valueText } from "@/lib/display";
 
 const PERSON_FIELD: Record<string, string> = { fullName: "nameEn", chiName: "nameZh", idNo: "idNumber", resAddr: "residentialAddress", corrAddr: "correspondenceAddress" };
 
@@ -149,4 +150,26 @@ onApprove("mailbox_update", async (ctx, p, opts) => {
     const { startManualRequest } = await import("./manual");
     await startManualRequest(ctx, { clientId: p.clientId, items: start.map((playbookId) => ({ playbookId })), notes: "Agreed in a reply from the mailbox", confirm: true });
   }
+});
+
+// An enforcement letter (late filing, warning, summons): start the matching work with the
+// letter's date as the hard deadline, the scan on the task, and a draft to the client.
+onApprove("start_enforcement", async (ctx, p) => {
+  const pl = p.payload as { playbookId: string; dueDate: string | null; form: string | null; reference: string | null; letter: { documentId: string; sender: string; summary: string; receivedOn: string; actionNeeded: string | null } };
+  const { startManualRequest } = await import("./manual");
+  const fields: Record<string, string> = {};
+  if (pl.reference) fields.enforcementRef = pl.reference;
+  if (pl.form) fields.overdueForm = pl.form;
+  const r = await startManualRequest(ctx, {
+    clientId: p.clientId!, items: [{ playbookId: pl.playbookId, fields, dueDate: pl.dueDate }], confirm: true, context: "letter", origin: "letter",
+    notes: `Letter from ${pl.letter.sender} received ${valueText(pl.letter.receivedOn)}: ${pl.letter.summary}`,
+    extraNotes: [`Letter from ${pl.letter.sender}, received ${valueText(pl.letter.receivedOn)}: ${pl.letter.summary}.`, pl.dueDate ? `The date that matters: ${valueText(pl.dueDate)}.` : "", pl.letter.actionNeeded ? `What it asks for: ${pl.letter.actionNeeded}.` : ""].filter(Boolean),
+    attachDocumentIds: [pl.letter.documentId],
+  });
+  await ctx.db.update(document).set({ taskId: r.taskIds[0] }).where(eq(document.id, pl.letter.documentId));
+});
+onReject("start_enforcement", async (ctx, p) => {
+  const { draftLetterNotice } = await import("./mail-items");
+  const l = p.payload.letter as import("./mail-items").LoggedLetter;
+  await draftLetterNotice(ctx, l);
 });

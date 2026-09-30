@@ -52,6 +52,14 @@ export class E2eLlm implements LlmProvider {
       json = { items: [], switchPerson: null, effectiveDate: null, playbookFit: "ok", suggestedPlaybookId: null, invoiceChange: { needed: false, reason: null }, conflicts: [], questionsForClient: [], summary: "No change" };
     } else if (req.agent === "extract") {
       json = { fields: [], documents: [], conflicts: [] };
+    } else if (req.agent === "mail") {
+      // Offline mail room: any scan is for Kowloon Bay Trading; a file named like a summons or warning is enforcement.
+      const all = JSON.stringify(req.messages);
+      const kind = /summons/i.test(all) ? "summons" : /warning/i.test(all) ? "warning_letter" : /late/i.test(all) ? "late_filing" : null;
+      json = { clientId: "cli_c1", addressee: "Kowloon Bay Trading Limited", sender: "Companies Registry", urgency: kind ? "urgent" : "normal",
+        summaryEn: kind === "summons" ? "Summons to Eastern Magistrates' Courts for failing to deliver the 2025 annual return (NAR1)." : kind === "warning_letter" ? "Warning that the company will be prosecuted unless the 2025 annual return is delivered within 21 days." : kind ? "Notice that the 2025 annual return is overdue, with a higher registration fee now payable." : "Routine letter about the company's records.",
+        actionNeeded: kind === "summons" ? "Attend court on the hearing date, or plead by letter" : kind ? "Deliver the overdue annual return" : null,
+        enforcement: kind ? { kind, dueDate: kind === "summons" ? "2026-11-20" : "2026-10-20", form: "NAR1 (2025)", reference: kind === "summons" ? "ESS 12345/2026" : "CR/NAR1/2026/0881", amountHkd: kind === "late_filing" ? 870 : null } : null };
     } else if (req.agent === "mailbox_review") {
       // E2E-WAIVE: staff told the client the first outstanding item isn't needed.
       const tasks = (jsonAfter(text, "Open tasks:") as { taskId: string; checklist: { key: string; label: string; status: string }[] }[] | null) ?? [];

@@ -682,5 +682,41 @@
     },
     "kind": "data",
     "extractionHint": "Actual proceedings, decisions and voting outcomes as supplied by the client, including dissent or deferrals; do not invent quorum, unanimity or approval."
+  },
+  "enforcementRef": {
+    "label": {
+      "en": "Reference on the letter (e.g. summons or case number)",
+      "tc": "信件上的編號（例如傳票或案件編號）",
+      "sc": "信件上的编号（例如传票或案件编号）"
+    },
+    "kind": "data",
+    "extractionHint": "The reference or case number printed on the Companies Registry or court letter."
+  },
+  "overdueForm": {
+    "label": {
+      "en": "Which filing is overdue",
+      "tc": "逾期未交的文件",
+      "sc": "逾期未交的文件"
+    },
+    "kind": "data",
+    "extractionHint": "The specified form or return the letter says is overdue, e.g. NAR1 for 2025."
+  },
+  "lateReason": {
+    "label": {
+      "en": "Why the filing was late (for the plea or explanation)",
+      "tc": "逾期提交的原因（用於認罪信或解釋）",
+      "sc": "逾期提交的原因（用于认罪信或解释）"
+    },
+    "kind": "data",
+    "extractionHint": "The client's explanation for the late filing, in their words."
+  },
+  "courtInstructions": {
+    "label": {
+      "en": "How the client wants to respond: plead by letter, attend court, or instruct a lawyer",
+      "tc": "客戶希望的回應方式：書面認罪、出庭，或委託律師",
+      "sc": "客户希望的回应方式：书面认罪、出庭，或委托律师"
+    },
+    "kind": "data",
+    "extractionHint": "Whether the client will plead guilty by letter, attend the hearing, or instruct a solicitor."
   }
 }

@@ -2671,5 +2671,229 @@
       "Arrange a replacement secretary where required; this task does not appoint one."
     ],
     "verifyNote": "Statutory rule summarised from Companies Registry guidance; verify with the firm's company secretary before relying on it."
+  },
+  {
+    "id": "hk.lateFiling",
+    "version": 1,
+    "jurisdiction": "HK",
+    "category": "Enforcement",
+    "name": {
+      "en": "Late filing notice",
+      "tc": "逾期提交通知",
+      "sc": "逾期提交通知"
+    },
+    "phrase": {
+      "en": "the late filing notice",
+      "tc": "逾期提交通知",
+      "sc": "逾期提交通知"
+    },
+    "description": "Respond to a Companies Registry notice that a filing is overdue: file it, pay the higher fee, and confirm to the client.",
+    "whenToUse": "A letter from the Companies Registry says a return or form is overdue, or asks for a late registration fee.",
+    "startedBy": "either",
+    "personSelection": "none",
+    "forms": "As stated in the letter",
+    "deadline": {
+      "kind": "letter_date",
+      "rule": "The date given in the letter"
+    },
+    "requirements": [
+      {
+        "key": "enforcementRef"
+      },
+      {
+        "key": "overdueForm"
+      },
+      {
+        "key": "changesSince",
+        "optional": true
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Tell the client and send the invoice",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect what's needed for the overdue filing"
+      },
+      {
+        "kind": "task",
+        "label": "File the overdue document and pay the late fee",
+        "human": true,
+        "instructions": "File on e-Registry. Add the late registration fee as a cost on this task if the firm pays it."
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [],
+    "feeCents": 150000,
+    "complianceNotes": [
+      "The late registration fee rises with the delay and can't be waived.",
+      "Continued default can lead to a warning letter and prosecution of the company and its officers."
+    ],
+    "verifyNote": "Enforcement practice summarised from Companies Registry guidance and firm experience; verify the steps, timelines and fees with the firm's company secretary (and a solicitor for court matters) before relying on them."
+  },
+  {
+    "id": "hk.warningLetter",
+    "version": 1,
+    "jurisdiction": "HK",
+    "category": "Enforcement",
+    "name": {
+      "en": "Warning letter",
+      "tc": "警告信",
+      "sc": "警告信"
+    },
+    "phrase": {
+      "en": "the warning letter",
+      "tc": "警告信",
+      "sc": "警告信"
+    },
+    "description": "Respond to a Companies Registry warning that the company will be prosecuted unless an overdue filing is made by a date.",
+    "whenToUse": "A Companies Registry letter warns of prosecution unless an overdue return or form is delivered by a stated date.",
+    "startedBy": "either",
+    "personSelection": "none",
+    "forms": "As stated in the letter",
+    "deadline": {
+      "kind": "letter_date",
+      "rule": "The reply-by date in the warning letter"
+    },
+    "requirements": [
+      {
+        "key": "enforcementRef"
+      },
+      {
+        "key": "overdueForm"
+      },
+      {
+        "key": "changesSince",
+        "optional": true
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Tell the client and send the invoice",
+        "human": true
+      },
+      {
+        "kind": "collect",
+        "label": "Collect what's needed for the overdue filing"
+      },
+      {
+        "kind": "task",
+        "label": "File the overdue document before the reply-by date",
+        "human": true,
+        "instructions": "File on e-Registry and keep the submission receipt as proof."
+      },
+      {
+        "kind": "task",
+        "label": "Tell the Companies Registry it has been filed, if the letter asks",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [],
+    "feeCents": 200000,
+    "complianceNotes": [
+      "Work starts before payment: missing the reply-by date risks prosecution.",
+      "Keep evidence of filing before the date in case prosecution proceeds."
+    ],
+    "verifyNote": "Enforcement practice summarised from Companies Registry guidance and firm experience; verify the steps, timelines and fees with the firm's company secretary (and a solicitor for court matters) before relying on them."
+  },
+  {
+    "id": "hk.prosecution",
+    "version": 1,
+    "jurisdiction": "HK",
+    "category": "Enforcement",
+    "name": {
+      "en": "Prosecution summons",
+      "tc": "檢控傳票",
+      "sc": "检控传票"
+    },
+    "phrase": {
+      "en": "the summons",
+      "tc": "傳票",
+      "sc": "传票"
+    },
+    "description": "Respond to a summons for failing to deliver a return: file what's overdue, take the client's instructions, handle the plea or court attendance, and record the outcome.",
+    "whenToUse": "The company (or its officers) received a summons from the Companies Registry or a magistrates' court for a filing offence.",
+    "startedBy": "either",
+    "personSelection": "none",
+    "forms": "As stated in the summons",
+    "deadline": {
+      "kind": "letter_date",
+      "rule": "The court hearing date on the summons"
+    },
+    "requirements": [
+      {
+        "key": "enforcementRef"
+      },
+      {
+        "key": "overdueForm"
+      },
+      {
+        "key": "courtInstructions"
+      },
+      {
+        "key": "lateReason"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Tell the client and send the invoice",
+        "human": true
+      },
+      {
+        "kind": "collect",
+        "label": "Collect the client's instructions"
+      },
+      {
+        "kind": "task",
+        "label": "File the overdue document",
+        "human": true,
+        "instructions": "Filing before the hearing is usually taken into account; keep the receipt."
+      },
+      {
+        "kind": "task",
+        "label": "Prepare the plea letter or arrange attendance or a solicitor",
+        "human": true
+      },
+      {
+        "kind": "task",
+        "label": "Record the court outcome and any fine",
+        "human": true,
+        "instructions": "Add any fine or costs the firm pays as a cost on this task."
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [],
+    "feeCents": 350000,
+    "complianceNotes": [
+      "The court date is a hard deadline; missing it can lead to a conviction in the company's absence.",
+      "Directors and the company secretary can be personally liable for filing offences.",
+      "Court representation is a solicitor's work; the firm coordinates."
+    ],
+    "verifyNote": "Enforcement practice summarised from Companies Registry guidance and firm experience; verify the steps, timelines and fees with the firm's company secretary (and a solicitor for court matters) before relying on them."
   }
 ]

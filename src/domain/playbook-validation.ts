@@ -7,6 +7,7 @@ const tri = z.strictObject({ en: text, tc: text, sc: text });
 const nonnegative = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const deadline = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("none"), rule: z.string().optional() }),
+  z.strictObject({ kind: z.literal("letter_date"), rule: text }),
   z.strictObject({ kind: z.literal("event"), days: nonnegative, from: z.enum(["effectiveDate", "resolution"]), rule: text }),
   z.strictObject({ kind: z.literal("anniversary"), days: nonnegative, rule: text }),
   z.strictObject({ kind: z.literal("fye"), months: nonnegative, rule: text }),

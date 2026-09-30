@@ -21,9 +21,11 @@ export type ManualItem = {
   person?: { personId?: string | null; nameEn?: string | null } | null;
   /** Requirement key -> value, as agreed in person. */
   fields?: Record<string, string>;
+  /** A hard deadline from outside the playbook (e.g. a hearing date). */
+  dueDate?: string | null;
 };
 
-export async function startManualRequest(ctx: Ctx, r: { clientId: string; items: ManualItem[]; notes?: string | null; confirm: boolean }) {
+export async function startManualRequest(ctx: Ctx, r: { clientId: string; items: ManualItem[]; notes?: string | null; confirm: boolean; context?: "meeting" | "letter"; extraNotes?: string[]; attachDocumentIds?: string[]; origin?: string }) {
   const cl = await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, r.clientId), eq(clientT.firmId, ctx.firmId)) });
   if (!cl) throw new ManualRequestError("Choose a client");
   if (!r.items.length) throw new ManualRequestError("Choose at least one thing to do");
@@ -52,8 +54,8 @@ export async function startManualRequest(ctx: Ctx, r: { clientId: string; items:
     // Particulars for an existing person that differ from the file become conflicts, never overwrites.
     const conflicts = personId ? await writePersonParticulars(ctx, personId, extracted, cl.id) : [];
     for (const c of conflicts) delete extracted[c];
-    const t = await startTask(ctx, { requestId: req.id, clientId: cl.id, playbookId: pb.id, personId, extracted });
-    await logEvent(ctx, t.id, "request.manual", `Started manually after a meeting or call${notes ? `: ${notes}` : ""}`, {}, ctx.userId);
+    const t = await startTask(ctx, { requestId: req.id, clientId: cl.id, playbookId: pb.id, personId, extracted, dueDate: it.dueDate ?? null });
+    await logEvent(ctx, t.id, "request.manual", r.context === "letter" ? `Started from a letter${notes ? `: ${notes}` : ""}` : `Started manually after a meeting or call${notes ? `: ${notes}` : ""}`, {}, ctx.userId);
     taskIds.push(t.id);
   }
   const inv = await createInvoiceForRequest(ctx, req.id);
@@ -76,11 +78,11 @@ export async function startManualRequest(ctx: Ctx, r: { clientId: string; items:
     id: ctx.ids.next("cnv"), firmId: ctx.firmId, clientId: cl.id, channel: "email", subject: pbs.map((p) => p.name.en).join(", "),
     counterpartyEmail: to?.email?.toLowerCase() ?? null, lastMessageAt: ctx.clock.now(), createdAt: ctx.clock.now(),
   }).returning();
-  const facts = { ...emptyFacts(lang), context: "meeting" as const, newRequests: await newRequestFacts(ctx, taskIds, lang) };
+  const facts = { ...emptyFacts(lang), context: r.context ?? "meeting", extraNotes: r.extraNotes ?? [], newRequests: await newRequestFacts(ctx, taskIds, lang) };
   const draft = await composeReply(ctx, { clientId: cl.id, conversationId: conv.id, inReplyTo: null, facts, requestId: req.id, to: to?.email ? [to.email] : undefined, purpose: "Confirm instructions given in person" });
   const p = await createProposal(ctx, {
-    kind: "send_message", title: `Approve confirmation and invoice to ${to?.name ?? cl.nameEn}`, summary: notes ?? "Taken in person",
-    clientId: cl.id, requestId: req.id, payload: { messageId: draft.id, requestId: req.id, taskIds, draftSource: draft.source, purpose: "request", origin: "manual" },
+    kind: "send_message", title: r.context === "letter" ? `Explain the letter to ${to?.name ?? cl.nameEn}, with the invoice` : `Approve confirmation and invoice to ${to?.name ?? cl.nameEn}`, summary: notes ?? "Taken in person",
+    clientId: cl.id, requestId: req.id, payload: { messageId: draft.id, requestId: req.id, taskIds, draftSource: draft.source, purpose: "request", origin: r.origin ?? "manual", attachDocumentIds: r.attachDocumentIds ?? [] },
   });
   await ctx.db.update(message).set({ proposalId: p.id }).where(eq(message.id, draft.id));
   return { requestId: req.id, taskIds, proposalId: p.id as string | null };
