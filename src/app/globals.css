@@ -184,6 +184,8 @@ span.f { display: block; }
   h1 { font-size: 21px; }
   .grid2, .grid3 { grid-template-columns: minmax(0, 1fr); }
   .kv { grid-template-columns: minmax(0, 1fr); gap: 2px 0; }
+  .hide-sm { display: none; }
+  .tbl td { overflow-wrap: break-word; }
   .kv dd { margin-bottom: 8px; }
   .item { flex-wrap: wrap; }
   .item > .main { flex-basis: 100%; }

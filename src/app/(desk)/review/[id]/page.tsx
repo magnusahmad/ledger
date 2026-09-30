@@ -78,6 +78,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
           <div className="stack">
             <div className="card">
               <div className="sec-h"><h2>Reply</h2><RedraftButtons proposalId={p.id} current={(draft.language as "en" | "tc" | "sc") ?? "en"} /></div>
+              {p.payload.purpose === "chase" && <div className={`banner ${p.payload.escalation ? "red" : "amber"}`}>{p.payload.escalation ? "Escalation: the deadline is close or earlier reminders went unanswered. A call to the client has been added to the task." : "Reminder: the client hasn’t sent what’s outstanding yet."}</div>}
               {!!p.payload.replaces && <div className="banner amber">Someone replied to this client from the mailbox, so this didn’t go out. It still carries the invoice and upload link. Edit it to follow on from that reply.</div>}
               {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the standard template. Check the wording before sending.</div>}
               <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">

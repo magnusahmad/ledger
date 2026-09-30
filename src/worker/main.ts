@@ -6,6 +6,7 @@ import { pollMail } from "@/channels/mail-poller";
 import { pollBank } from "@/domain/payments";
 import { runJobs } from "@/domain/jobs";
 import { runReminders } from "@/domain/reminders";
+import { runChasers } from "@/domain/chasing";
 import { checkForms } from "@/documents/forms-check";
 import { kvGet, kvSet } from "@/domain/kv";
 
@@ -27,6 +28,8 @@ async function tick() {
   const now = Date.now();
   const lastRem = await kvGet<number>(ctx, "worker.lastReminders");
   if (!lastRem || now - lastRem > 3600_000) { try { const n = await runReminders(ctx); if (n) log(`reminders: ${n} drafted`); } catch (e) { log("reminders error:", (e as Error).message); } await kvSet(ctx, "worker.lastReminders", now); }
+  const lastChase = await kvGet<number>(ctx, "worker.lastChasers");
+  if (!lastChase || now - lastChase > 3600_000) { try { const n = await runChasers(ctx); if (n) log(`chasers: ${n} drafted`); } catch (e) { log("chasers error:", (e as Error).message); } await kvSet(ctx, "worker.lastChasers", now); }
   const lastForms = await kvGet<number>(ctx, "worker.lastFormsCheck");
   if (!lastForms || now - lastForms > 7 * 86400_000) { await kvSet(ctx, "worker.lastFormsCheck", now); checkForms(ctx).then((r) => r.changed.length && log(`FORMS CHANGED on cr.gov.hk: ${r.changed.join(", ")}`)).catch(() => {}); }
 }
