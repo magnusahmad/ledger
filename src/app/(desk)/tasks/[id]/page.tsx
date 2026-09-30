@@ -10,7 +10,7 @@ import { envelopeStatus } from "@/domain/signing";
 import { client, document, request as requestT, invoice, taskAction } from "@/db/schema";
 import { taskTimeline } from "@/server/queries";
 import { ActionForm } from "@/components/ActionForm";
-import { tickAction, manualStepAction, addStepAction, addPartyAction, completeStepAction, dropStepAction, holdAction, releaseHoldAction, followedUpAction } from "@/server/actions";
+import { tickAction, manualStepAction, addStepAction, addPartyAction, addCostAction, completeStepAction, dropStepAction, holdAction, releaseHoldAction, followedUpAction } from "@/server/actions";
 import { DeadlineStamp, Pill, StatusPill, ago, fmt } from "@/components/ui";
 import { ChecklistTick } from "@/components/ChecklistTick";
 import { ActionButton } from "@/components/ActionForm";
@@ -35,6 +35,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   const tl = await taskTimeline(ctx, t.id);
   const req = t.requestId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, t.requestId) }) : null;
   const inv = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
+  const reqInvoices = t.requestId ? await ctx.db.select().from(invoice).where(eq(invoice.requestId, t.requestId)).orderBy(asc(invoice.createdAt)) : [];
   const cur = t._steps[t.stepIndex];
   const out = outstanding(t);
   const steps = await ctx.db.select().from(taskAction).where(eq(taskAction.taskId, t.id)).orderBy(asc(taskAction.createdAt));
@@ -204,7 +205,16 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
               {person && <><dt>Person</dt><dd>{person.nameEn}{person.nameZh ? ` ${person.nameZh}` : ""}</dd></>}
               {t.effectiveDate && <><dt>Effective</dt><dd>{fmt(t.effectiveDate)}</dd></>}
               {t.dueDate && <><dt>Deadline</dt><dd>{fmt(t.dueDate)}{pb.deadline.kind !== "none" && <div className="muted">{pb.deadline.rule}</div>}</dd></>}
-              {inv && <><dt>Invoice</dt><dd><span className="row" style={{ gap: 8 }}><Link className="lnk" href={`/invoices/${inv.id}`}>{inv.number}</Link><StatusPill status={inv.status} /></span></dd></>}
+              {reqInvoices.length > 0 && <><dt>{reqInvoices.length > 1 ? "Invoices" : "Invoice"}</dt><dd>{reqInvoices.map((i) => <div key={i.id} className="row" style={{ gap: 8 }}><Link className="lnk" href={`/invoices/${i.id}`}>{i.number}</Link><span className="muted">{money(i.totalCents)}</span><StatusPill status={i.status} /></div>)}
+                {t.status !== "cancelled" && <details className="more" style={{ marginTop: 6 }}><summary>Add a cost</summary>
+                  <div style={{ marginTop: 8 }}><ActionForm action={addCostAction.bind(null, t.id)} submit="Add cost" resetOnSuccess>
+                    <p className="small muted" style={{ marginTop: 0 }}>{inv?.status === "draft" ? "Goes on the draft invoice." : "The invoice has gone out, so this goes on an additional invoice for you to approve."}</p>
+                    <div className="fld"><label className="f" htmlFor="cost-desc">What for</label><input id="cost-desc" type="text" name="description" required placeholder="e.g. Late filing fee paid to the Companies Registry" /></div>
+                    <div className="fld"><label className="f" htmlFor="cost-amt">Amount (HK$)</label><input id="cost-amt" type="number" name="amount" min="0.01" step="0.01" required /></div>
+                    <label className="row small" style={{ marginTop: 10, gap: 8 }}><input type="checkbox" name="onBehalf" defaultChecked /> Paid on the client’s behalf (disbursement)</label>
+                  </ActionForm></div>
+                </details>}
+              </dd></>}
               <dt>Payment</dt><dd>{t.onCredit ? "On credit terms" : "Upfront"}</dd>
               <dt>Third parties</dt><dd>{parties.length ? parties.map((p) => <div key={p.id}>{partyName(p.id)} <span className="muted">· {ROLE_LABEL[p.role]}{p.email ? ` · ${p.email}` : ""}</span></div>) : <span className="muted">None</span>}
                 {t.status === "open" && <details className="more" style={{ marginTop: 6 }}><summary>Add a third party</summary>

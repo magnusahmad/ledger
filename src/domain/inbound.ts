@@ -434,7 +434,7 @@ async function answerFacts(ctx: Ctx, clientId: string): Promise<string> {
 }
 
 /** Builds recipient, invoice and link facts and drafts the outbound message. */
-export async function composeReply(ctx: Ctx, o: { clientId: string; conversationId: string; inReplyTo: typeof message.$inferSelect | null; facts: ReplyFacts; requestId: string | null; messageId?: string | null; to?: string[]; purpose?: string }) {
+export async function composeReply(ctx: Ctx, o: { clientId: string; conversationId: string; inReplyTo: typeof message.$inferSelect | null; facts: ReplyFacts; requestId: string | null; messageId?: string | null; to?: string[]; purpose?: string; invoiceId?: string | null; subject?: string }) {
   const f = o.facts;
   const firm = await getFirm(ctx);
   const cl = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, o.clientId) }))!;
@@ -446,9 +446,10 @@ export async function composeReply(ctx: Ctx, o: { clientId: string; conversation
   f.signOff = firm.signOff?.[f.language] ?? firm.legalName;
   if (o.requestId) {
     const req = (await ctx.db.query.request.findFirst({ where: eq(requestT.id, o.requestId) }))!;
-    f.uploadUrl = `${ctx.config.APP_URL}/u/${req.uploadToken}`;
-    if (req.invoiceId && o.purpose !== "update") {
-      const inv = await invoiceWithLines(ctx, req.invoiceId);
+    if (f.context !== "costs") f.uploadUrl = `${ctx.config.APP_URL}/u/${req.uploadToken}`;
+    const invId = o.invoiceId ?? req.invoiceId;
+    if (invId && o.purpose !== "update") {
+      const inv = await invoiceWithLines(ctx, invId);
       if (inv.status === "draft") {
         const details = await ctx.bank.accountDetails();
         f.invoice = {
@@ -461,12 +462,12 @@ export async function composeReply(ctx: Ctx, o: { clientId: string; conversation
     }
   }
   const d = await draftEmail(ctx, f, { messageId: o.messageId, purpose: o.purpose });
-  const subject = o.inReplyTo?.subject ? (/^re:/i.test(o.inReplyTo.subject) ? o.inReplyTo.subject : `Re: ${o.inReplyTo.subject}`) : d.subject;
+  const subject = o.subject ? o.subject : o.inReplyTo?.subject ? (/^re:/i.test(o.inReplyTo.subject) ? o.inReplyTo.subject : `Re: ${o.inReplyTo.subject}`) : d.subject;
   const [row] = await ctx.db.insert(message).values({
     id: ctx.ids.next("msg"), firmId: ctx.firmId, conversationId: o.conversationId, direction: "out", status: "draft",
     fromAddr: ctx.mail.address, toAddrs: toAddr ? [toAddr] : [], subject, text: d.body, language: f.language,
     inReplyTo: o.inReplyTo?.rfcMessageId ?? null, at: ctx.clock.now(),
-    intake: { facts: f, requestId: o.requestId, attachInvoiceId: f.invoice ? (await ctx.db.query.request.findFirst({ where: eq(requestT.id, o.requestId!) }))?.invoiceId ?? null : null },
+    intake: { facts: f, requestId: o.requestId, attachInvoiceId: f.invoice ? o.invoiceId ?? (await ctx.db.query.request.findFirst({ where: eq(requestT.id, o.requestId!) }))?.invoiceId ?? null : null },
   }).returning();
   return { ...row, source: d.source };
 }

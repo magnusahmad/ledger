@@ -19,7 +19,8 @@ onApprove("send_message", async (ctx, p, opts) => {
   const raw = opts.edits as { subject?: string; text?: string; to?: string | string[] } | undefined;
   const edits = raw ? { ...raw, to: typeof raw.to === "string" ? raw.to.split(/[,;\s]+/).filter(Boolean) : raw.to } : undefined;
   if (edits?.text && opts.editChars === undefined) opts.editChars = editDistance(m.text ?? "", edits.text);
-  const inv = await invoiceForRequest(ctx, (p.payload.requestId as string | null) ?? null);
+  // An additional invoice (costs added later) names itself; otherwise it's the request's invoice.
+  const inv = p.payload.invoiceId ? (await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, p.payload.invoiceId as string) })) ?? null : await invoiceForRequest(ctx, (p.payload.requestId as string | null) ?? null);
   const attachInvoice = inv && inv.status === "draft" && (m.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
   const attachments = attachInvoice ? [{ filename: `${inv!.number}.pdf`, mime: "application/pdf", content: await renderInvoicePdf(ctx, inv!.id) }] : [];
   for (const docId of (p.payload.attachDocumentIds as string[] | undefined) ?? []) {

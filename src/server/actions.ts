@@ -18,6 +18,7 @@ import { logMailItem } from "@/domain/mail-items";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { portalSubmit } from "@/domain/portal";
 import { startManualRequest, type ManualItem } from "@/domain/manual";
+import { addCost } from "@/domain/costs";
 import { addThirdParty, linkThirdParty, markSenderNotClient, type PartyRole } from "@/domain/third-parties";
 import { addOffPlatformStep, cancelOffPlatformStep, completeOffPlatformStep, followedUp, putOnHold, releaseHold, type WaitingOn } from "@/domain/off-platform";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
@@ -87,6 +88,16 @@ export async function manualRequestAction(_prev: ActionResult | null, form: Form
     const r = await startManualRequest(getCtx(), { clientId: String(form.get("clientId") ?? ""), items, notes: String(form.get("notes") ?? ""), confirm: form.get("confirm") === "on" });
     revalidatePath("/", "layout");
     return { ok: true, redirectTo: r.proposalId ? `/review/${r.proposalId}` : `/tasks/${r.taskIds[0]}` };
+  } catch (e) { return fail(e); }
+}
+
+// ---------- Costs added later ----------
+export async function addCostAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const amount = Number(String(form.get("amount") ?? "").replace(/[^\d.]/g, ""));
+    const r = await addCost(getCtx(), taskId, { description: String(form.get("description") ?? ""), amountCents: Math.round(amount * 100), kind: form.get("onBehalf") === "on" ? "disbursement" : "fee" });
+    revalidatePath("/", "layout");
+    return r.additional ? { ok: true, redirectTo: `/review/${r.proposalId}` } : done("Added to the draft invoice");
   } catch (e) { return fail(e); }
 }
 

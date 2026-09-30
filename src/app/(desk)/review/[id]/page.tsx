@@ -55,23 +55,25 @@ export default async function Review({ params }: { params: Promise<{ id: string 
   if (p.kind === "send_message") {
     const draft = (await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }))!;
     const conv = await ctx.db.query.conversation.findFirst({ where: (c, { eq }) => eq(c.id, draft.conversationId) });
-    const source = draft.inReplyTo ? await ctx.db.query.message.findFirst({ where: eq(message.rfcMessageId, draft.inReplyTo) }) : conv ? (await ctx.db.select().from(message).where(eq(message.conversationId, conv.id)).orderBy(asc(message.at))).filter((m) => m.direction === "in").at(-1) : null;
+    const isCosts = p.payload.purpose === "costs";
+    const source = isCosts ? null : draft.inReplyTo ? await ctx.db.query.message.findFirst({ where: eq(message.rfcMessageId, draft.inReplyTo) }) : conv ? (await ctx.db.select().from(message).where(eq(message.conversationId, conv.id)).orderBy(asc(message.at))).filter((m) => m.direction === "in").at(-1) : null;
     const srcAtts = source ? await ctx.db.select().from(attachment).where(eq(attachment.messageId, source.id)) : [];
     const intake = source?.intake as { intake?: Intake } | Intake | null;
     const it = (intake && "actions" in intake ? intake : (intake as { intake?: Intake } | null)?.intake) as Intake | undefined;
     const reqId = (p.payload.requestId as string | null) ?? null;
     const req = reqId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, reqId) }) : null;
-    const inv = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
+    const invId = (p.payload.invoiceId as string | undefined) ?? req?.invoiceId ?? null;
+    const inv = invId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, invId) }) : null;
     const lines = inv ? await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, inv.id)).orderBy(asc(invoiceLine.sort)) : [];
     const tasks = [] as Awaited<ReturnType<typeof getTask>>[];
     for (const tid of (p.payload.taskIds as string[]) ?? []) tasks.push(await getTask(ctx, tid));
-    if (!tasks.length && reqId) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
+    if (!tasks.length && reqId && !isCosts) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
     const pbNames = new Map((await listPlaybooks(ctx)).map((x) => [x.id, x.name.en]));
     const attachInvoice = inv && inv.status === "draft" && (draft.intake as { attachInvoiceId?: string } | null)?.attachInvoiceId === inv.id;
     return (
       <>
         {header}
-        {cl?.lifecycle === "prospect" && conv && source && <p className="small muted" style={{ marginTop: -14, marginBottom: 16 }}>Not a client, e.g. a bank or law firm? <Link className="lnk" href={`/inbox/${conv.id}`}>Mark the sender as not a client</Link></p>}
+        {cl?.lifecycle === "prospect" && conv && source && !isCosts && <p className="small muted" style={{ marginTop: -14, marginBottom: 16 }}>Not a client, e.g. a bank or law firm? <Link className="lnk" href={`/inbox/${conv.id}`}>Mark the sender as not a client</Link></p>}
         <div className="cols">
           <div className="stack">
             <div className="card">
@@ -132,7 +134,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
                   ))}
                   <tr><td><b>Total</b></td><td style={{ textAlign: "right" }}><b>{money(inv.totalCents)}</b></td></tr>
                 </tbody></table>
-                <p className="small muted" style={{ marginBottom: 0 }}>{inv.termsDays ? `${inv.termsDays} days credit. Work starts now.` : "Payable upfront. Work starts once paid."}</p>
+                <p className="small muted" style={{ marginBottom: 0 }}>{isCosts ? (inv.termsDays ? `Payable within ${inv.termsDays} days.` : "Payable on receipt.") : inv.termsDays ? `${inv.termsDays} days credit. Work starts now.` : "Payable upfront. Work starts once paid."}</p>
               </div>
             )}
           </div>
