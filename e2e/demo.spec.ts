@@ -103,7 +103,7 @@ test("an unknown sender's request goes from email to a completed, filed and regi
   await expect(page.locator("table").first().getByText("Jane DOE")).toHaveCount(0);
 });
 
-const PAGES = ["/", "/clients", "/clients/cli_c1", "/clients/cli_c1?tab=shares", "/clients/cli_c1?tab=officers", "/tasks?s=all", "/invoices?s=all", "/payments", "/batch", "/playbooks", "/inbox", "/reports", "/settings", "/demo", "/new", "/mail"];
+const PAGES = ["/", "/clients", "/clients/cli_c1", "/clients/cli_c1?tab=company", "/clients/cli_c1?tab=shares", "/clients/cli_c1?tab=officers", "/clients/cli_c1?tab=records", "/clients/cli_c1?tab=contacts", "/tasks?s=all", "/invoices?s=all", "/payments", "/batch", "/playbooks", "/inbox", "/reports", "/settings", "/demo", "/new", "/new?mode=manual&client=cli_c1", "/mail"];
 for (const width of [375, 768, 1280, 1440]) {
   test(`no horizontal overflow and no console errors at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
