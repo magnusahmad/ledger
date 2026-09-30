@@ -118,3 +118,33 @@ onApprove("revise_invoice", async (ctx, p, opts) => {
   const nw = await applyRevision(ctx, invoiceId, { reason, lines: use });
   if (nw.status === "sent") await enqueue(ctx, "xero.sync_invoice", { invoiceId: nw.id }, `xero.invoice:${nw.id}`);
 });
+
+// A mailbox reply's suggested task updates: apply only the changes staff kept ticked.
+onApprove("mailbox_update", async (ctx, p, opts) => {
+  const changes = (p.payload.changes as { type: string; taskId: string | null; key: string | null; value: string | null; playbookId: string | null; text: string }[]) ?? [];
+  const edits = (opts.edits ?? {}) as Record<string, unknown>;
+  const keep = (i: number) => edits.selection !== "explicit" || !!edits[`apply:${i}`];
+  const touched = new Set<string>();
+  const start: string[] = [];
+  for (const [i, c] of changes.entries()) {
+    if (!keep(i)) continue;
+    if (c.type === "start" && c.playbookId) { start.push(c.playbookId); continue; }
+    if (!c.taskId) continue;
+    const t = await getTask(ctx, c.taskId);
+    if (t.status !== "open") continue;
+    if (c.type === "not_needed" || c.type === "received") {
+      const next = t.checklist.map((e) => e.key === c.key && (!e.personId || e.personId === t.personId) ? { ...e, status: c.type === "received" ? "received" as const : "not_needed" as const, value: c.type === "received" ? c.value : e.value ?? null, reason: c.type === "not_needed" ? "Waived in a reply from the mailbox" : e.reason, source: "Reply from the mailbox" } : e);
+      await setChecklist(ctx, t.id, next, c.text, ctx.userId);
+      touched.add(t.id);
+    } else if (c.type === "cancel") {
+      await cancelTask(ctx, t.id, c.text || "Cancelled as agreed in a reply from the mailbox");
+    } else {
+      await logEvent(ctx, t.id, "note.mailbox", c.text, { proposalId: p.id }, ctx.userId);
+    }
+  }
+  for (const id of touched) await advance(ctx, id);
+  if (start.length && p.clientId) {
+    const { startManualRequest } = await import("./manual");
+    await startManualRequest(ctx, { clientId: p.clientId, items: start.map((playbookId) => ({ playbookId })), notes: "Agreed in a reply from the mailbox", confirm: true });
+  }
+});

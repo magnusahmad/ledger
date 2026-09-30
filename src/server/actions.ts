@@ -147,13 +147,20 @@ export async function simulateEmailAction(_prev: ActionResult | null, form: Form
     const fake = ctx.mail as FakeMail;
     if (typeof (fake as Partial<FakeMail>).deliver !== "function") throw new Error("A real mailbox is connected: send a real email to it instead");
     const files = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+    // "As the firm": simulates staff replying from the mailbox (e.g. Gmail); From becomes the recipient.
+    const asFirm = form.get("asFirm") === "on";
+    // A firm reply without a chosen thread answers that client's latest email.
+    const latestFromClient = asFirm && !form.get("inReplyTo")
+      ? (await ctx.db.select().from(message).where(eq(message.fromAddr, String(form.get("from")).toLowerCase()))).filter((m) => m.direction === "in").sort((a, b) => b.at.getTime() - a.at.getTime())[0]
+      : null;
     fake.deliver({
-      from: { email: String(form.get("from")), name: String(form.get("fromName") || "") || null }, subject: String(form.get("subject") || "(no subject)"), text: String(form.get("text") || ""),
-      inReplyTo: String(form.get("inReplyTo") || "") || null,
+      from: asFirm ? { email: ctx.mail.address, name: "Karen Yip" } : { email: String(form.get("from")), name: String(form.get("fromName") || "") || null },
+      to: asFirm ? [String(form.get("from"))] : undefined, subject: String(form.get("subject") || "(no subject)"), text: String(form.get("text") || ""),
+      inReplyTo: String(form.get("inReplyTo") || "") || latestFromClient?.rfcMessageId || null,
       attachments: await Promise.all(files.map(async (f) => ({ filename: f.name, mime: f.type || "application/octet-stream", content: Buffer.from(await f.arrayBuffer()) }))),
     });
     const r = await pollMail(ctx);
-    return done(`Delivered; ${r.processed} message(s) processed`);
+    return done(asFirm ? "Recorded as a reply from the mailbox" : `Delivered; ${r.processed} message(s) processed`);
   } catch (e) { return fail(e); }
 }
 

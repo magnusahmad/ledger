@@ -28,6 +28,7 @@ export default async function Demo() {
               <div className="fld"><label className="f" htmlFor="text">Body</label><textarea id="text" name="text" defaultValue="Hi Karen, we'd like to add my business partner Wong Ka Man as a director from 15 October. Thanks, Tai Man" /></div>
               <div className="fld"><label className="f" htmlFor="files">Attachments</label><input id="files" type="file" name="files" multiple /></div>
               {lastOut[0]?.m.rfcMessageId && <label className="small row" style={{ marginTop: 8 }}><input type="checkbox" name="inReplyTo" value={lastOut[0].m.rfcMessageId} /> Reply in the thread “{lastOut[0].m.subject}”</label>}
+              <label className="small row" style={{ marginTop: 8 }}><input type="checkbox" name="asFirm" /> Send as the firm, as if replying in Gmail (the address above is the recipient)</label>
             </ActionForm>
           ) : <p className="small">Ask the investor to email <b>{ctx.mail.address || "the connected mailbox"}</b>. It appears on Today within about 20 seconds. Test sender recognised as an existing client: <b>{demoEmail}</b>.</p>}
         </div>

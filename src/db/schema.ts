@@ -343,7 +343,7 @@ export const taskEvent = pgTable("task_event", {
 export type ProposalKind =
   | "send_message" | "change_request" | "cancel_task" | "revise_invoice" | "register_change"
   | "record_filing" | "triage" | "conflict" | "match_payment" | "screening_review" | "custom_plan"
-  | "send_signing" | "new_request";
+  | "send_signing" | "new_request" | "mailbox_update";
 
 export const proposal = pgTable("proposal", {
   id: text("id").primaryKey(),
@@ -397,6 +397,8 @@ export const message = pgTable("message", {
   processedAt: timestamp("processed_at", { withTimezone: true }),
   intake: jsonb("intake").$type<Record<string, unknown>>(),
   error: text("error"),
+  /** Sent by staff straight from the shared mailbox (e.g. Gmail), not through Harbourline. */
+  viaMailbox: boolean("via_mailbox").notNull().default(false),
 }, (t) => [uniqueIndex("message_provider_uq").on(t.provider, t.providerMessageId)]);
 
 export const attachment = pgTable("attachment", {

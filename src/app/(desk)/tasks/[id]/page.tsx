@@ -118,8 +118,8 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           <div className="card">
             <h2>Timeline</h2>
             <ul className="timeline">
-              {tl.ev.map((e) => (
-                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{e.summary}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : "Karen Yip"}</div></li>
+              {tl.ev.filter((e) => timelineText(e) !== null).map((e) => (
+                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{timelineText(e)}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : e.actor === "mailbox" ? "Mailbox" : "Karen Yip"}</div></li>
               ))}
             </ul>
           </div>

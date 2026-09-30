@@ -37,14 +37,19 @@ export default async function Review({ params }: { params: Promise<{ id: string 
       <div>
         <Link href="/" className="back">← Today</Link>
         <h1>{p.title}</h1>
-        <p className="sub">{cl ? <><Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{cl.lifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{decided ? ` · ${p.status}` : ""}</p>
+        <p className="sub">{cl ? <><Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link>{cl.lifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{decided ? ` · ${p.status === "superseded" ? "Withdrawn" : sentence(p.status)}` : ""}</p>
       </div>
       {!decided && <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>}
     </div>
   );
   if (decided) {
     const recent = p.decidedAt && ctx.clock.now().getTime() - p.decidedAt.getTime() < 15_000;
-    return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>{p.status === "approved" ? "Done" : "Dismissed"}{p.decidedAt ? ` ${ago(p.decidedAt)}` : ""}. {recent ? "Taking you back to Today…" : <Link href="/">Back to Today</Link>}</div>{recent && <AutoRedirect to="/" />}</>;
+    if (p.status === "superseded") {
+      const byMailbox = p.payload.supersededBy === "mailbox_reply";
+      const convId = byMailbox ? (await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.replyMessageId as string) }))?.conversationId : null;
+      return <>{header}<div className="banner amber">{byMailbox ? <>Withdrawn: someone replied to this thread from the mailbox, so this draft wasn’t sent. {convId && <Link href={`/inbox/${convId}`}>View the thread</Link>}</> : <>Replaced by a newer version. <Link href="/">Back to Today</Link></>}</div></>;
+    }
+    return <>{header}<div className={`banner ${p.status === "approved" ? "ok" : "amber"}`}>{p.status === "approved" ? "Approved" : "Dismissed"}{p.decidedAt && !recent ? ` ${fmt(p.decidedAt, true)}` : ""}. {recent ? "Taking you back to Today…" : <Link href="/">Back to Today</Link>}</div>{recent && <AutoRedirect to="/" />}</>;
   }
 
   if (p.kind === "send_message") {
@@ -70,7 +75,8 @@ export default async function Review({ params }: { params: Promise<{ id: string 
           <div className="stack">
             <div className="card">
               <div className="sec-h"><h2>Reply</h2><RedraftButtons proposalId={p.id} current={(draft.language as "en" | "tc" | "sc") ?? "en"} /></div>
-              {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the template because the AI draft missed required details. Check the wording.</div>}
+              {!!p.payload.replaces && <div className="banner amber">Someone replied to this client from the mailbox, so this didn’t go out. It still carries the invoice and upload link. Edit it to follow on from that reply.</div>}
+              {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the standard template. Check the wording before sending.</div>}
               <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">
                 <div className="fld"><label className="f" htmlFor="to">To</label><input id="to" type="email" name="to" defaultValue={draft.toAddrs.join(", ")} /></div>
                 <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue={draft.subject ?? ""} /></div>
@@ -189,6 +195,32 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         <ReviewForm action={approve} submit="Use the new value" redirectTo="/"><input type="hidden" name="accept" value="incoming" /></ReviewForm>
         <ReviewForm action={approve} submit="Keep what's on file" tone="secondary" redirectTo="/"><input type="hidden" name="accept" value="onFile" /></ReviewForm>
       </div></div></>);
+  }
+  if (p.kind === "mailbox_update") {
+    const reply = await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) });
+    const changes = (p.payload.changes as { type: string; taskId: string | null; text: string; evidence: string | null }[]) ?? [];
+    const titles = new Map<string, string>();
+    for (const c of changes) if (c.taskId && !titles.has(c.taskId)) titles.set(c.taskId, (await getTask(ctx, c.taskId).catch(() => null))?.title ?? "");
+    return (<>{header}<div className="cols">
+      <div className="card">
+        <h2>Suggested updates</h2>
+        <p className="small muted" style={{ marginTop: -4 }}>Someone replied to this client from the mailbox. These changes would bring the tasks in line with what they wrote. Untick any that are wrong.</p>
+        <ReviewForm action={approve} submit="Apply selected" redirectTo="/">
+          <input type="hidden" name="selection" value="explicit" />
+          {changes.map((c, i) => (
+            <label key={i} className="chk" style={{ gridTemplateColumns: "20px minmax(0,1fr)", cursor: "pointer" }}>
+              <input type="checkbox" name={`apply:${i}`} defaultChecked style={{ marginTop: 4 }} />
+              <span>{c.text}{c.taskId && titles.get(c.taskId) ? <span className="small muted" style={{ display: "block" }}>{titles.get(c.taskId)}</span> : c.type === "start" ? <span className="small muted" style={{ display: "block" }}>New request, with a confirmation and invoice for you to approve</span> : null}</span>
+            </label>
+          ))}
+        </ReviewForm>
+      </div>
+      {reply && <div className="card">
+        <h2>Reply from the mailbox</h2>
+        <p className="small muted" style={{ marginTop: -4 }}>To {reply.toAddrs.join(", ")} · {fmt(reply.at, true)} · <Link className="lnk" href={`/inbox/${reply.conversationId}`}>View thread</Link></p>
+        <div className="draft" style={{ maxHeight: 320 }}>{reply.text}</div>
+      </div>}
+    </div></>);
   }
   if (p.kind === "custom_plan" && task) {
     const plan = task.params.plan as { title: string; items: { labelEn: string }[]; steps: string[]; feeHkd: number; caveats: string[] };

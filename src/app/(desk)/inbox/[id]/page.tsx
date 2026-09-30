@@ -19,7 +19,7 @@ export default async function Thread({ params }: { params: Promise<{ id: string 
   for (const m of msgs) if (m.proposalId) { const p = await ctx.db.query.proposal.findFirst({ where: eq(proposal.id, m.proposalId) }); if (p) props.set(m.id, p); }
   return (
     <>
-      <div className="top"><div><Link href="/inbox" className="back">← Inbox</Link><h1>{conv.subject || "(no subject)"}</h1><p className="sub">{cl ? <Link href={`/clients/${cl.id}`}>{cl.nameEn}</Link> : "Unmatched"} · {conv.counterpartyEmail}</p></div><LiveRefresh /></div>
+      <div className="top"><div><Link href="/inbox" className="back">← Inbox</Link><h1>{conv.subject || "(no subject)"}</h1><p className="sub">{cl ? <Link className="lnk" href={`/clients/${cl.id}`}>{cl.nameEn}</Link> : "Not matched to a client"} · {conv.counterpartyEmail}</p></div><LiveRefresh /></div>
       <div className="stack" style={{ maxWidth: 860 }}>
         {msgs.map((m) => {
           const it = m.intake as Intake | null;
@@ -28,7 +28,7 @@ export default async function Thread({ params }: { params: Promise<{ id: string 
           return (
             <div key={m.id} className="card" style={m.direction === "out" ? { borderColor: m.status === "draft" ? "var(--blue)" : "var(--line)", background: m.status === "draft" ? "#FAFCFF" : undefined } : undefined}>
               <div className="sec-h"><div><b>{m.direction === "in" ? (m.fromName ?? m.fromAddr) : "Caine Road Corporate Services"}</b> <span className="small muted">{m.direction === "in" ? m.fromAddr : `to ${m.toAddrs.join(", ")}`}</span></div>
-                <div className="row">{m.status === "draft" && <Pill tone="blue">Draft</Pill>}{m.status === "failed" && <Pill tone="red">Not sent</Pill>}<span className="small muted">{fmt(m.at, true)}</span></div></div>
+                <div className="row">{m.viaMailbox && <Pill>Sent from {m.provider === "gmail" ? "Gmail" : "the mailbox"}</Pill>}{m.status === "draft" && <Pill tone="blue">Draft</Pill>}{m.status === "failed" && (m.error === "Replied from the mailbox instead" ? <Pill>Withdrawn</Pill> : <Pill tone="red">Not sent</Pill>)}<span className="small muted">{fmt(m.at, true)}</span></div></div>
               <div className="draft" style={{ background: "transparent", border: 0, padding: 0, maxHeight: "none" }}>{m.text}</div>
               {mine.length > 0 && <p className="small">Attachments: {mine.map((a) => <a key={a.id} href={`/api/docs/${a.documentId}`} target="_blank" style={{ marginRight: 8 }}>{a.filename}</a>)}</p>}
               {it?.summary && <p className="small muted" style={{ marginBottom: 0, paddingTop: 10, borderTop: "1px solid var(--line)" }}>Understood as: {it.summary}</p>}

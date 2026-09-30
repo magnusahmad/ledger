@@ -3,6 +3,7 @@
 import { google, type gmail_v1 } from "googleapis";
 import type { MailProvider, OutboundMail, SentMail, InboundMail } from "../types";
 import { buildRaw, parseRaw } from "./mime";
+import { gmailDirection } from "./gmail-labels";
 
 export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"];
 
@@ -23,13 +24,17 @@ export class GmailMail implements MailProvider {
       const prof = await this.gmail.users.getProfile({ userId: "me" });
       return { messages: [], cursor: prof.data.historyId ?? null };
     }
-    const ids = new Set<string>();
+    const ids = new Map<string, "in" | "out">();
     let pageToken: string | undefined;
     let latest = cursor;
     try {
       do {
-        const h = await this.gmail.users.history.list({ userId: "me", startHistoryId: cursor, historyTypes: ["messageAdded"], labelId: "INBOX", pageToken });
-        for (const rec of h.data.history ?? []) for (const ma of rec.messagesAdded ?? []) if (ma.message?.id && !(ma.message.labelIds ?? []).includes("SENT")) ids.add(ma.message.id);
+        // Inbox and Sent: staff sometimes reply straight from Gmail, and those replies belong in the thread.
+        const h = await this.gmail.users.history.list({ userId: "me", startHistoryId: cursor, historyTypes: ["messageAdded"], pageToken });
+        for (const rec of h.data.history ?? []) for (const ma of rec.messagesAdded ?? []) {
+          const dir = gmailDirection(ma.message?.labelIds ?? []);
+          if (ma.message?.id && dir) ids.set(ma.message.id, dir);
+        }
         latest = h.data.historyId ?? latest;
         pageToken = h.data.nextPageToken ?? undefined;
       } while (pageToken);
@@ -41,12 +46,11 @@ export class GmailMail implements MailProvider {
       throw e;
     }
     const messages: InboundMail[] = [];
-    for (const id of ids) {
+    for (const [id, dir] of ids) {
       const r = await this.gmail.users.messages.get({ userId: "me", id, format: "raw" });
       if (!r.data.raw) continue;
       const m = await parseRaw(Buffer.from(r.data.raw, "base64url"), "gmail", id, r.data.threadId);
-      if (m.from.email === this.address.toLowerCase()) continue;
-      messages.push(m);
+      messages.push({ ...m, sentByUs: dir === "out" || m.from.email === this.address.toLowerCase() });
     }
     return { messages, cursor: latest };
   }

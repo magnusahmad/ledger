@@ -105,3 +105,18 @@ export const MailItemZ = z.object({
   urgency: z.enum(["normal", "urgent"]),
   actionNeeded: z.string().nullable(),
 });
+
+/** What a staff reply sent from the mailbox commits the firm to, as suggested task changes. */
+export const MailboxReviewZ = z.object({
+  summary: z.string(),
+  changes: z.array(z.object({
+    type: z.enum(["not_needed", "received", "cancel", "start", "note"]),
+    taskId: z.string().nullable(),
+    key: z.string().nullable(),
+    value: z.string().nullable(),
+    playbookId: z.string().nullable(),
+    text: z.string(),
+    evidence: z.string().nullable(),
+  })),
+});
+export type MailboxReview = z.infer<typeof MailboxReviewZ>;

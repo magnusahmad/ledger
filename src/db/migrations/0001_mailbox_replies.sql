@@ -1,0 +1,1 @@
+ALTER TABLE "message" ADD COLUMN "via_mailbox" boolean DEFAULT false NOT NULL;
