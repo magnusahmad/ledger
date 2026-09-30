@@ -19,6 +19,7 @@ import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { portalSubmit } from "@/domain/portal";
 import { startManualRequest, type ManualItem } from "@/domain/manual";
 import { addCost } from "@/domain/costs";
+import { setChaseRules } from "@/domain/chasing";
 import { addThirdParty, linkThirdParty, markSenderNotClient, type PartyRole } from "@/domain/third-parties";
 import { addOffPlatformStep, cancelOffPlatformStep, completeOffPlatformStep, followedUp, putOnHold, releaseHold, type WaitingOn } from "@/domain/off-platform";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
@@ -88,6 +89,15 @@ export async function manualRequestAction(_prev: ActionResult | null, form: Form
     const r = await startManualRequest(getCtx(), { clientId: String(form.get("clientId") ?? ""), items, notes: String(form.get("notes") ?? ""), confirm: form.get("confirm") === "on" });
     revalidatePath("/", "layout");
     return { ok: true, redirectTo: r.proposalId ? `/review/${r.proposalId}` : `/tasks/${r.taskIds[0]}` };
+  } catch (e) { return fail(e); }
+}
+
+// ---------- Settings ----------
+export async function chaseRulesAction(_prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const n = (k: string) => Number(form.get(k));
+    await setChaseRules(getCtx(), { firstAfterDays: n("firstAfterDays"), repeatEveryDays: n("repeatEveryDays"), escalateWithinDays: n("escalateWithinDays"), escalateAfterChases: n("escalateAfterChases") });
+    return done("Saved");
   } catch (e) { return fail(e); }
 }
 

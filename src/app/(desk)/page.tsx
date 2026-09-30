@@ -51,7 +51,7 @@ export default async function Today() {
                   <Link href={`/review/${p.id}`} className="t" style={{ textDecoration: "none" }}>{p.title}</Link>
                   <div className="m">{p.clientName ? <>{p.clientName}{p.clientLifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{p.summary ? ` · ${p.summary.split("\n")[0].slice(0, 140)}` : ""}</div>
                 </div>
-                <div className="row">{KIND_TONE[p.kind] && KIND_TONE[p.kind] !== "blue" && <Pill tone={KIND_TONE[p.kind]}>{KIND_LABEL[p.kind] ?? p.kind}</Pill>}<Link className="btn sm" href={`/review/${p.id}`}>Review</Link></div>
+                <div className="row">{p.payload.purpose === "chase" ? <Pill tone={p.payload.escalation ? "red" : "amber"}>{p.payload.escalation ? "Escalation" : "Reminder"}</Pill> : KIND_TONE[p.kind] && KIND_TONE[p.kind] !== "blue" && <Pill tone={KIND_TONE[p.kind]}>{KIND_LABEL[p.kind] ?? p.kind}</Pill>}<Link className="btn sm" href={`/review/${p.id}`}>Review</Link></div>
               </li>
             ))}
           </ul>

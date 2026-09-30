@@ -42,6 +42,7 @@ Rules:
 - If an invoice is in the facts, state its number and total exactly as given, say it is attached, and give the payment terms and payment instructions exactly as given (bank details verbatim, and ask them to quote the invoice number as the payment reference).
 - If an upload link is given, include it exactly, on its own line.
 - If a statutory deadline is given, mention it plainly.
+- If context is "chase", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.
 - If context is "costs", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.
 - If context is "meeting", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.
 - Never promise anything not in the facts. Never include internal notes, confidence scores or ids.

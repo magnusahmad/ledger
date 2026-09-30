@@ -40,6 +40,7 @@ onApprove("send_message", async (ctx, p, opts) => {
     await logEvent(ctx, taskId, "message.sent", `Email sent to ${m.toAddrs.join(", ")}: ${m.subject ?? ""}`, { messageId }, ctx.userId);
     await advance(ctx, taskId);
   }
+  if (p.payload.purpose === "chase" && p.taskId) await logEvent(ctx, p.taskId, "chase.sent", `Reminder sent to ${m.toAddrs.join(", ")}${p.payload.escalation ? " (escalated)" : ""}`, { messageId }, ctx.userId);
   // Confirmation and step-specific messages mark their own step (see payload.markStep).
   const mark = p.payload.markStep as { taskId: string; kind: "confirm" | "send" } | undefined;
   if (mark) { await markStepState(ctx, mark.taskId, mark.kind, { sent: true, messageId }); await advance(ctx, mark.taskId); }
