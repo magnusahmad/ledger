@@ -70,3 +70,6 @@ export function valueText(v: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
   return new Date(`${v}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }
+
+const WAITING: Record<string, string> = { us: "Us", client: "The client", third_party: "A third party" };
+export const waitingLabel = (w: string | null | undefined) => (w ? WAITING[w] ?? sentence(w) : "—");

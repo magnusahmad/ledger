@@ -22,7 +22,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
               <td><Link href={`/tasks/${t.id}`}>{t.title}</Link></td>
               <td><Link href={`/clients/${t.clientId}`}>{t.clientName}</Link></td>
               <td className="small">{t.stepLabel}</td>
-              <td>{t.waitingOn && <Pill tone={t.waitingOn === "you" ? "blue" : t.waitingOn === "client" || t.waitingOn === "payment" || t.waitingOn === "signatures" ? "amber" : undefined}>{t.waitingOn === "you" ? "You" : sentence(t.waitingOn)}</Pill>}</td>
+              <td>{t.waitingOn && <Pill tone={t.waitingOn === "you" ? "blue" : ["client", "payment", "signatures", "hold"].includes(t.waitingOn) ? "amber" : undefined}>{t.waitingOn === "you" ? "You" : t.waitingOn === "hold" ? "On hold" : sentence(t.waitingOn)}</Pill>}</td>
               <td>{t.status === "open" ? <DeadlineStamp dueDate={t.dueDate} today={ctx.clock.today()} /> : null}</td>
             </tr>))}
           </tbody></table>

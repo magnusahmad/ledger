@@ -160,6 +160,13 @@ details.more summary { cursor: pointer; color: var(--muted); font-size: 13.5px; 
 .mr-head { display: flex; justify-content: space-between; align-items: baseline; }
 .mr-rows { margin-bottom: 12px; }
 span.f { display: block; }
+/* Small popover for a header action (e.g. Put on hold). */
+.pop { position: relative; }
+.pop > summary { list-style: none; }
+.pop > summary::-webkit-details-marker { display: none; }
+.pop-body { position: absolute; right: 0; top: calc(100% + 6px); width: min(360px, calc(100vw - 32px)); z-index: 15; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.inline-form input { width: auto; flex: 1 1 140px; padding: 5px 9px; }
+.banner.hold { color: var(--ink2); }
 .menu-btn { background: none; border: 1px solid var(--line2); border-radius: 7px; padding: 6px 10px; }
 
 @media (max-width: 1100px) { .cols { grid-template-columns: minmax(0, 1fr); } }
