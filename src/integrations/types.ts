@@ -32,6 +32,8 @@ export type InboundMail = {
   inReplyTo?: string | null;
   references?: string[];
   from: { email: string; name?: string | null };
+  /** Set by providers that can tell: the firm sent this from the mailbox itself. */
+  sentByUs?: boolean;
   to: string[];
   cc: string[];
   subject: string;

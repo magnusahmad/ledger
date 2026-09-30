@@ -2,6 +2,7 @@
 import type { Ctx } from "@/lib/ctx";
 import { ingestMessage, processInbound } from "@/domain/inbound";
 import { kvGet, kvSet, withLease } from "@/domain/kv";
+import { recordMailboxReply } from "@/domain/mailbox-replies";
 
 export async function pollMail(ctx: Ctx): Promise<{ fetched: number; processed: number; errors: string[] }> {
   return (await withLease(ctx, "mail", 300, () => pollMailUnlocked(ctx))) ?? { fetched: 0, processed: 0, errors: [] };
@@ -14,7 +15,11 @@ async function pollMailUnlocked(ctx: Ctx): Promise<{ fetched: number; processed:
   let processed = 0;
   const errors: string[] = [];
   for (const m of messages) {
-    if (m.from.email?.toLowerCase() === ctx.mail.address.toLowerCase()) continue;
+    // The firm's own mail (Harbourline's sends, or staff replying in Gmail) joins the thread; it isn't a client request.
+    if (m.sentByUs || m.from.email?.toLowerCase() === ctx.mail.address.toLowerCase()) {
+      try { await recordMailboxReply(ctx, m); } catch (e) { errors.push(`${m.providerMessageId}: ${(e as Error).message}`); }
+      continue;
+    }
     const row = await ingestMessage(ctx, { ...m, channel: "email" });
     if (row.duplicate) continue;
     try {

@@ -52,6 +52,14 @@ export class E2eLlm implements LlmProvider {
       json = { items: [], switchPerson: null, effectiveDate: null, playbookFit: "ok", suggestedPlaybookId: null, invoiceChange: { needed: false, reason: null }, conflicts: [], questionsForClient: [], summary: "No change" };
     } else if (req.agent === "extract") {
       json = { fields: [], documents: [], conflicts: [] };
+    } else if (req.agent === "mailbox_review") {
+      // E2E-WAIVE: staff told the client the first outstanding item isn't needed.
+      const tasks = (jsonAfter(text, "Open tasks:") as { taskId: string; checklist: { key: string; label: string; status: string }[] }[] | null) ?? [];
+      const t = tasks.find((x) => x.checklist.some((e) => e.status === "needed"));
+      const e = t?.checklist.find((x) => x.status === "needed");
+      json = text.includes("E2E-WAIVE") && t && e
+        ? { summary: "Staff waived an item", changes: [{ type: "not_needed", taskId: t.taskId, key: e.key, value: null, playbookId: null, text: `${e.label}: not needed`, evidence: "E2E-WAIVE" }] }
+        : { summary: "No change", changes: [] };
     } else if (req.agent === "screen") {
       json = { hits: [], overall: "clear" };
     } else {

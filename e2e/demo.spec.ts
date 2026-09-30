@@ -49,7 +49,7 @@ test("an unknown sender's request goes from email to a completed, filed and regi
   await page.getByLabel("Name").fill("Sam Lee");
   await page.getByLabel("Subject").fill("Re: New director E2E");
   await page.getByLabel("Body").fill("E2E-DETAILS Jane's HKID K987654(3); home Flat 12B, 88 Robinson Road; use your office for correspondence; jane.doe@example.com +852 9123 4567");
-  await page.getByRole("checkbox").check();
+  await page.getByRole("checkbox", { name: /Reply in the thread/ }).check();
   await page.getByRole("button", { name: "Deliver email" }).click();
   await expect(page.getByText(/processed/)).toBeVisible({ timeout: 30_000 });
   await approveTop(page, /^Approve reply to /, /Approve and send/);

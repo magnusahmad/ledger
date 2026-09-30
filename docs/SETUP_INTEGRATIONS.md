@@ -1,6 +1,6 @@
 # Setting up the integrations
 
-Harbourline runs without any of these: each has a built-in demo adapter (demo mailbox, demo bank, demo ledger, local sanctions list). Add keys to `.env` when you have them, restart `npm run dev`, and check **Settings**, where each integration shows Live or Demo. Nothing here costs money. Every credential is stored in `.env` or, for OAuth tokens, encrypted in the database. None is ever shown in the app.
+Harbourline runs without any of these: each has a built-in demo adapter (demo mailbox, demo bank, demo ledger, local sanctions list). Add keys to `.env` when you have them, restart `npm run dev`, and check **Settings**, where each connection shows Connected or Off. Nothing here costs money. Every credential is stored in `.env` or, for OAuth tokens, encrypted in the database. None is ever shown in the app.
 
 ## 1. Gmail (primary mailbox), about 10 minutes
 
@@ -25,6 +25,7 @@ Use a dedicated demo address, e.g. `desk.caineroad.demo@gmail.com`, so investors
 Notes:
 - Testing-mode refresh tokens expire after 7 days. Reconnect from Settings the day before a meeting, or publish the consent screen.
 - On first connection Harbourline starts from "now" and doesn't import old mail.
+- Harbourline reads the inbox and the Sent folder. Replies staff type in Gmail itself are captured in the thread; they withdraw any Harbourline draft on that thread and may raise an "Update tasks to match the mailbox reply" card. No extra permission is needed.
 
 ## 2. AgentMail (fallback mailbox), about 3 minutes
 

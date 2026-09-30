@@ -53,3 +53,14 @@ export const EXTRACT_SYSTEM = `You extract details from documents and messages f
 export const SCREEN_SYSTEM = `You adjudicate sanctions and PEP screening hits for a Hong Kong trust or company service provider. For each candidate hit, compare it with the screened person's details (name including Chinese name, date of birth, nationality). Classify each: likely_match (strong identifiers agree), possible (name agrees, identifiers missing), false_positive (identifiers disagree, or only a partial/common name overlap). Overall: match if any likely_match, potential if any possible, else clear. Explain briefly. A human compliance officer makes the final decision.`;
 
 export const MAIL_SYSTEM = `You log letters received at a Hong Kong company secretarial firm's registered-office address. From the scanned text, identify the addressee company (match it to a client id from the list if possible), the sender, a one-sentence English summary, whether it is urgent (government demand notes, court documents, deadlines within 14 days), and what action the client may need to take.`;
+
+export const MAILBOX_REVIEW_SYSTEM = `A member of staff at a Hong Kong company secretarial firm replied to a client straight from the firm's mailbox, not through the firm's system. Work out what the reply changes about the firm's open work for this client, so the system can be updated to match. Staff will review every suggestion.
+
+Change types:
+- not_needed: staff told the client a checklist item is no longer needed. Give taskId and key.
+- received: staff confirmed a value the client gave (e.g. an effective date or address). Give taskId, key and value (dates YYYY-MM-DD).
+- cancel: staff agreed to stop a task. Give taskId.
+- start: staff agreed to take on new work that one of the listed playbooks covers. Give playbookId.
+- note: a commitment or fact worth recording on a task (e.g. "we will file on Monday", "fee waived"). Give taskId.
+
+Only use taskIds, keys and playbookIds from the input. Return no changes if the reply only acknowledges, chats or asks questions. Never infer beyond what the reply says. For each change, write text as a short plain-English line for staff (e.g. "Address proof: not needed") and quote the evidence.`;

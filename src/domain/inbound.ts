@@ -34,11 +34,18 @@ const MIN_CONFIDENCE = 0.7;
 const ONBOARDING = new Set(["hk.transferIn", "hk.incorporation"]);
 
 // ---------- Ingest ----------
-export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" | "html" | "rfcMessageId" | "inReplyTo" | "providerThreadId"> & Partial<InboundMail> & { channel: "email" | "paste" | "portal"; clientId?: string | null }) {
+export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" | "html" | "rfcMessageId" | "inReplyTo" | "providerThreadId"> & Partial<InboundMail> & { channel: "email" | "paste" | "portal"; clientId?: string | null; direction?: "in" | "out" }) {
+  const out = m.direction === "out";
   if (m.providerMessageId) {
     const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.provider, m.provider), eq(message.providerMessageId, m.providerMessageId)) });
     if (dup) return { ...dup, duplicate: true as const };
   }
+  // Mail Harbourline sent reappears in the mailbox's Sent folder; match it by Message-ID too.
+  if (out && m.rfcMessageId) {
+    const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.rfcMessageId, m.rfcMessageId)) });
+    if (dup) return { ...dup, duplicate: true as const };
+  }
+  const counterparty = (out ? m.to[0] : m.from.email)?.toLowerCase() ?? null;
   // Thread: provider thread id, then In-Reply-To, else a new conversation.
   let conv = m.providerThreadId ? await ctx.db.query.conversation.findFirst({ where: and(eq(conversation.firmId, ctx.firmId), eq(conversation.providerThreadId, m.providerThreadId)) }) : undefined;
   if (!conv && m.inReplyTo) {
@@ -48,17 +55,18 @@ export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" 
   if (!conv) {
     [conv] = await ctx.db.insert(conversation).values({
       id: ctx.ids.next("cnv"), firmId: ctx.firmId, clientId: m.clientId ?? null, channel: m.channel,
-      providerThreadId: m.providerThreadId ?? null, subject: m.subject.replace(/^(re|fwd?):\s*/i, ""), counterpartyEmail: m.from.email?.toLowerCase() ?? null,
+      providerThreadId: m.providerThreadId ?? null, subject: m.subject.replace(/^(re|fwd?):\s*/i, ""), counterpartyEmail: counterparty,
       lastMessageAt: m.receivedAt, createdAt: ctx.clock.now(),
     }).returning();
   } else {
     await ctx.db.update(conversation).set({ lastMessageAt: m.receivedAt }).where(eq(conversation.id, conv.id));
   }
   const [row] = await ctx.db.insert(message).values({
-    id: ctx.ids.next("msg"), firmId: ctx.firmId, conversationId: conv.id, direction: "in", provider: m.provider,
+    id: ctx.ids.next("msg"), firmId: ctx.firmId, conversationId: conv.id, direction: out ? "out" : "in", provider: m.provider,
     providerMessageId: m.providerMessageId ?? null, rfcMessageId: m.rfcMessageId ?? null, inReplyTo: m.inReplyTo ?? null,
     fromAddr: m.from.email?.toLowerCase() ?? null, fromName: m.from.name ?? null, toAddrs: m.to, ccAddrs: m.cc,
-    subject: m.subject, text: m.text, html: m.html ?? null, status: "received", at: m.receivedAt,
+    subject: m.subject, text: m.text, html: m.html ?? null, status: out ? "sent" : "received", at: m.receivedAt, viaMailbox: out,
+    processedAt: out ? ctx.clock.now() : null,
   }).returning();
   for (const a of m.attachments) {
     const docId = ctx.ids.next("doc");
