@@ -3,6 +3,7 @@
 import type { client } from "@/db/schema";
 import type { Deadline } from "./deadlines";
 import { addMonths } from "./dates";
+import { valueText } from "@/lib/display";
 
 type D = Omit<Deadline, "clientId" | "clientName" | "daysLeft" | "overdue">;
 type Subscription = { holder: string; amountCents: number; paidCents?: number; deadline: string };
@@ -32,7 +33,7 @@ export function jurisdictionDeadlines(c: typeof client.$inferSelect, today: stri
     for (const y of [Y - 1, Y]) {
       const fye = `${y}-${pad(c.fyeMonth)}-${pad(c.fyeDay)}`;
       if (fye >= today || lastAgm >= fye) continue;
-      out.push({ key: "MOACC", label: `Approve accounts for year ended ${fye}`, dueDate: addMonths(fye, jd.fyeApprovalMonths ?? 3), playbookId: "mo.approveAccounts", periodKey: `MOACC:${y}`, periodYear: y });
+      out.push({ key: "MOACC", label: `Approve accounts for year ended ${valueText(fye)}`, dueDate: addMonths(fye, jd.fyeApprovalMonths ?? 3), playbookId: "mo.approveAccounts", periodKey: `MOACC:${y}`, periodYear: y });
     }
   }
   return out.filter((d) => d.dueDate >= addMonths(today, -24));

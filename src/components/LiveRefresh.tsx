@@ -23,6 +23,7 @@ export function LiveRefresh({ intervalMs = 3000, label = true }: { intervalMs?: 
     tick();
     return () => { alive = false; };
   }, [router, intervalMs]);
-  if (!label) return null;
-  return <span className="live" title="Updates automatically">{ok ? <i /> : null}{ok ? "Live" : "Reconnecting…"}</span>;
+  // Pages update silently; only a lost connection is worth showing.
+  if (!label || ok) return null;
+  return <span className="live" role="status">Reconnecting…</span>;
 }

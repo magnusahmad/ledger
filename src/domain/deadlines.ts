@@ -14,6 +14,7 @@ export type Deadline = {
 };
 
 import { financialYearEnds, financialPeriodKey } from "./fye-periods";
+import { valueText } from "@/lib/display";
 
 export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; withinDays: number; includeCovered?: boolean }): Promise<Deadline[]> {
   const today = ctx.clock.today();
@@ -56,7 +57,7 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
             if (lastAgm && lastAgm >= fye) continue;
             // Existing filings/tasks retain their old annual keys across a calendar change.
             if (doneKeys.has(`AGM:${y}`) || (!opts.includeCovered && covered.has(`AGM:${y}`))) continue;
-            push({ key: "AGM", label: `AGM and accounts for year ended ${fye}`, dueDate: addMonths(fye, 9), playbookId: "hk.agm", periodKey, periodYear: y });
+            push({ key: "AGM", label: `AGM and accounts for year ended ${valueText(fye)}`, dueDate: addMonths(fye, 9), playbookId: "hk.agm", periodKey, periodYear: y });
           }
         }
       }

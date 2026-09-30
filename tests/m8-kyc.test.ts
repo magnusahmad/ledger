@@ -6,7 +6,7 @@ import { seedDemo } from "@/db/seed-demo";
 import { createRequest, startTask, advance, markStepState, getTask } from "@/domain/engine";
 import { createPerson, getPersonProtected } from "@/domain/records";
 import { approveProposal, pendingProposals } from "@/domain/proposals";
-import { portalView, portalUpload, portalSubmitField } from "@/domain/portal";
+import { portalView, portalUpload, portalSubmitField, portalSubmit } from "@/domain/portal";
 import { cddRecord, screeningResult, request as requestT } from "@/db/schema";
 import { FakeScreening } from "@/integrations/screening/fake";
 import { LocalOpenSanctions } from "@/integrations/screening/opensanctions-local";
@@ -71,6 +71,43 @@ describe("Upload portal", () => {
     const { req, t } = await appointment("cli_c1", "WONG Ka Man");
     await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "corrAddr", value: "Unit 1502, Kowloon Bay Centre" });
     expect((await getTask(ctx, t.id)).checklist.find((e) => e.key === "corrAddr")).toMatchObject({ status: "received", value: "Unit 1502, Kowloon Bay Centre" });
+  });
+
+  it("the upload link takes every filled detail and file in one submission, and leaves blank items outstanding", async () => {
+    ctx.llm.on("extract", noExtraction);
+    const { req, t } = await appointment("cli_c1", "WONG Ka Man");
+    const r = await portalSubmit(ctx, req.uploadToken, {
+      fields: [{ taskId: t.id, key: "corrAddr", value: "Unit 1502, Kowloon Bay Centre" }, { taskId: t.id, key: "resAddr", value: "  " }],
+      files: [{ taskId: t.id, key: "idCopy", filename: "hkid.jpg", mime: "image/jpeg", content: Buffer.from("jpg") }],
+    });
+    expect(r.saved).toBe(2);
+    const list = (await getTask(ctx, t.id)).checklist;
+    expect(list.find((e) => e.key === "corrAddr")).toMatchObject({ status: "received", value: "Unit 1502, Kowloon Bay Centre" });
+    expect(list.find((e) => e.key === "idCopy")).toMatchObject({ status: "received", documentId: expect.any(String) });
+    expect(list.find((e) => e.key === "resAddr")?.status).toBe("needed");
+  });
+
+  it("the upload link names the person for an officer change, but not the instructing person on an onboarding task", async () => {
+    const { req, p } = await appointment("cli_c1", "WONG Ka Man");
+    await startTask(ctx, { requestId: req.id, clientId: "cli_c1", playbookId: "hk.transferIn", personId: p.id });
+    const titles = (await portalView(ctx, req.uploadToken, "en")).tasks.map((t) => t.title);
+    expect(titles).toEqual(expect.arrayContaining(["Appoint a director · WONG Ka Man", "Take over an existing company"]));
+  });
+
+  it("an upload link submission with nothing filled in is rejected and changes nothing", async () => {
+    const { req, t } = await appointment("cli_c1", "WONG Ka Man");
+    const before = (await getTask(ctx, t.id)).checklist;
+    await expect(portalSubmit(ctx, req.uploadToken, { fields: [{ taskId: t.id, key: "corrAddr", value: "" }], files: [] })).rejects.toThrow(/at least one/i);
+    expect((await getTask(ctx, t.id)).checklist).toEqual(before);
+  });
+
+  it("a submission touching a task outside the link's request is rejected before anything is saved", async () => {
+    const a = await appointment("cli_c1", "WONG Ka Man");
+    const other = await appointment("cli_c2", "Someone Else");
+    await expect(portalSubmit(ctx, a.req.uploadToken, {
+      fields: [{ taskId: a.t.id, key: "corrAddr", value: "Unit 1502" }, { taskId: other.t.id, key: "corrAddr", value: "Elsewhere" }], files: [],
+    })).rejects.toThrow();
+    expect((await getTask(ctx, a.t.id)).checklist.find((e) => e.key === "corrAddr")?.status).toBe("needed");
   });
 });
 

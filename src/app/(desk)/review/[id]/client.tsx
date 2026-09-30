@@ -31,12 +31,12 @@ export function RedraftButtons({ proposalId, current }: { proposalId: string; cu
   const [err, setErr] = useState<string | null>(null);
   return (
     <div className="row" role="group" aria-label="Draft language">
-      {LANGS.map((l) => (
-        <button key={l.k} type="button" className={`btn sm${l.k === current ? "" : " sec2"}`} disabled={pending} aria-pressed={l.k === current}
+      <span className="seg">{LANGS.map((l) => (
+        <button key={l.k} type="button" disabled={pending} aria-pressed={l.k === current}
           onClick={() => start(async () => { const r = await redraftAction(proposalId, l.k); setErr(r.error ?? null); if (r.ok) window.location.reload(); })}>
           {l.label}
         </button>
-      ))}
+      ))}</span>
       {pending && <span className="small muted">Redrafting…</span>}
       {err && <span className="small" style={{ color: "var(--red)" }}>{err}</span>}
     </div>
@@ -44,12 +44,12 @@ export function RedraftButtons({ proposalId, current }: { proposalId: string; cu
 }
 
 /** Click-to-edit value (invoice number, line price) saved through a server action. */
-export function InlineEdit({ action, name, value, label, prefix }: { action: Action; name: string; value: string; label: string; prefix?: string }) {
+export function InlineEdit({ action, name, value, label, display }: { action: Action; name: string; value: string; label: string; display?: string }) {
   const [editing, setEditing] = useState(false);
   const [state, run, pending] = useActionState(async (p: ActionResult | null, f: FormData) => { const r = await action(p, f); if (r.ok) setEditing(false); return r; }, null);
   if (!editing) return (
     <span>
-      <button type="button" className="txt" onClick={() => setEditing(true)} aria-label={`Edit ${label}`}>{prefix}{value}</button>
+      <button type="button" className="txt" onClick={() => setEditing(true)} aria-label={`Edit ${label}`} title="Click to edit">{display ?? value}</button>
       {state?.error && <span className="small" style={{ color: "var(--red)", display: "block" }}>{state.error}</span>}
     </span>
   );

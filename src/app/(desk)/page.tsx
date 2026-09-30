@@ -8,6 +8,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { batchAction } from "@/server/actions";
 import { message } from "@/db/schema";
 import { money } from "@/domain/labels";
+import { plural } from "@/lib/display";
 
 const KIND_LABEL: Record<string, string> = {
   send_message: "Reply to approve", record_filing: "Record filing", register_change: "Register update", send_signing: "Signing pack",
@@ -26,21 +27,21 @@ export default async function Today() {
       <div className="top">
         <div>
           <h1>Today</h1>
-          <p className="sub">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} · {d.proposals.length ? `${d.proposals.length} thing${d.proposals.length > 1 ? "s" : ""} need${d.proposals.length > 1 ? "" : "s"} you` : "Nothing needs you right now"}</p>
+          <p className="sub">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} {d.proposals.length ? ` · ${d.proposals.length} thing${d.proposals.length > 1 ? "s" : ""} need${d.proposals.length > 1 ? "" : "s"} you` : ""}</p>
         </div>
         <div className="row"><LiveRefresh /><Link href="/new" className="btn">New request</Link></div>
       </div>
 
       <section className="sec" aria-labelledby="needs">
-        <div className="sec-h"><h2 id="needs">Needs you</h2><span className="small muted">Mail checked {d.lastMailPoll ? ago(d.lastMailPoll) : "—"}</span></div>
+        <div className="sec-h"><h2 id="needs">Needs you</h2></div>
         <div className="card tight">
           {reading.map((m) => (
             <div key={m.id} className="item new-flash">
-              <div className="main"><div className="t">Reading a new email from {m.fromName ?? m.fromAddr}…</div><div className="m">“{m.subject}” · Harbourline is working out what they need</div></div>
+              <div className="main"><div className="t">New email from {m.fromName ?? m.fromAddr}</div><div className="m">{m.subject ? `${m.subject} · ` : ""}Reading it now</div></div>
               <Pill tone="blue">Reading</Pill>
             </div>
           ))}
-          {d.proposals.length === 0 && reading.length === 0 && <p className="empty">You’re all caught up. New client emails appear here within seconds.</p>}
+          {d.proposals.length === 0 && reading.length === 0 && <p className="empty">You’re all caught up.</p>}
           <ul className="list">
             {d.proposals.map((p) => (
               <li key={p.id} className="item">
@@ -48,7 +49,7 @@ export default async function Today() {
                   <Link href={`/review/${p.id}`} className="t" style={{ textDecoration: "none" }}>{p.title}</Link>
                   <div className="m">{p.clientName ? <>{p.clientName}{p.clientLifecycle === "prospect" ? " · new prospect" : ""} · </> : null}{ago(p.createdAt)}{p.summary ? ` · ${p.summary.split("\n")[0].slice(0, 140)}` : ""}</div>
                 </div>
-                <div className="row"><Pill tone={KIND_TONE[p.kind]}>{KIND_LABEL[p.kind] ?? p.kind}</Pill><Link className="btn sm" href={`/review/${p.id}`}>Review</Link></div>
+                <div className="row">{KIND_TONE[p.kind] && KIND_TONE[p.kind] !== "blue" && <Pill tone={KIND_TONE[p.kind]}>{KIND_LABEL[p.kind] ?? p.kind}</Pill>}<Link className="btn sm" href={`/review/${p.id}`}>Review</Link></div>
               </li>
             ))}
           </ul>
@@ -57,11 +58,11 @@ export default async function Today() {
 
       {d.deadlines.length > 0 && (
         <section className="sec" aria-labelledby="dl">
-          <div className="sec-h"><h2 id="dl">Deadlines in the next 30 days with no task yet</h2></div>
+          <div className="sec-h"><h2 id="dl">Upcoming deadlines</h2><span className="small muted">Next 30 days, not yet started</span></div>
           <div className="card tight"><ul className="list">
             {d.deadlines.map((x) => (
               <li key={`${x.clientId}-${x.periodKey}`} className="item">
-                <div className="main"><div className="t">{x.label}</div><div className="m"><Link href={`/clients/${x.clientId}`}>{x.clientName}</Link> · due {fmt(x.dueDate)}</div></div>
+                <div className="main"><div className="t">{x.label}</div><div className="m"><Link href={`/clients/${x.clientId}`}>{x.clientName}</Link> · Due {fmt(x.dueDate)}</div></div>
                 <div className="row">
                   <DeadlineStamp dueDate={x.dueDate} today={today} />
                   <ActionForm action={batchAction} submit="Start" tone="secondary">
@@ -80,7 +81,7 @@ export default async function Today() {
           <div className="card tight"><ul className="list">
             {d.overdue.map((i) => (
               <li key={i.id} className="item">
-                <div className="main"><Link href={`/invoices/${i.id}`} className="t">{i.number}</Link><div className="m">{i.clientName} · {money(i.totalCents - i.paidCents)} due {fmt(i.dueOn)}</div></div>
+                <div className="main"><Link href={`/invoices/${i.id}`} className="t">{i.number}</Link><div className="m">{i.clientName} · {money(i.totalCents - i.paidCents)} outstanding</div></div>
                 <DeadlineStamp dueDate={i.dueOn} today={today} />
               </li>
             ))}
@@ -95,20 +96,19 @@ export default async function Today() {
             {d.waitingClient.length === 0 && <li className="empty">Nothing waiting.</li>}
             {d.waitingClient.map((t) => (
               <li key={t.id} className="item">
-                <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.stepKind === "sign" ? "signatures" : t.outstanding.slice(0, 3).join(", ")}{t.outstanding.length > 3 ? ` +${t.outstanding.length - 3}` : ""}</div></div>
-                <Pill tone="amber">{t.stepKind === "sign" ? "Signing" : "Info"}</Pill>
+                <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.stepKind === "sign" ? "Signatures" : plural(t.outstanding.length, "item") + " outstanding"}</div></div>
               </li>
             ))}
           </ul></div>
         </section>
         <section className="sec" aria-labelledby="ap">
-          <div className="sec-h"><h2 id="ap">Awaiting payment</h2><span className="small muted">Bank checked {d.lastBankPoll ? ago(d.lastBankPoll) : "—"}</span></div>
+          <div className="sec-h"><h2 id="ap">Awaiting payment</h2></div>
           <div className="card tight"><ul className="list">
             {d.awaitingPayment.length === 0 && <li className="empty">Nothing waiting.</li>}
             {d.awaitingPayment.map((t) => (
               <li key={t.id} className="item">
-                <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.invoice ? `${t.invoice.number} ${t.invoice.total}` : ""}</div></div>
-                <Pill tone="amber">Payment</Pill>
+                <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName}{t.invoice ? ` · ${t.invoice.number}` : ""}</div></div>
+                {t.invoice && <span className="small" style={{ fontVariantNumeric: "tabular-nums" }}>{t.invoice.total}</span>}
               </li>
             ))}
           </ul></div>
@@ -122,7 +122,7 @@ export default async function Today() {
             {d.working.map((t) => (
               <li key={t.id} className="item">
                 <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.stepLabel}</div></div>
-                <div className="row"><DeadlineStamp dueDate={t.dueDate} today={today} /><Pill tone={t.waitingOn === "you" ? "blue" : undefined}>{t.waitingOn === "you" ? "You" : "Harbourline"}</Pill></div>
+                <div className="row"><DeadlineStamp dueDate={t.dueDate} today={today} nearOnly />{t.waitingOn === "you" && <Pill tone="blue">With you</Pill>}</div>
               </li>
             ))}
           </ul></div>

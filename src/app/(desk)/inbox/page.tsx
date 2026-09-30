@@ -3,15 +3,13 @@ import { getCtx } from "@/server/ctx";
 import { conversations } from "@/server/queries";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { Pill, ago } from "@/components/ui";
-import { ActionButton } from "@/components/ActionForm";
-import { checkMailAction } from "@/server/actions";
 
 export default async function Inbox() {
   const ctx = getCtx();
   const rows = await conversations(ctx);
   return (
     <>
-      <div className="top"><div><h1>Inbox</h1><p className="sub">Every email from clients and prospects, read by Harbourline. Connected mailbox: {ctx.mail.address || ctx.mail.name}</p></div><div className="row"><LiveRefresh /><ActionButton action={checkMailAction}>Check mail now</ActionButton></div></div>
+      <div className="top"><div><h1>Inbox</h1>{ctx.mail.address && <p className="sub">{ctx.mail.address}</p>}</div><LiveRefresh /></div>
       <div className="card tight"><ul className="list">
         {rows.map((c) => (
           <li key={c.id} className="item">

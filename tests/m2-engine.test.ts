@@ -87,6 +87,13 @@ describe("Task engine", () => {
     expect(byKey.effDate).toBe("needed");
   });
 
+  it("an officer change is titled with the person it concerns, but an onboarding task is not titled with the instructing person checked for KYC", async () => {
+    const { c, req } = await setup();
+    const p = await createPerson(ctx, { nameEn: "LEE Siu Ling" });
+    expect((await startTask(ctx, { requestId: req.id, clientId: c.id, playbookId: "hk.appointDirector", personId: p.id })).title).toBe("Appoint a director: LEE Siu Ling");
+    expect((await startTask(ctx, { requestId: req.id, clientId: c.id, playbookId: "hk.transferIn", personId: p.id })).title).toBe("Take over an existing company");
+  });
+
   it("a person whose CDD review date has passed is asked for fresh KYC documents", async () => {
     const { c, req } = await setup();
     const p = await createPerson(ctx, { nameEn: "LEE Siu Ling" });

@@ -10,5 +10,5 @@ it("a mixed form check reports both changed forms and failed checks", () => {
   expect(result).toContain("NAR1");
 });
 it("only a complete unchanged form check reports all forms match", () => {
-  expect(summary({ checked: 11, changed: [], errors: [] })).toBe("All 11 forms match the manifest.");
+  expect(summary({ checked: 11, changed: [], errors: [] })).toBe("All 11 forms match the current versions.");
 });

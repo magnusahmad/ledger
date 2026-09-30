@@ -21,4 +21,5 @@ playwright-report/
 .next-e2e/
 .next/
 .next-build/
+.next-ui/
 *.tsbuildinfo

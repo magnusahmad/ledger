@@ -31,7 +31,7 @@ export default async function Thread({ params }: { params: Promise<{ id: string 
                 <div className="row">{m.status === "draft" && <Pill tone="blue">Draft</Pill>}{m.status === "failed" && <Pill tone="red">Not sent</Pill>}<span className="small muted">{fmt(m.at, true)}</span></div></div>
               <div className="draft" style={{ background: "transparent", border: 0, padding: 0, maxHeight: "none" }}>{m.text}</div>
               {mine.length > 0 && <p className="small">Attachments: {mine.map((a) => <a key={a.id} href={`/api/docs/${a.documentId}`} target="_blank" style={{ marginRight: 8 }}>{a.filename}</a>)}</p>}
-              {it?.summary && <p className="small" style={{ color: "var(--blue)", marginBottom: 0 }}>Harbourline: {it.summary} ({it.actions.map((a) => a.type.replace(/_/g, " ")).join(", ") || "no action"})</p>}
+              {it?.summary && <p className="small muted" style={{ marginBottom: 0, paddingTop: 10, borderTop: "1px solid var(--line)" }}>Understood as: {it.summary}</p>}
               {prop && prop.status === "pending" && <p style={{ marginBottom: 0 }}><Link className="btn sm" href={`/review/${prop.id}`}>Review draft</Link></p>}
             </div>
           );
