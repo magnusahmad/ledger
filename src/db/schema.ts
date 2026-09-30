@@ -50,7 +50,7 @@ export const client = pgTable("client", {
   nameTc: text("name_tc"),
   nameSc: text("name_sc"),
   companyNumber: text("company_number"),
-  lifecycle: text("lifecycle").$type<"prospect" | "onboarding" | "active" | "ceased">().notNull().default("active"),
+  lifecycle: text("lifecycle").$type<"prospect" | "onboarding" | "active" | "ceased" | "archived">().notNull().default("active"),
   operatingStatus: text("operating_status").$type<"operating" | "dormant" | "deregistering" | "struck_off" | "not_incorporated">().notNull().default("operating"),
   clientGroup: text("client_group"),
   listedSubsidiary: boolean("listed_subsidiary").notNull().default(false),
@@ -334,6 +334,27 @@ export const task = pgTable("task", {
   createdAt: createdAt(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 }, (t) => [index("task_client_idx").on(t.clientId)]);
+
+/** People and organisations the firm deals with who aren't clients: banks, law firms, auditors,
+ *  officials, outgoing secretaries. "ignore" records mail from the address without acting on it. */
+export const thirdParty = pgTable("third_party", {
+  id: text("id").primaryKey(),
+  firmId: firmId(),
+  name: text("name").notNull(),
+  organisation: text("organisation"),
+  email: text("email"),
+  role: text("role").$type<"bank" | "law_firm" | "auditor" | "government" | "outgoing_secretary" | "notary" | "other" | "ignore">().notNull().default("other"),
+  notes: text("notes"),
+  createdAt: createdAt(),
+}, (t) => [index("third_party_email_idx").on(t.firmId, t.email)]);
+
+export const taskParty = pgTable("task_party", {
+  id: text("id").primaryKey(),
+  firmId: firmId(),
+  taskId: text("task_id").notNull(),
+  partyId: text("party_id").notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("task_party_uq").on(t.taskId, t.partyId)]);
 
 /** Work done outside Harbourline for a task (Stamp Office, notary, bank, court...), with proof when done. */
 export const taskAction = pgTable("task_action", {

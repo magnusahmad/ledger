@@ -3,7 +3,7 @@
 // put on hold while it waits on someone. Both show on Today with their follow-up dates.
 import { and, asc, eq, isNotNull } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { client as clientT, document, task as taskT, taskAction } from "@/db/schema";
+import { client as clientT, document, task as taskT, taskAction, thirdParty } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
 import { advance, getTask, logEvent } from "./engine";
 
@@ -95,7 +95,7 @@ export async function followedUp(ctx: Ctx, o: { kind: "step" | "hold"; id: strin
 
 export type OutsideRow = {
   kind: "step" | "hold"; id: string; taskId: string; taskTitle: string; clientId: string; clientName: string;
-  title: string; waitingOn: WaitingOn; partyId: string | null; dueDate: string | null; followUpOn: string | null; followUpDue: boolean;
+  title: string; waitingOn: WaitingOn; partyId: string | null; partyName: string | null; dueDate: string | null; followUpOn: string | null; followUpDue: boolean;
 };
 
 /** Everything happening outside the platform: open off-platform steps and held tasks. Due follow-ups first. */
@@ -107,9 +107,11 @@ export async function outsideWork(ctx: Ctx, opts: { taskId?: string } = {}): Pro
   const holds = await ctx.db.select({ t: taskT, c: clientT }).from(taskT).innerJoin(clientT, eq(clientT.id, taskT.clientId))
     .where(and(eq(taskT.firmId, ctx.firmId), eq(taskT.status, "open"), isNotNull(taskT.holdReason), opts.taskId ? eq(taskT.id, opts.taskId) : undefined));
   const due = (d: string | null) => !!d && d <= today;
+  const parties = new Map((await ctx.db.select().from(thirdParty).where(eq(thirdParty.firmId, ctx.firmId))).map((p) => [p.id, `${p.name}${p.organisation ? `, ${p.organisation}` : ""}`]));
+  const pn = (id: string | null) => (id ? parties.get(id) ?? null : null);
   const rows: OutsideRow[] = [
-    ...steps.map(({ a, t, c }) => ({ kind: "step" as const, id: a.id, taskId: t.id, taskTitle: t.title, clientId: c.id, clientName: c.nameEn, title: a.title, waitingOn: a.waitingOn, partyId: a.partyId, dueDate: a.dueDate, followUpOn: a.followUpOn, followUpDue: due(a.followUpOn) || due(a.dueDate) })),
-    ...holds.map(({ t, c }) => ({ kind: "hold" as const, id: t.id, taskId: t.id, taskTitle: t.title, clientId: c.id, clientName: c.nameEn, title: t.holdReason!, waitingOn: t.holdWaitingOn ?? "third_party", partyId: t.holdPartyId, dueDate: null, followUpOn: t.holdFollowUpOn, followUpDue: due(t.holdFollowUpOn) })),
+    ...steps.map(({ a, t, c }) => ({ kind: "step" as const, id: a.id, taskId: t.id, taskTitle: t.title, clientId: c.id, clientName: c.nameEn, title: a.title, waitingOn: a.waitingOn, partyId: a.partyId, partyName: pn(a.partyId), dueDate: a.dueDate, followUpOn: a.followUpOn, followUpDue: due(a.followUpOn) || due(a.dueDate) })),
+    ...holds.map(({ t, c }) => ({ kind: "hold" as const, id: t.id, taskId: t.id, taskTitle: t.title, clientId: c.id, clientName: c.nameEn, title: t.holdReason!, waitingOn: t.holdWaitingOn ?? "third_party", partyId: t.holdPartyId, partyName: pn(t.holdPartyId), dueDate: null, followUpOn: t.holdFollowUpOn, followUpDue: due(t.holdFollowUpOn) })),
   ];
   const key = (r: OutsideRow) => `${r.followUpDue ? 0 : 1}${r.followUpOn ?? r.dueDate ?? "9999"}`;
   return rows.sort((a, b) => key(a).localeCompare(key(b)));

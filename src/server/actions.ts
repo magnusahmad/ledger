@@ -18,6 +18,7 @@ import { logMailItem } from "@/domain/mail-items";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { portalSubmit } from "@/domain/portal";
 import { startManualRequest, type ManualItem } from "@/domain/manual";
+import { addThirdParty, linkThirdParty, markSenderNotClient, type PartyRole } from "@/domain/third-parties";
 import { addOffPlatformStep, cancelOffPlatformStep, completeOffPlatformStep, followedUp, putOnHold, releaseHold, type WaitingOn } from "@/domain/off-platform";
 import { requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
 import { contact, invoice, message, type Lang } from "@/db/schema";
@@ -86,6 +87,25 @@ export async function manualRequestAction(_prev: ActionResult | null, form: Form
     const r = await startManualRequest(getCtx(), { clientId: String(form.get("clientId") ?? ""), items, notes: String(form.get("notes") ?? ""), confirm: form.get("confirm") === "on" });
     revalidatePath("/", "layout");
     return { ok: true, redirectTo: r.proposalId ? `/review/${r.proposalId}` : `/tasks/${r.taskIds[0]}` };
+  } catch (e) { return fail(e); }
+}
+
+// ---------- Third parties ----------
+export async function notClientAction(conversationId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const as = String(form.get("as") ?? "third_party") === "ignore" ? "ignore" : "third_party";
+    await markSenderNotClient(getCtx(), conversationId, { as, name: String(form.get("name") ?? ""), organisation: String(form.get("organisation") ?? "") || null, role: (String(form.get("role") ?? "") || "other") as PartyRole, taskId: String(form.get("taskId") ?? "") || null });
+    revalidatePath("/", "layout");
+    return done(as === "ignore" ? "Mail from this address will be ignored" : "Saved as a third party");
+  } catch (e) { return fail(e); }
+}
+export async function addPartyAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    const ctx = getCtx();
+    const existing = String(form.get("partyId") ?? "");
+    const party = existing ? { id: existing } : await addThirdParty(ctx, { name: String(form.get("name") ?? ""), organisation: String(form.get("organisation") ?? "") || null, email: String(form.get("email") ?? "") || null, role: (String(form.get("role") ?? "") || "other") as PartyRole });
+    await linkThirdParty(ctx, taskId, party.id);
+    return done("Added");
   } catch (e) { return fail(e); }
 }
 

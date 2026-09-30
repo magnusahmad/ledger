@@ -71,6 +71,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     return (
       <>
         {header}
+        {cl?.lifecycle === "prospect" && conv && source && <p className="small muted" style={{ marginTop: -14, marginBottom: 16 }}>Not a client, e.g. a bank or law firm? <Link className="lnk" href={`/inbox/${conv.id}`}>Mark the sender as not a client</Link></p>}
         <div className="cols">
           <div className="stack">
             <div className="card">

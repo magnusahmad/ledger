@@ -10,10 +10,11 @@ import { envelopeStatus } from "@/domain/signing";
 import { client, document, request as requestT, invoice, taskAction } from "@/db/schema";
 import { taskTimeline } from "@/server/queries";
 import { ActionForm } from "@/components/ActionForm";
-import { tickAction, manualStepAction, addStepAction, completeStepAction, dropStepAction, holdAction, releaseHoldAction, followedUpAction } from "@/server/actions";
+import { tickAction, manualStepAction, addStepAction, addPartyAction, completeStepAction, dropStepAction, holdAction, releaseHoldAction, followedUpAction } from "@/server/actions";
 import { DeadlineStamp, Pill, StatusPill, ago, fmt } from "@/components/ui";
 import { ChecklistTick } from "@/components/ChecklistTick";
 import { ActionButton } from "@/components/ActionForm";
+import { listThirdParties, partiesForTask, ROLE_LABEL } from "@/domain/third-parties";
 import { documentSourceLabel, stepStatus, timelineText, valueText, waitingLabel } from "@/lib/display";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { money } from "@/domain/labels";
@@ -39,6 +40,9 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
   const steps = await ctx.db.select().from(taskAction).where(eq(taskAction.taskId, t.id)).orderBy(asc(taskAction.createdAt));
   const openSteps = steps.filter((a) => a.status === "open");
   const today = ctx.clock.today();
+  const [parties, allParties] = await Promise.all([partiesForTask(ctx, t.id), listThirdParties(ctx)]);
+  const partyName = (id: string | null) => { const p = parties.find((x) => x.id === id) ?? allParties.find((x) => x.id === id); return p ? `${p.name}${p.organisation ? `, ${p.organisation}` : ""}` : null; };
+  const partySelect = parties.length > 0 && <div><label className="f">Which third party</label><select name="partyId" defaultValue=""><option value="">Not specified</option>{parties.map((p) => <option key={p.id} value={p.id}>{partyName(p.id)}</option>)}</select></div>;
   const waitingSelect = (def: string) => <select name="waitingOn" defaultValue={def}><option value="us">Us</option><option value="client">The client</option><option value="third_party">A third party</option></select>;
   return (
     <>
@@ -57,6 +61,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                   <div className="grid2" style={{ marginTop: 12 }}>
                     <div><label className="f">Waiting on</label>{waitingSelect("third_party")}</div>
                     <div><label className="f" htmlFor="hold-fu">Follow up on</label><input id="hold-fu" type="date" name="followUpOn" required /></div>
+                    {partySelect}
                   </div>
                 </ActionForm>
               </div>
@@ -66,7 +71,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
       </div>
       {t.holdReason && t.status === "open" && (
         <div className="banner amber hold">
-          <div><b>On hold</b> since {fmt(t.holdSince)}: {t.holdReason}. Waiting on {waitingLabel(t.holdWaitingOn).toLowerCase()}. {t.holdFollowUpOn && (t.holdFollowUpOn < today ? <b>Follow-up overdue since {fmt(t.holdFollowUpOn)}.</b> : t.holdFollowUpOn === today ? <b>Follow up today.</b> : <>Follow up on {fmt(t.holdFollowUpOn)}.</>)}</div>
+          <div><b>On hold</b> since {fmt(t.holdSince)}: {t.holdReason}. Waiting on {partyName(t.holdPartyId) ?? waitingLabel(t.holdWaitingOn).toLowerCase()}. {t.holdFollowUpOn && (t.holdFollowUpOn < today ? <b>Follow-up overdue since {fmt(t.holdFollowUpOn)}.</b> : t.holdFollowUpOn === today ? <b>Follow up today.</b> : <>Follow up on {fmt(t.holdFollowUpOn)}.</>)}</div>
           <div className="row" style={{ marginTop: 10, alignItems: "flex-start" }}>
             <ActionForm action={releaseHoldAction.bind(null, t.id)} submit="Release hold" />
             <details className="pop"><summary className="btn sec2">Followed up</summary>
@@ -132,7 +137,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                   <div className="main">
                     <div className="t" style={a.status !== "open" ? { color: "var(--muted)", fontWeight: 400 } : undefined}>{a.status === "done" ? "✓ " : a.status === "cancelled" ? "– " : ""}{a.title}</div>
                     <div className="m">{a.status === "open"
-                      ? [`Waiting on ${waitingLabel(a.waitingOn).toLowerCase()}`, a.dueDate && `due ${fmt(a.dueDate)}`, a.followUpOn && (a.followUpOn <= today ? `follow-up due ${fmt(a.followUpOn)}` : `follow up ${fmt(a.followUpOn)}`), a.beforeStep != null && `before “${t._steps[a.beforeStep]?.label}”`].filter(Boolean).join(" · ")
+                      ? [`Waiting on ${partyName(a.partyId) ?? waitingLabel(a.waitingOn).toLowerCase()}`, a.dueDate && `due ${fmt(a.dueDate)}`, a.followUpOn && (a.followUpOn <= today ? `follow-up due ${fmt(a.followUpOn)}` : `follow up ${fmt(a.followUpOn)}`), a.beforeStep != null && `before “${t._steps[a.beforeStep]?.label}”`].filter(Boolean).join(" · ")
                       : a.status === "done" ? [`Done ${fmt(a.completedAt)}`, a.proofReference && `ref ${a.proofReference}`, a.proofNote].filter(Boolean).join(" · ") : "Dropped"}
                       {a.proofDocumentId && <> · <a className="lnk" href={`/api/docs/${a.proofDocumentId}`} target="_blank">Proof</a></>}</div>
                   </div>
@@ -169,6 +174,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
                       <div><label className="f" htmlFor="ops-before">Must be done before</label><select id="ops-before" name="beforeStep" defaultValue=""><option value="">No particular step</option>{t._steps.map((s, i) => i > t.stepIndex ? <option key={i} value={i}>{s.label}</option> : null)}</select></div>
                       <div><label className="f" htmlFor="ops-due">Due</label><input id="ops-due" type="date" name="dueDate" /></div>
                       <div><label className="f" htmlFor="ops-fu">Follow up on</label><input id="ops-fu" type="date" name="followUpOn" /></div>
+                      {partySelect}
                     </div>
                   </ActionForm>
                 </div>
@@ -200,6 +206,17 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
               {t.dueDate && <><dt>Deadline</dt><dd>{fmt(t.dueDate)}{pb.deadline.kind !== "none" && <div className="muted">{pb.deadline.rule}</div>}</dd></>}
               {inv && <><dt>Invoice</dt><dd><span className="row" style={{ gap: 8 }}><Link className="lnk" href={`/invoices/${inv.id}`}>{inv.number}</Link><StatusPill status={inv.status} /></span></dd></>}
               <dt>Payment</dt><dd>{t.onCredit ? "On credit terms" : "Upfront"}</dd>
+              <dt>Third parties</dt><dd>{parties.length ? parties.map((p) => <div key={p.id}>{partyName(p.id)} <span className="muted">· {ROLE_LABEL[p.role]}{p.email ? ` · ${p.email}` : ""}</span></div>) : <span className="muted">None</span>}
+                {t.status === "open" && <details className="more" style={{ marginTop: 6 }}><summary>Add a third party</summary>
+                  <div style={{ marginTop: 8 }}><ActionForm action={addPartyAction.bind(null, t.id)} submit="Add" resetOnSuccess>
+                    {allParties.length > 0 && <div className="fld"><label className="f" htmlFor="tp-pick">Someone already known</label><select id="tp-pick" name="partyId" defaultValue=""><option value="">Someone new (below)</option>{allParties.filter((p) => !parties.some((x) => x.id === p.id)).map((p) => <option key={p.id} value={p.id}>{p.name}{p.organisation ? `, ${p.organisation}` : ""}</option>)}</select></div>}
+                    <div className="fld"><label className="f" htmlFor="tp-name">Name</label><input id="tp-name" type="text" name="name" /></div>
+                    <div className="fld"><label className="f" htmlFor="tp-org">Organisation</label><input id="tp-org" type="text" name="organisation" /></div>
+                    <div className="fld"><label className="f" htmlFor="tp-email">Email</label><input id="tp-email" type="email" name="email" /></div>
+                    <div className="fld"><label className="f" htmlFor="tp-role">Role</label><select id="tp-role" name="role" defaultValue="other">{(["bank", "law_firm", "auditor", "government", "outgoing_secretary", "notary", "other"] as const).map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</select></div>
+                  </ActionForm></div>
+                </details>}
+              </dd>
             </dl>
             <details className="more" style={{ marginTop: 10 }}><summary>Compliance notes</summary><ul className="small">{pb.complianceNotes.map((n, i) => <li key={i}>{n}</li>)}</ul><p className="small muted">{pb.verifyNote}</p></details>
           </div>
@@ -207,7 +224,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
             <h2>Timeline</h2>
             <ul className="timeline">
               {tl.ev.filter((e) => timelineText(e) !== null).map((e) => (
-                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{timelineText(e)}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : e.actor === "mailbox" ? "Mailbox" : "Karen Yip"}</div></li>
+                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{timelineText(e)}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : e.actor === "mailbox" ? "Mailbox" : e.actor === "third_party" ? "Third party" : "Karen Yip"}</div></li>
               ))}
             </ul>
           </div>

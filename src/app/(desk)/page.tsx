@@ -84,7 +84,7 @@ export default async function Today() {
             {outside.map((r) => (
               <li key={`${r.kind}-${r.id}`} className="item">
                 <div className="main"><Link href={`/tasks/${r.taskId}`} className="t">{r.kind === "hold" ? `On hold: ${r.title}` : r.title}</Link>
-                  <div className="m">{r.clientName} · {r.taskTitle} · Waiting on {waitingLabel(r.waitingOn).toLowerCase()}</div></div>
+                  <div className="m">{r.clientName} · {r.taskTitle} · Waiting on {r.partyName ?? waitingLabel(r.waitingOn).toLowerCase()}</div></div>
                 <div className="row">{r.followUpDue ? <Pill tone="amber">{(r.followUpOn ?? r.dueDate)! < today ? "Follow-up overdue" : "Follow up today"}</Pill> : (r.followUpOn || r.dueDate) ? <span className="small muted">{r.followUpOn ? `Follow up ${fmt(r.followUpOn)}` : `Due ${fmt(r.dueDate)}`}</span> : null}</div>
               </li>
             ))}

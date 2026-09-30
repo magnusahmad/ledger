@@ -165,6 +165,7 @@ span.f { display: block; }
 .pop > summary { list-style: none; }
 .pop > summary::-webkit-details-marker { display: none; }
 .pop-body { position: absolute; right: 0; top: calc(100% + 6px); width: min(360px, calc(100vw - 32px)); z-index: 15; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+@media (max-width: 900px) { .pop-body { left: 0; right: auto; } }
 .inline-form input { width: auto; flex: 1 1 140px; padding: 5px 9px; }
 .banner.hold { color: var(--ink2); }
 .menu-btn { background: none; border: 1px solid var(--line2); border-radius: 7px; padding: 6px 10px; }

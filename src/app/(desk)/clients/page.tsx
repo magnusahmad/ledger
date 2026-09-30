@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
 import { client, appUser } from "@/db/schema";
 import { upcomingDeadlines } from "@/domain/deadlines";
@@ -10,7 +10,7 @@ const JUR: Record<string, string> = { HK: "Hong Kong", CN: "Mainland China", MO:
 
 export default async function Clients() {
   const ctx = getCtx();
-  const rows = await ctx.db.select({ c: client, u: appUser }).from(client).leftJoin(appUser, eq(appUser.id, client.staffId)).where(eq(client.firmId, ctx.firmId)).orderBy(client.nameEn);
+  const rows = await ctx.db.select({ c: client, u: appUser }).from(client).leftJoin(appUser, eq(appUser.id, client.staffId)).where(and(eq(client.firmId, ctx.firmId), ne(client.lifecycle, "archived"))).orderBy(client.nameEn);
   const dl = await upcomingDeadlines(ctx, { withinDays: 365 });
   const open = await taskRows(ctx, { status: "open" });
   return (
