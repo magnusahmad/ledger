@@ -1,0 +1,43 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { makeCtx, resetDb, type TestCtx } from "./helpers";
+import { seedDemo } from "@/db/seed-demo";
+import { action, intake, goodDraft } from "./agent-fixtures";
+import { ingestMessage, processInbound } from "@/domain/inbound";
+import { createRequest, startTask } from "@/domain/engine";
+import { addThirdParty, linkThirdParty } from "@/domain/third-parties";
+import { appointment, filing, message, proposal, task, client, taskEvent } from "@/db/schema";
+import { EMAIL_CASES } from "../eval/email-cases";
+let ctx: TestCtx;
+beforeEach(async () => { await resetDb(); ctx = makeCtx({ now: "2026-10-03T02:00:00Z" }); await seedDemo(ctx, { demoEmail: "director@kbtrading.example" }); });
+describe("The email evaluation exercises real ingestion while retaining staff approval", () => {
+  it("a mixed-language two-request email creates both tasks and a pending reply but changes no statutory register or filing", async () => {
+    const baseline = JSON.stringify([await ctx.db.select().from(appointment), await ctx.db.select().from(filing)]);
+    ctx.llm.on("intake", intake({ language: "tc", actions: [action({ type: "start_request", playbookId: "hk.changeOffice" }), action({ type: "start_request", playbookId: "hk.appointDirector", person: { mode: "existing", personId: "per_p2", nameEn: "LEE Siu Ling", nameZh: null, email: null } })] }));
+    ctx.llm.on("draft", goodDraft);
+    const c = EMAIL_CASES[1];
+    const m = await ingestMessage(ctx, { channel: "email", provider: "emails-eval-test", providerMessageId: c.id, from: { email: c.from, name: c.fromName }, to: ["desk@caineroad.example"], cc: [], subject: c.subject, text: c.text, receivedAt: ctx.clock.now(), attachments: [] });
+    const r = await processInbound(ctx, m.id);
+    const created = (await ctx.db.select().from(task)).filter(t => r.taskIds.includes(t.id));
+    expect(created.map(t => t.playbookId).sort()).toEqual(["hk.appointDirector", "hk.changeOffice"]);
+    expect((await ctx.db.select().from(proposal)).some(p => p.kind === "send_message" && p.status === "pending")).toBe(true);
+    expect((await ctx.db.select().from(message)).filter(m => m.direction === "out" && m.status === "draft")).toHaveLength(1);
+    expect(JSON.stringify([await ctx.db.select().from(appointment), await ctx.db.select().from(filing)])).toBe(baseline);
+    expect(ctx.mail.sent()).toHaveLength(0);
+  });
+  it("a known legal correspondent is logged on its linked task without invoking a model, creating a prospect or drafting a client reply", async () => {
+    const c = EMAIL_CASES[6];
+    const r = await createRequest(ctx, { clientId: "cli_c1", summary: "Prior instruction" });
+    const t = await startTask(ctx, { requestId: r.id, clientId: "cli_c1", playbookId: "hk.changeOffice" });
+    const party = await addThirdParty(ctx, { name: c.fromName, email: c.from, role: "law_firm" }); await linkThirdParty(ctx, t.id, party.id);
+    const clients = await ctx.db.select().from(client);
+    const tasks = await ctx.db.select().from(task);
+    const m = await ingestMessage(ctx, { channel: "email", provider: "emails-eval-test", providerMessageId: c.id, from: { email: c.from, name: c.fromName }, to: ["desk@caineroad.example"], cc: [], subject: c.subject, text: c.text, receivedAt: ctx.clock.now(), attachments: [] });
+    await processInbound(ctx, m.id);
+    expect(ctx.llm.callsFor("intake")).toHaveLength(0);
+    expect(await ctx.db.select().from(client)).toEqual(clients);
+    expect(await ctx.db.select().from(task)).toEqual(tasks);
+    expect((await ctx.db.select().from(taskEvent)).some(e => e.kind === "message.third_party" && e.data.messageId === m.id)).toBe(true);
+    expect((await ctx.db.select().from(message)).filter(m => m.direction === "out" && m.status === "draft")).toHaveLength(0);
+    expect(ctx.mail.sent()).toHaveLength(0);
+  });
+});

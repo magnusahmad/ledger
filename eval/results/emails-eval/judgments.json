@@ -1,0 +1,548 @@
+{
+  "reviewer": "Codex coding agent, independently inspecting source emails, prerecorded expected outcomes, output JSON, draft source facts and database effects; no separate human/company secretary reviewer",
+  "date": "2026-10-03",
+  "threshold": 0.9,
+  "note": "Labels apply to initial actual ingestions, not synthetic repeat effects. Natural action counts concern routing/type/target, not all composite-field completion. All flaws are retained; Jev remained in shadow mode.",
+  "stats": {
+    "naturalIntakeRouting": {
+      "correctActions": 16,
+      "correctFlagged": 9,
+      "incorrectActions": 0,
+      "incorrectCaught": 0,
+      "incorrectRecall": null,
+      "requiredIntents": 10,
+      "missedRequiredIntents": 0
+    },
+    "pairedControls": {
+      "incorrect": 4,
+      "incorrectCaught": 4,
+      "correct": 4,
+      "correctFlagged": 3
+    },
+    "replyQuality": {
+      "drafts": 6,
+      "substantivelyDefective": 1,
+      "substantivelyDefectiveFlagged": 1,
+      "additionalLanguageDefects": 2,
+      "languageDefectsFlagged": 0,
+      "correctDrafts": 3,
+      "correctDraftsFlagged": 1
+    },
+    "schema": {
+      "gemini": {
+        "valid": 34,
+        "total": 34
+      },
+      "jev": {
+        "valid": 54,
+        "total": 54
+      }
+    },
+    "repeatAgreement": {
+      "geminiCoreRouting": {
+        "equalPairs": 27,
+        "pairs": 27
+      },
+      "geminiStrictStructured": {
+        "equalPairs": 14,
+        "pairs": 27
+      },
+      "jevLabels": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "jevLabelsAndFlags": {
+        "equalPairs": 22,
+        "pairs": 30
+      }
+    },
+    "latency": {
+      "inlineMedianMs": 870.0,
+      "inlineP95Ms": 1257,
+      "fullInitialChecks": {
+        "n": 10,
+        "totalMs": 12357,
+        "medianMs": 1323.5,
+        "p95Ms": 1705
+      }
+    },
+    "jevCostUsd": {
+      "mainIncludingRepeats": 0.01195425,
+      "controls": 0.0027998459999999995,
+      "total": 0.014754096
+    }
+  },
+  "judgments": [
+    {
+      "id": "E01",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.93,
+            "probabilities": {
+              "uncertain": 0.02,
+              "supported": 0.95,
+              "unsupported": 0.03
+            }
+          },
+          "flagged": false
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.82,
+            "probabilities": {
+              "uncertain": 0.02,
+              "supported": 0.88,
+              "unsupported": 0.1
+            }
+          },
+          "flagged": true
+        }
+      ],
+      "independentReason": "Correct appointment, requested documents and quote; new Wong person and explicit date. Separate document question is acceptable.",
+      "draftQuality": {
+        "produced": true,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": false
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E02",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.changeOffice",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.93,
+            "probabilities": {
+              "uncertain": 0.02,
+              "supported": 0.96,
+              "unsupported": 0.02
+            }
+          },
+          "flagged": false
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.51,
+            "probabilities": {
+              "uncertain": 0.12,
+              "supported": 0.68,
+              "unsupported": 0.2
+            }
+          },
+          "flagged": true
+        }
+      ],
+      "independentReason": "Correct two tasks and reuse of existing shareholder/KYC on the ingested call. Both repeat intakes wrongly mark existing Lee as a new person.",
+      "draftQuality": {
+        "produced": true,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": true
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E03",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.transferShares",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.63,
+            "probabilities": {
+              "uncertain": 0.09,
+              "supported": 0.76,
+              "unsupported": 0.15
+            }
+          },
+          "flagged": true
+        }
+      ],
+      "independentReason": "Correct transfer, parties, amount, quantity and date. Reply retains Traditional Chinese payment terms and English deadline explanation.",
+      "draftQuality": {
+        "produced": true,
+        "issue": "language",
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": false
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E04",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.incorporation",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.66,
+            "probabilities": {
+              "supported": 0.77,
+              "uncertain": 0.02,
+              "unsupported": 0.21
+            }
+          },
+          "flagged": true
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.82,
+            "probabilities": {
+              "supported": 0.88,
+              "uncertain": 0.02,
+              "unsupported": 0.1
+            }
+          },
+          "flagged": true
+        }
+      ],
+      "independentReason": "Correct incorporation prospect; missing ID, address and capital not invented. Reply retains Traditional Chinese payment terms; composite founder/share-count and proposed/alternative-name items are marked received with partial values.",
+      "draftQuality": {
+        "produced": true,
+        "issue": "language",
+        "upstreamCompositeRequirementConcern": true,
+        "flagged": false
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E05",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.transferIn",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.7,
+            "probabilities": {
+              "uncertain": 0.12,
+              "unsupported": 0.08,
+              "supported": 0.8
+            }
+          },
+          "flagged": true
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.61,
+            "probabilities": {
+              "uncertain": 0.16,
+              "unsupported": 0.1,
+              "supported": 0.74
+            }
+          },
+          "flagged": true
+        },
+        {
+          "index": 2,
+          "type": "ask_question",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.84,
+            "probabilities": {
+              "uncertain": 0.02,
+              "unsupported": 0.08,
+              "supported": 0.9
+            }
+          },
+          "flagged": false
+        }
+      ],
+      "independentReason": "Correct genuine prospect, takeover and director appointment, quoted fees and upfront terms.",
+      "draftQuality": {
+        "produced": true,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": false
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E06",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "general_correspondence",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.99,
+            "probabilities": {
+              "supported": 1,
+              "uncertain": 0,
+              "unsupported": 0
+            }
+          },
+          "flagged": false
+        }
+      ],
+      "independentReason": "Correct staff triage of junk; no prospect, task, invoice or draft.",
+      "draftQuality": {
+        "produced": false,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": null
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E07",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [],
+      "independentReason": "Correct known-third-party logging with no model call, prospect, task or draft.",
+      "draftQuality": {
+        "produced": false,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": null
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E08",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "general_correspondence",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.88,
+            "probabilities": {
+              "supported": 0.92,
+              "uncertain": 0.02,
+              "unsupported": 0.06
+            }
+          },
+          "flagged": false
+        }
+      ],
+      "independentReason": "Correct staff triage of unauthorised unknown legal correspondent; no prospect, task or draft.",
+      "draftQuality": {
+        "produced": false,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": null
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E09",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.62,
+            "probabilities": {
+              "uncertain": 0.05,
+              "unsupported": 0.21,
+              "supported": 0.74
+            }
+          },
+          "flagged": true
+        }
+      ],
+      "independentReason": "Correct client abstention and safe triage; unsupported_request describes suspicious demands without executing them. Overrides the provisional exact-intent scorer.",
+      "draftQuality": {
+        "produced": false,
+        "issue": null,
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": null
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    },
+    {
+      "id": "E10",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "cancel_request",
+          "playbookId": null,
+          "taskId": "tsk_000194",
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.94,
+            "probabilities": {
+              "unsupported": 0.03,
+              "supported": 0.96,
+              "uncertain": 0.01
+            }
+          },
+          "flagged": false
+        },
+        {
+          "index": 1,
+          "type": "provide_information",
+          "playbookId": null,
+          "taskId": "tsk_000198",
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.68,
+            "probabilities": {
+              "unsupported": 0.16,
+              "uncertain": 0.05,
+              "supported": 0.79
+            }
+          },
+          "flagged": true
+        },
+        {
+          "index": 2,
+          "type": "ask_question",
+          "playbookId": null,
+          "taskId": null,
+          "routingCorrect": true,
+          "jev": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.92,
+            "probabilities": {
+              "unsupported": 0.04,
+              "supported": 0.95,
+              "uncertain": 0.01
+            }
+          },
+          "flagged": false
+        }
+      ],
+      "independentReason": "Correct intake target routing, but downstream contactInfo combines email/mobile receipt, semantically identical email strings generate a false conflict, and the draft claims a pending cancellation is completed.",
+      "draftQuality": {
+        "produced": true,
+        "issue": "substantive",
+        "upstreamCompositeRequirementConcern": false,
+        "flagged": true
+      },
+      "invariants": {
+        "noMailSent": true,
+        "statutoryRecordsUnchanged": true
+      }
+    }
+  ],
+  "sourceSha256": {
+    "results.json": "427cb37afa5af6eea6df496ab661c91399d2f78bc279ffcaa35853cd6267938c",
+    "controls.json": "304671c795fa338f7bb2bb02afa65a9e0ff4ae0c1e87f7afadf50393c99da099"
+  }
+}
