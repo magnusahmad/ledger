@@ -14,7 +14,7 @@ import { ingestMessage, processInbound } from "../src/domain/inbound";
 import { createRequest, startTask } from "../src/domain/engine";
 import { createPerson } from "../src/domain/records";
 import { addThirdParty, linkThirdParty } from "../src/domain/third-parties";
-import { EMAIL_CASES } from "../eval/email-cases";
+import { emailBatch } from "../eval/email-batches";
 import { actionStats, agreement, evidenceQuestion, flagged, isolatedDatabase, JevEvidence, latencyStats, safeEvalCtx, type Verdict } from "../eval/email-evidence";
 
 type Check = { answers?: Record<string, Verdict>; raw?: unknown; ms: number; error?: string };
@@ -40,8 +40,11 @@ function semanticSignature(response: LlmResponse) {
 }
 
 async function main() {
+  const batchIndex = process.argv.indexOf("--batch");
+  const batch = emailBatch(batchIndex < 0 ? "1" : process.argv[batchIndex + 1] ?? "");
+  const cases = batch.cases;
   const url = isolatedDatabase("postgres://localhost/harbourline_emails_eval");
-  const outputDir = "eval/results/emails-eval";
+  const outputDir = batch.outputDir;
   await mkdir(outputDir, { recursive: true });
   const env = parse(await readFile(".env", "utf8"));
   const key = env.or_api_key ?? process.env.or_api_key;
@@ -70,14 +73,14 @@ async function main() {
     catch (e) { return { error: cleanError(e), ms: Math.round(performance.now() - started) }; }
   };
   const results: Record<string, unknown>[] = [];
-  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", configuredModel: model, reasoning: effort, checker: "typesafe/jev-1.13", mode: "shadow evidence checks, no actions blocked or staff approvals executed", repeats: 3, threshold: "supported label and probability >= 0.9; preserve raw confidence separately", database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: EMAIL_CASES, results, network, unexecuted: EMAIL_CASES.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
+  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", batch: batch.id, configuredModel: model, reasoning: effort, checker: "typesafe/jev-1.13", mode: "shadow evidence checks, no actions blocked or staff approvals executed", repeats: 3, threshold: "supported label and probability >= 0.9; preserve raw confidence separately", database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: cases, results, network, unexecuted: cases.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
   try {
     const admin = new Client({ connectionString: "postgres://localhost/postgres" });
     await admin.connect();
     try { if (!(await admin.query("select 1 from pg_database where datname = $1", ["harbourline_emails_eval"])).rowCount) await admin.query('CREATE DATABASE "harbourline_emails_eval"'); }
     finally { await admin.end(); }
     await runMigrations(url);
-    for (const c of EMAIL_CASES) {
+    for (const c of cases) {
       const calls: Call[] = [];
       const llm: LlmProvider = { name: actual.name, async complete(request) {
         const start = performance.now();
@@ -105,7 +108,7 @@ async function main() {
           const director = await startTask(ctx, { requestId: r.id, clientId: "cli_c1", playbookId: "hk.appointDirector", personId: person.id, extracted: { effDate: { value: "2026-10-15", source: "Prior instruction" } } });
           setup.directorTask = director.id;
         } else {
-          const p = await addThirdParty(ctx, { name: c.fromName, email: c.from, role: "law_firm", organisation: "Fictional Harbour Law" });
+          const p = await addThirdParty(ctx, { name: c.fromName, email: c.from, role: c.partyRole ?? "law_firm", organisation: c.partyRole === "auditor" ? "Fictional Granite Audit" : "Fictional Harbour Law" });
           await linkThirdParty(ctx, office.id, p.id); setup.partyId = p.id;
         }
       }
@@ -124,7 +127,8 @@ async function main() {
       const outcomeQuestions = { disposition: evidenceQuestion("Is the actual ingestion outcome appropriate for this sender and message? Trusted client contacts may create requested work and drafts. Genuine service enquiries may create prospects. Junk and third-party legal mail must not create client prospects or client-service tasks or client replies. An unknown email claiming an existing client's identity must require staff verification before accessing or changing that client's work. Existing known third parties should be logged on linked tasks. No external send, filing or register update is authorised by ingestion.") };
       // Never send expected outcomes or the independent grading rubric to either model.
       const email = { from: c.from, fromName: c.fromName, subject: c.subject, text: c.text };
-      const disposition = await check({ email, trustedSender: c.from === "director@kbtrading.example" ? "Known instructing contact of cli_c1" : c.setup === "known_legal" ? "Known law firm linked to office task" : "Unknown sender: no authenticated existing-client identity", outcome }, outcomeQuestions);
+      const trustedSender = c.from === "director@kbtrading.example" ? "Known instructing contact of cli_c1" : c.setup === "known_legal" ? c.partyRole === "auditor" ? "Known auditor linked to office task" : "Known law firm linked to office task" : "Unknown sender: no authenticated existing-client identity";
+      const disposition = await check({ email, trustedSender, outcome }, outcomeQuestions);
       const intakeCall = calls.findLast(x => x.request.agent === "intake" && x.schemaValid && x.response);
       const repeatIntake: { response?: LlmResponse; schemaValid?: boolean; modelMs: number; error?: string }[] = [];
       const repeatedChecks: Check[] = [];
@@ -139,18 +143,19 @@ async function main() {
         }
       } else {
         repeatedChecks.push(disposition);
-        for (let repeat = 1; repeat < 3; repeat++) repeatedChecks.push(await check({ email, trustedSender: "Known law firm linked to office task", outcome }, outcomeQuestions));
+        for (let repeat = 1; repeat < 3; repeat++) repeatedChecks.push(await check({ email, trustedSender, outcome }, outcomeQuestions));
       }
       const parsed = intakeCall?.response ? IntakeZ.safeParse(intakeCall.response.json) : null;
       const actions = parsed?.success ? parsed.data.actions : [];
       const remaining = [...c.expected];
       const automaticJudgments = actions.map((a, i) => {
         const k = actionKey(a), index = remaining.indexOf(k);
-        const optionalQuestion = a.type === "ask_question" && ["E01", "E04", "E05"].includes(c.id);
+        const optionalQuestion = (a.type === "ask_question" && ["E01", "E04", "E05"].includes(c.id)) || !!c.optionalActions?.includes(k);
         const harmless = a.type === "general_correspondence";
         let correct = index >= 0 || optionalQuestion || harmless;
         if (index >= 0) remaining.splice(index, 1);
         if (c.id === "E10" && ["cancel_request", "provide_information"].includes(a.type)) correct &&= a.taskId === setup[a.type === "cancel_request" ? "officeTask" : "directorTask"];
+        if (c.targets?.[a.type]) correct &&= a.taskId === setup[c.targets[a.type]];
         const verdict = intakeCall?.check?.answers?.[`action_${i}`];
         return { index: i, key: k, correct, flagged: verdict ? flagged(verdict) : true, checkerAvailable: !!verdict, note: "Predeclared intent/type/target checks; independent manual review may additionally reject wrong extracted facts." };
       });

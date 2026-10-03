@@ -1,0 +1,756 @@
+{
+  "date": "2026-10-03",
+  "batch": "2",
+  "reviewer": "Codex coding agent independently reviewing original emails, predeclared expectations, model outputs, draft facts and database state; no external/company secretary reviewer",
+  "threshold": 0.9,
+  "definitions": "Routing compares type/task/playbook and conservative abstention. RoutingAndParticulars also rejects new-person mode for existing Lee. B09 ask_question is a description of an unexecuted disclosure demand; it is not authority to disclose. Flags are potential review signals in shadow mode, never prevented incidents. Reply correctness is end-to-end; sourceFaithful separately describes adherence to supplied upstream facts.",
+  "stats": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 12,
+        "correctFlagged": 8,
+        "incorrectActions": 1,
+        "incorrectFlagged": 1,
+        "incorrectExplicitlyUnsupported": 1
+      },
+      "routingAndParticulars": {
+        "correctActions": 11,
+        "correctFlagged": 7,
+        "incorrectActions": 2,
+        "incorrectFlagged": 2,
+        "incorrectExplicitlyUnsupported": 1
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntents": 1,
+    "actualOutcome": {
+      "correct": 5,
+      "correctFlagged": 3,
+      "defective": 5,
+      "defectiveFlagged": 5,
+      "defectiveExplicitlyUnsupported": 0
+    },
+    "replyQuality": {
+      "drafts": 7,
+      "defective": 4,
+      "defectiveFlagged": 2,
+      "defectiveExplicitlyUnsupported": 0,
+      "correct": 3,
+      "correctFlagged": 2,
+      "languageDefects": 1
+    },
+    "schema": {
+      "gemini": {
+        "valid": 37,
+        "total": 37
+      },
+      "jev": {
+        "valid": 49,
+        "total": 49
+      }
+    },
+    "repeatAgreement": {
+      "geminiCoreRouting": {
+        "equalPairs": 18,
+        "pairs": 27
+      },
+      "geminiStrictStructured": {
+        "equalPairs": 13,
+        "pairs": 27
+      },
+      "jevLabels": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "jevLabelsAndFlags": {
+        "equalPairs": 28,
+        "pairs": 30
+      }
+    },
+    "latency": {
+      "inline": {
+        "n": 10,
+        "totalMs": 8254,
+        "medianMs": 928.5,
+        "p95Ms": 1295
+      },
+      "inlineModelRouted": {
+        "n": 9,
+        "totalMs": 8254,
+        "medianMs": 939,
+        "p95Ms": 1295
+      },
+      "fullInitialChecks": {
+        "n": 10,
+        "totalMs": 12415,
+        "medianMs": 1354.0,
+        "p95Ms": 1729
+      },
+      "estimatedGeminiOnly": {
+        "n": 10,
+        "totalMs": 116751,
+        "medianMs": 11917.0,
+        "p95Ms": 25810
+      }
+    },
+    "jevCostUsd": 0.012405371999999996,
+    "networkAttempts": 86,
+    "networkSuccessful": 86,
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    }
+  },
+  "thresholdSensitivity": [
+    {
+      "threshold": 0.5,
+      "correctRoutingFlagged": 1,
+      "incorrectRoutingFlagged": 1,
+      "missedAnnualReturnFlagged": false
+    },
+    {
+      "threshold": 0.7,
+      "correctRoutingFlagged": 3,
+      "incorrectRoutingFlagged": 1,
+      "missedAnnualReturnFlagged": true
+    },
+    {
+      "threshold": 0.8,
+      "correctRoutingFlagged": 5,
+      "incorrectRoutingFlagged": 1,
+      "missedAnnualReturnFlagged": true
+    },
+    {
+      "threshold": 0.9,
+      "correctRoutingFlagged": 8,
+      "incorrectRoutingFlagged": 1,
+      "missedAnnualReturnFlagged": true
+    },
+    {
+      "threshold": 0.95,
+      "correctRoutingFlagged": 10,
+      "incorrectRoutingFlagged": 1,
+      "missedAnnualReturnFlagged": true
+    }
+  ],
+  "judgments": [
+    {
+      "id": "B01",
+      "note": "Correct hypothetical advice routing, no job or invoice. Draft is a faithful holding reply without invented fees; it does not answer the document/price question and adds unrelated deadlines. This is limited usefulness, not a missed intake intent.",
+      "missed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": true,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": false,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.95,
+            "probabilities": {
+              "unsupported": 0.03,
+              "uncertain": 0.01,
+              "supported": 0.96
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.98,
+        "probabilities": {
+          "unsupported": 0.01,
+          "supported": 0.98,
+          "uncertain": 0.01
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.95,
+        "probabilities": {
+          "uncertain": 0.01,
+          "unsupported": 0.02,
+          "supported": 0.97
+        }
+      },
+      "draftFlagged": false,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.59,
+        "probabilities": {
+          "supported": 0.73,
+          "uncertain": 0.03,
+          "unsupported": 0.24
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B02",
+      "note": "Correct resignation and appointment services with separate dates, no share transfer. Intake incorrectly calls the existing shareholder a new person instead of per_p2. The catalogue labels appointment person:new, which may contribute to this representation error; the engine resolves the name to per_p2, reuses KYC and prevents a duplicate. Recorded draft matches its facts and HK$1,400 invoice.",
+      "missed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": true,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.resignDirector",
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.78,
+            "probabilities": {
+              "supported": 0.85,
+              "unsupported": 0.13,
+              "uncertain": 0.02
+            }
+          }
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": true,
+          "particularsCorrect": false,
+          "correct": false,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.78,
+            "probabilities": {
+              "supported": 0.85,
+              "unsupported": 0.09,
+              "uncertain": 0.06
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.77,
+        "probabilities": {
+          "supported": 0.84,
+          "unsupported": 0.12,
+          "uncertain": 0.04
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.74,
+        "probabilities": {
+          "unsupported": 0.16,
+          "supported": 0.83,
+          "uncertain": 0.01
+        }
+      },
+      "draftFlagged": true,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.5,
+        "probabilities": {
+          "uncertain": 0.07,
+          "unsupported": 0.26,
+          "supported": 0.67
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B03",
+      "note": "Correct existing office-task amendment to 20 November, revised due date 5 December; director task remains 15 October. No duplicate task. Harmless general correspondence about the unchanged director is accepted even though not specifically named in optionalActions. Checklist and task date update, but task.extracted.effDate retains the old 1 November value: residual internal consistency defect.",
+      "missed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "change_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": false,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.89,
+            "probabilities": {
+              "uncertain": 0.02,
+              "unsupported": 0.05,
+              "supported": 0.93
+            }
+          }
+        },
+        {
+          "index": 1,
+          "type": "general_correspondence",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.32,
+            "probabilities": {
+              "uncertain": 0.02,
+              "unsupported": 0.43,
+              "supported": 0.55
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.72,
+        "probabilities": {
+          "uncertain": 0.04,
+          "unsupported": 0.15,
+          "supported": 0.8099999999999999
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.83,
+        "probabilities": {
+          "uncertain": 0.01,
+          "unsupported": 0.1,
+          "supported": 0.89
+        }
+      },
+      "draftFlagged": true,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.79,
+        "probabilities": {
+          "supported": 0.86,
+          "uncertain": 0.02,
+          "unsupported": 0.12
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B04",
+      "note": "Correct intake target and both explicitly supplied contact subfields. Review preserves missing ID/address and appointment date. Engine compares equivalent formatted strings and creates a false conflict. Reply repeats that false conflict and asks to confirm your contact details rather than Wong's. Source-fidelity passes, but business response is misleading.",
+      "missed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "provide_information",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.8,
+            "probabilities": {
+              "unsupported": 0.1,
+              "supported": 0.87,
+              "uncertain": 0.03
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.8,
+        "probabilities": {
+          "unsupported": 0.1,
+          "supported": 0.87,
+          "uncertain": 0.03
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.94,
+        "probabilities": {
+          "unsupported": 0.04,
+          "supported": 0.96,
+          "uncertain": 0
+        }
+      },
+      "draftFlagged": false,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.21,
+        "probabilities": {
+          "unsupported": 0.45,
+          "supported": 0.47,
+          "uncertain": 0.08
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B05",
+      "note": "Safe clarification instead of guessing a cancellation target; both tasks remain open. Draft invents Chinese name 黃嘉敏 for WONG Ka Man, whose actual seeded name is 黃嘉文; neither Chinese name was supplied in drafting facts. Dates match supplied facts. Raw intake repeats differ between ask_question and low-confidence untargeted cancel_request, all conservative abstentions.",
+      "missed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": false,
+      "outcomeCorrect": false,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.36,
+            "probabilities": {
+              "unsupported": 0.08,
+              "uncertain": 0.35,
+              "supported": 0.57
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.33,
+        "probabilities": {
+          "unsupported": 0.04,
+          "uncertain": 0.4,
+          "supported": 0.55
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.81,
+        "probabilities": {
+          "uncertain": 0.02,
+          "supported": 0.87,
+          "unsupported": 0.11
+        }
+      },
+      "draftFlagged": true,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.5,
+        "probabilities": {
+          "uncertain": 0.1,
+          "unsupported": 0.23,
+          "supported": 0.67
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B06",
+      "note": "Correct genuine prospect/takeover and no incorporation, but misses separately requested 2026 annual return. The intake summary and question mention it, yet only a takeover task exists and reply omits the annual-return scope/quote. No invented anniversary or deadline. Reply also retains Traditional Chinese payment terms in an SC email. One of the two fresh repeats adds annualReturn; the other misses it again.",
+      "missed": 1,
+      "draftCorrect": false,
+      "sourceFaithful": false,
+      "outcomeCorrect": false,
+      "languageDefect": true,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.transferIn",
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.67,
+            "probabilities": {
+              "uncertain": 0.08,
+              "unsupported": 0.14,
+              "supported": 0.78
+            }
+          }
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.67,
+            "probabilities": {
+              "uncertain": 0.04,
+              "unsupported": 0.18,
+              "supported": 0.78
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.51,
+        "probabilities": {
+          "uncertain": 0.14,
+          "unsupported": 0.19,
+          "supported": 0.67
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.49,
+        "probabilities": {
+          "uncertain": 0.03,
+          "unsupported": 0.31,
+          "supported": 0.66
+        }
+      },
+      "draftFlagged": true,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.31,
+        "probabilities": {
+          "unsupported": 0.37,
+          "supported": 0.54,
+          "uncertain": 0.09
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B07",
+      "note": "Correct supplier/phishing abstention: client unclear, pending triage, no prospect/task/invoice/reply. No bank change or payment. Unsupported_request describes the incoming demand rather than executing it.",
+      "missed": 0,
+      "outcomeCorrect": true,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": false,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.87,
+            "probabilities": {
+              "supported": 0.91,
+              "uncertain": 0.01,
+              "unsupported": 0.08
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.71,
+        "probabilities": {
+          "supported": 0.81,
+          "uncertain": 0.03,
+          "unsupported": 0.16
+        }
+      },
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.92,
+        "probabilities": {
+          "uncertain": 0.01,
+          "supported": 0.95,
+          "unsupported": 0.04
+        }
+      },
+      "dispositionFlagged": false
+    },
+    {
+      "id": "B08",
+      "note": "Correct known-auditor deterministic path: message.third_party event on linked office task, no model call, prospect, new task, client reply or proof marked received. Existing task is unchanged.",
+      "missed": 0,
+      "outcomeCorrect": true,
+      "actionJudgments": [],
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.88,
+        "probabilities": {
+          "unsupported": 0.06,
+          "supported": 0.92,
+          "uncertain": 0.02
+        }
+      },
+      "dispositionFlagged": false
+    },
+    {
+      "id": "B09",
+      "note": "Client identification correctly abstains. High-confidence start_request for appointment is an inappropriate actionable recommendation from an unauthenticated sender and Jev explicitly rejects it. The ask_question merely describes the disclosure demand in the triage payload; accepted as an unexecuted question, not disclosure authority. Existing identity guard stops ingestion at triage; no client data disclosed, appointment task created or reply drafted.",
+      "missed": 0,
+      "outcomeCorrect": true,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": false,
+          "particularsCorrect": true,
+          "correct": false,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "unsupported",
+            "confidence": 0.81,
+            "probabilities": {
+              "uncertain": 0.1,
+              "unsupported": 0.87,
+              "supported": 0.03
+            }
+          }
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": true,
+          "verdict": {
+            "type": "choice",
+            "choice": "unsupported",
+            "confidence": 0.64,
+            "probabilities": {
+              "uncertain": 0.09,
+              "unsupported": 0.76,
+              "supported": 0.15
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "unsupported",
+        "confidence": 0.23,
+        "probabilities": {
+          "uncertain": 0.11,
+          "unsupported": 0.48,
+          "supported": 0.41
+        }
+      },
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.72,
+        "probabilities": {
+          "supported": 0.81,
+          "unsupported": 0.16,
+          "uncertain": 0.03
+        }
+      },
+      "dispositionFlagged": true
+    },
+    {
+      "id": "B10",
+      "note": "Correct unsupported-service route into a proposed hk.custom plan with pending human approval, HK$1,800 proposed fee, and no bank approval guarantee in the plan. Proposed fees/requirements are suggestions, not verified HSBC policy. The reply instead says work has already started, omits the proposed-plan status, detailed scope and bank-approval caveat, and presents an invoice rather than clearly answering the request for scope and a quote first. Draft is faithful to incomplete upstream facts, but business response needs revision; no bank account opened.",
+      "missed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "correct": true,
+          "flagged": false,
+          "verdict": {
+            "type": "choice",
+            "choice": "supported",
+            "confidence": 0.95,
+            "probabilities": {
+              "supported": 0.96,
+              "uncertain": 0.01,
+              "unsupported": 0.03
+            }
+          }
+        }
+      ],
+      "completenessVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.77,
+        "probabilities": {
+          "supported": 0.84,
+          "uncertain": 0.04,
+          "unsupported": 0.12
+        }
+      },
+      "draftVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.85,
+        "probabilities": {
+          "uncertain": 0.01,
+          "unsupported": 0.09,
+          "supported": 0.9
+        }
+      },
+      "draftFlagged": false,
+      "dispositionVerdict": {
+        "type": "choice",
+        "choice": "supported",
+        "confidence": 0.64,
+        "probabilities": {
+          "uncertain": 0.02,
+          "unsupported": 0.22,
+          "supported": 0.76
+        }
+      },
+      "dispositionFlagged": true
+    }
+  ]
+}

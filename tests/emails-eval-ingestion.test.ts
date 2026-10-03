@@ -7,6 +7,7 @@ import { createRequest, startTask } from "@/domain/engine";
 import { addThirdParty, linkThirdParty } from "@/domain/third-parties";
 import { appointment, filing, message, proposal, task, client, taskEvent } from "@/db/schema";
 import { EMAIL_CASES } from "../eval/email-cases";
+import { EMAIL_CASES_2 } from "../eval/email-cases-2";
 let ctx: TestCtx;
 beforeEach(async () => { await resetDb(); ctx = makeCtx({ now: "2026-10-03T02:00:00Z" }); await seedDemo(ctx, { demoEmail: "director@kbtrading.example" }); });
 describe("The email evaluation exercises real ingestion while retaining staff approval", () => {
@@ -24,11 +25,11 @@ describe("The email evaluation exercises real ingestion while retaining staff ap
     expect(JSON.stringify([await ctx.db.select().from(appointment), await ctx.db.select().from(filing)])).toBe(baseline);
     expect(ctx.mail.sent()).toHaveLength(0);
   });
-  it("a known legal correspondent is logged on its linked task without invoking a model, creating a prospect or drafting a client reply", async () => {
-    const c = EMAIL_CASES[6];
+  it.each(["law_firm", "auditor"] as const)("a known %s is logged on its linked task without invoking a model, creating a prospect or drafting a client reply", async (role) => {
+    const c = role === "auditor" ? EMAIL_CASES_2[7] : EMAIL_CASES[6];
     const r = await createRequest(ctx, { clientId: "cli_c1", summary: "Prior instruction" });
     const t = await startTask(ctx, { requestId: r.id, clientId: "cli_c1", playbookId: "hk.changeOffice" });
-    const party = await addThirdParty(ctx, { name: c.fromName, email: c.from, role: "law_firm" }); await linkThirdParty(ctx, t.id, party.id);
+    const party = await addThirdParty(ctx, { name: c.fromName, email: c.from, role }); await linkThirdParty(ctx, t.id, party.id);
     const clients = await ctx.db.select().from(client);
     const tasks = await ctx.db.select().from(task);
     const m = await ingestMessage(ctx, { channel: "email", provider: "emails-eval-test", providerMessageId: c.id, from: { email: c.from, name: c.fromName }, to: ["desk@caineroad.example"], cc: [], subject: c.subject, text: c.text, receivedAt: ctx.clock.now(), attachments: [] });

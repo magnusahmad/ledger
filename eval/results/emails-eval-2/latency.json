@@ -1,0 +1,14 @@
+{
+  "initialChecksPerEmail": {
+    "n": 10,
+    "totalMs": 12415,
+    "medianMs": 1354,
+    "p95Ms": 1729
+  },
+  "estimatedGeminiOnlyIngestion": {
+    "n": 10,
+    "totalMs": 116751,
+    "medianMs": 11917,
+    "p95Ms": 25810
+  }
+}
