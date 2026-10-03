@@ -1,4 +1,4 @@
-// Fictional, isolated end-to-end ingestion. Real services: Gemini and Jev only.
+// Fictional, isolated end-to-end ingestion. Live LLM, optional shadow evidence checker.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { parse } from "dotenv";
 import { Client } from "pg";
@@ -14,7 +14,7 @@ import { ingestMessage, processInbound } from "../src/domain/inbound";
 import { createRequest, startTask } from "../src/domain/engine";
 import { createPerson } from "../src/domain/records";
 import { addThirdParty, linkThirdParty } from "../src/domain/third-parties";
-import { emailBatch } from "../eval/email-batches";
+import { emailRun, optionalEvidenceCheck, permitsEvalEndpoint } from "../eval/email-run";
 import { actionStats, agreement, evidenceQuestion, flagged, isolatedDatabase, JevEvidence, latencyStats, safeEvalCtx, type Verdict } from "../eval/email-evidence";
 
 type Check = { answers?: Record<string, Verdict>; raw?: unknown; ms: number; error?: string };
@@ -40,40 +40,45 @@ function semanticSignature(response: LlmResponse) {
 }
 
 async function main() {
-  const batchIndex = process.argv.indexOf("--batch");
-  const batch = emailBatch(batchIndex < 0 ? "1" : process.argv[batchIndex + 1] ?? "");
-  const cases = batch.cases;
-  const url = isolatedDatabase("postgres://localhost/harbourline_emails_eval");
-  const outputDir = batch.outputDir;
-  await mkdir(outputDir, { recursive: true });
   const env = parse(await readFile(".env", "utf8"));
-  const key = env.or_api_key ?? process.env.or_api_key;
-  if (!key) throw new Error("OpenRouter credential is not configured");
-  const model = env.LLM_MODEL ?? process.env.LLM_MODEL ?? "google/gemini-3.8-flash";
   const effort = env.LLM_REASONING ?? "low";
   if (!["none", "low", "medium", "high"].includes(effort)) throw new Error("Invalid reasoning setting");
+  const run = emailRun(process.argv.slice(2), { model: env.LLM_MODEL ?? process.env.LLM_MODEL ?? "google/gemini-3.8-flash", reasoning: effort as "none" | "low" | "medium" | "high" });
+  const { batch, model, outputDir, checkerEnabled } = run;
+  const cases = batch.cases;
+  const url = isolatedDatabase("postgres://localhost/harbourline_emails_eval");
+  await mkdir(outputDir, { recursive: true });
+  const key = env.or_api_key ?? process.env.or_api_key;
+  if (!key) throw new Error("OpenRouter credential is not configured");
   const cleanError = (e: unknown) => String(e instanceof Error ? e.message : e).replaceAll(key, "[redacted]").slice(0, 1000);
   const originalFetch = globalThis.fetch;
-  const network: { path: string; status?: number; ms: number; error?: string }[] = [];
+  const network: { path: string; status?: number; ms: number; error?: string; model?: string; usage?: unknown }[] = [];
   globalThis.fetch = async (input, init) => {
     const u = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-    if (u.origin !== "https://openrouter.ai" || !["/api/v1/chat/completions", "/api/alpha/decisions"].includes(u.pathname) || init?.method !== "POST") throw Object.assign(new Error("Non-model network access denied by evaluation"), { fatal: true });
+    if (!permitsEvalEndpoint(u, checkerEnabled) || init?.method !== "POST") throw Object.assign(new Error("Non-model network access denied by evaluation"), { fatal: true });
     if (network.length >= 180) throw Object.assign(new Error("Evaluation HTTP budget exhausted"), { fatal: true });
     const row: typeof network[number] = { path: u.pathname, ms: 0 }; network.push(row);
     const t = performance.now();
-    try { const res = await originalFetch(input, { ...init, redirect: "error" }); row.status = res.status; return res; }
+    try {
+      const res = await originalFetch(input, { ...init, redirect: "error" }); row.status = res.status;
+      if (res.ok && !checkerEnabled) {
+        const meta = await res.clone().json() as { model?: string; usage?: unknown };
+        row.model = meta.model; row.usage = meta.usage;
+      }
+      return res;
+    }
     catch (e) { row.error = cleanError(e); throw e; }
     finally { row.ms = Math.round(performance.now() - t); }
   };
   const actual = new OpenRouterLlm(key, model, "http://localhost:3000", effort as "low");
-  const jev = new JevEvidence(key);
-  const check = async (state: unknown, questions: Record<string, unknown>): Promise<Check> => {
+  const jev = checkerEnabled ? new JevEvidence(key) : undefined;
+  const check = async (state: unknown, questions: Record<string, unknown>): Promise<Check | undefined> => optionalEvidenceCheck(checkerEnabled, async () => {
     const started = performance.now();
-    try { return await jev.check(state, questions); }
+    try { return await jev!.check(state, questions); }
     catch (e) { return { error: cleanError(e), ms: Math.round(performance.now() - started) }; }
-  };
+  });
   const results: Record<string, unknown>[] = [];
-  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", batch: batch.id, configuredModel: model, reasoning: effort, checker: "typesafe/jev-1.13", mode: "shadow evidence checks, no actions blocked or staff approvals executed", repeats: 3, threshold: "supported label and probability >= 0.9; preserve raw confidence separately", database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: cases, results, network, unexecuted: cases.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
+  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", batch: batch.id, configuredModel: model, reasoning: effort, checker: checkerEnabled ? "typesafe/jev-1.13" : null, mode: checkerEnabled ? "shadow evidence checks, no actions blocked or staff approvals executed" : "model only, no evidence checker or staff approvals executed", repeats: 3, threshold: checkerEnabled ? "supported label and probability >= 0.9; preserve raw confidence separately" : null, database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: cases, results, network, unexecuted: cases.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
   try {
     const admin = new Client({ connectionString: "postgres://localhost/postgres" });
     await admin.connect();
@@ -139,11 +144,15 @@ async function main() {
           const t = performance.now();
           try { const response = await actual.complete(intakeCall.request); repeatIntake.push({ response, schemaValid: IntakeZ.safeParse(response.json).success, modelMs: Math.round(performance.now() - t) }); }
           catch (e) { repeatIntake.push({ error: cleanError(e), modelMs: Math.round(performance.now() - t) }); }
-          repeatedChecks.push(await check({ sourceMessages: intakeCall.request.messages, proposal: intakeCall.response.json }, checkerQuestions(intakeCall.request, intakeCall.response)));
+          const repeatedCheck = await check({ sourceMessages: intakeCall.request.messages, proposal: intakeCall.response.json }, checkerQuestions(intakeCall.request, intakeCall.response));
+          if (repeatedCheck) repeatedChecks.push(repeatedCheck);
         }
-      } else {
+      } else if (disposition) {
         repeatedChecks.push(disposition);
-        for (let repeat = 1; repeat < 3; repeat++) repeatedChecks.push(await check({ email, trustedSender, outcome }, outcomeQuestions));
+        for (let repeat = 1; repeat < 3; repeat++) {
+          const repeatedCheck = await check({ email, trustedSender, outcome }, outcomeQuestions);
+          if (repeatedCheck) repeatedChecks.push(repeatedCheck);
+        }
       }
       const parsed = intakeCall?.response ? IntakeZ.safeParse(intakeCall.response.json) : null;
       const actions = parsed?.success ? parsed.data.actions : [];
@@ -157,17 +166,17 @@ async function main() {
         if (c.id === "E10" && ["cancel_request", "provide_information"].includes(a.type)) correct &&= a.taskId === setup[a.type === "cancel_request" ? "officeTask" : "directorTask"];
         if (c.targets?.[a.type]) correct &&= a.taskId === setup[c.targets[a.type]];
         const verdict = intakeCall?.check?.answers?.[`action_${i}`];
-        return { index: i, key: k, correct, flagged: verdict ? flagged(verdict) : true, checkerAvailable: !!verdict, note: "Predeclared intent/type/target checks; independent manual review may additionally reject wrong extracted facts." };
+        return { index: i, key: k, correct, flagged: verdict ? flagged(verdict) : checkerEnabled ? true : null, checkerAvailable: !!verdict, note: "Predeclared intent/type/target checks; independent manual review may additionally reject wrong extracted facts." };
       });
       const signatureRuns = repeatIntake.filter(x => x.response).map(x => semanticSignature(x.response!));
       const decisionRuns = repeatedChecks.filter(x => x.answers).map(x => Object.entries(x.answers!).map(([k, v]) => `${k}:${v.choice}:${flagged(v)}`));
-      const initialCheckMs = calls.reduce((s, c) => s + (c.check?.ms ?? 0), 0) + disposition.ms;
+      const initialCheckMs = calls.reduce((s, c) => s + (c.check?.ms ?? 0), 0) + (disposition?.ms ?? 0);
       const invariants = { noMailSent: ctx.mail.sent().length === 0, statutoryRecordsUnchanged: statutoryBefore === JSON.stringify(await Promise.all([dbSchema.appointment, dbSchema.significantController, dbSchema.shareMovement, dbSchema.filing].map(t => ctx.db.select().from(t)))) };
-      const result = { id: c.id, name: c.name, setup, messageId: m.id, elapsedMs, initialCheckMs, estimatedBaselineMs: elapsedMs - calls.reduce((s, c) => s + (c.check?.ms ?? 0), 0), calls, outcome, disposition, repeatIntake, repeatedChecks, automaticJudgments, provisionalActionStats: actionStats(automaticJudgments, c.expected, actions.map(actionKey)), geminiPairwiseAgreement: agreement(signatureRuns), jevPairwiseAgreement: agreement(decisionRuns), geminiRepeatSuccesses: signatureRuns.length, jevRepeatSuccesses: decisionRuns.length, invariants };
+      const result = { id: c.id, name: c.name, setup, messageId: m.id, elapsedMs, initialCheckMs, estimatedBaselineMs: elapsedMs - calls.reduce((s, c) => s + (c.check?.ms ?? 0), 0), calls, outcome, disposition: disposition ?? null, repeatIntake, repeatedChecks, automaticJudgments, provisionalActionStats: checkerEnabled ? actionStats(automaticJudgments.map(j => ({ ...j, flagged: j.flagged ?? true })), c.expected, actions.map(actionKey)) : null, modelPairwiseAgreement: agreement(signatureRuns), ...(checkerEnabled ? { geminiPairwiseAgreement: agreement(signatureRuns) } : {}), jevPairwiseAgreement: agreement(decisionRuns), modelRepeatSuccesses: signatureRuns.length, ...(checkerEnabled ? { geminiRepeatSuccesses: signatureRuns.length } : {}), jevRepeatSuccesses: decisionRuns.length, invariants };
       results.push(result); await persist();
-      console.log(JSON.stringify({ id: c.id, modelCalls: calls.length, actions: actions.map(actionKey), newClients: outcome.newClients.length, newTasks: outcome.newTasks.map(t => t.playbookId), checkerMs: initialCheckMs, geminiAgreement: result.geminiPairwiseAgreement, jevAgreement: result.jevPairwiseAgreement, error }));
+      console.log(JSON.stringify({ id: c.id, modelCalls: calls.length, actions: actions.map(actionKey), newClients: outcome.newClients.length, newTasks: outcome.newTasks.map(t => t.playbookId), checkerMs: initialCheckMs, modelAgreement: result.modelPairwiseAgreement, jevAgreement: result.jevPairwiseAgreement, error }));
     }
-    await writeFile(`${outputDir}/latency.json`, JSON.stringify({ initialChecksPerEmail: latencyStats(results.map(r => r.initialCheckMs as number)), estimatedGeminiOnlyIngestion: latencyStats(results.map(r => r.estimatedBaselineMs as number)) }, null, 2));
+    await writeFile(`${outputDir}/latency.json`, JSON.stringify(checkerEnabled ? { initialChecksPerEmail: latencyStats(results.map(r => r.initialCheckMs as number)), estimatedGeminiOnlyIngestion: latencyStats(results.map(r => r.estimatedBaselineMs as number)) } : { ingestion: latencyStats(results.map(r => r.elapsedMs as number)), checkerOverhead: latencyStats(results.map(r => r.initialCheckMs as number)) }, null, 2));
   } finally { await persist(); globalThis.fetch = originalFetch; await closePools(); }
 }
 main().catch(e => { console.error(e instanceof Error ? `${e.name}: ${e.message}` : "Evaluation failed"); process.exitCode = 1; });

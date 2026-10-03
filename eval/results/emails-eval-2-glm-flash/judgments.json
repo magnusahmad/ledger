@@ -1,0 +1,470 @@
+{
+  "date": "2026-10-03",
+  "batch": "2",
+  "configuredModel": "~z-ai/glm-flash-latest",
+  "checker": null,
+  "reviewer": "Codex coding agent independently inspecting original emails, frozen B01-B10 expectations, raw outputs, draft facts and database effects; no external/company secretary reviewer",
+  "grading": "Same conservative abstention, field fidelity and pending-versus-started reply conventions as second Gemini batch. Schema compliance is distinct from business correctness. Original ingestions alone contribute correctness; repeats only contribute consistency and schema stats. No Jev catches/false flags exist in this run.",
+  "stats": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 10,
+        "incorrectActions": 2
+      },
+      "routingAndParticulars": {
+        "correctActions": 8,
+        "incorrectActions": 4
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntentTypeChecks": 1,
+    "distinctServiceIntentsOmitted": 0,
+    "clientIdentification": {
+      "correct": 9,
+      "incorrect": 1
+    },
+    "intakeLanguage": {
+      "correct": 8,
+      "total": 9
+    },
+    "actualOutcome": {
+      "correct": 4,
+      "defective": 6
+    },
+    "replyQuality": {
+      "drafts": 7,
+      "correct": 1,
+      "defective": 6,
+      "contentDefects": 5,
+      "additionalLanguageOnlyDefects": 1,
+      "sourceFaithful": 6,
+      "languageDefects": 1
+    },
+    "schema": {
+      "all": {
+        "valid": 37,
+        "responses": 37,
+        "attempts": 37,
+        "providerOrParseErrors": 0
+      },
+      "original": {
+        "valid": 19,
+        "responses": 19,
+        "attempts": 19
+      },
+      "freshRepeats": {
+        "valid": 18,
+        "responses": 18,
+        "attempts": 18
+      },
+      "schemaRepairCalls": 0
+    },
+    "repeatAgreement": {
+      "coreRouting": {
+        "equalPairs": 19,
+        "pairs": 27
+      },
+      "strictStructured": {
+        "equalPairs": 11,
+        "pairs": 27
+      }
+    },
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 168105,
+        "medianMs": 15355.5,
+        "p95Ms": 41355
+      },
+      "modelRoutedIngestion": {
+        "n": 9,
+        "totalMs": 168102,
+        "medianMs": 15665,
+        "p95Ms": 41355
+      },
+      "individualModelCalls": {
+        "n": 37,
+        "totalMs": 374728,
+        "medianMs": 9058,
+        "p95Ms": 17832
+      },
+      "checkerOverhead": {
+        "n": 10,
+        "totalMs": 0,
+        "medianMs": 0.0,
+        "p95Ms": 0
+      }
+    },
+    "returnedModels": [
+      "z-ai/glm-5.3-flash"
+    ],
+    "network": {
+      "attempts": 37,
+      "successful": 37,
+      "jevAttempts": 0,
+      "returnedUsageCostUsd": 0.027077558745999996,
+      "usageCostReports": 37
+    },
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    },
+    "identicalOriginalIntakePrompts": [
+      {
+        "id": "B01",
+        "identical": true
+      },
+      {
+        "id": "B02",
+        "identical": true
+      },
+      {
+        "id": "B03",
+        "identical": true
+      },
+      {
+        "id": "B04",
+        "identical": true
+      },
+      {
+        "id": "B05",
+        "identical": true
+      },
+      {
+        "id": "B06",
+        "identical": true
+      },
+      {
+        "id": "B07",
+        "identical": true
+      },
+      {
+        "id": "B09",
+        "identical": true
+      },
+      {
+        "id": "B10",
+        "identical": true
+      }
+    ]
+  },
+  "comparisonGeminiBatch2": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 12,
+        "correctFlagged": 8,
+        "incorrectActions": 1,
+        "incorrectFlagged": 1,
+        "incorrectExplicitlyUnsupported": 1
+      },
+      "routingAndParticulars": {
+        "correctActions": 11,
+        "correctFlagged": 7,
+        "incorrectActions": 2,
+        "incorrectFlagged": 2,
+        "incorrectExplicitlyUnsupported": 1
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntents": 1,
+    "actualOutcome": {
+      "correct": 5,
+      "correctFlagged": 3,
+      "defective": 5,
+      "defectiveFlagged": 5,
+      "defectiveExplicitlyUnsupported": 0
+    },
+    "replyQuality": {
+      "drafts": 7,
+      "defective": 4,
+      "defectiveFlagged": 2,
+      "defectiveExplicitlyUnsupported": 0,
+      "correct": 3,
+      "correctFlagged": 2,
+      "languageDefects": 1
+    },
+    "schema": {
+      "gemini": {
+        "valid": 37,
+        "total": 37
+      },
+      "jev": {
+        "valid": 49,
+        "total": 49
+      }
+    },
+    "repeatAgreement": {
+      "geminiCoreRouting": {
+        "equalPairs": 18,
+        "pairs": 27
+      },
+      "geminiStrictStructured": {
+        "equalPairs": 13,
+        "pairs": 27
+      },
+      "jevLabels": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "jevLabelsAndFlags": {
+        "equalPairs": 28,
+        "pairs": 30
+      }
+    },
+    "latency": {
+      "inline": {
+        "n": 10,
+        "totalMs": 8254,
+        "medianMs": 928.5,
+        "p95Ms": 1295
+      },
+      "inlineModelRouted": {
+        "n": 9,
+        "totalMs": 8254,
+        "medianMs": 939,
+        "p95Ms": 1295
+      },
+      "fullInitialChecks": {
+        "n": 10,
+        "totalMs": 12415,
+        "medianMs": 1354.0,
+        "p95Ms": 1729
+      },
+      "estimatedGeminiOnly": {
+        "n": 10,
+        "totalMs": 116751,
+        "medianMs": 11917.0,
+        "p95Ms": 25810
+      }
+    },
+    "jevCostUsd": 0.012405371999999996,
+    "networkAttempts": 86,
+    "networkSuccessful": 86,
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    }
+  },
+  "judgments": [
+    {
+      "id": "B01",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": true,
+      "notes": "Correct hypothetical question, no job/invoice. Faithful holding response with no invented fee, but no actual documents/price answer and irrelevant deadline reminders; same limited usefulness as Gemini.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B02",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "incorrectActionIndices": [
+        0,
+        1
+      ],
+      "notes": "Correct resignation/appointment routing and existing Chan/Lee person IDs, but initial intake drops both explicit effective dates, lastDay and named replacement. Both created tasks have null effective/due dates and draft unnecessarily asks for dates/replacement already supplied. Fresh repeats extract the dates; existing-person mode stays correct. Chinese intake summary wrongly suggests missing new-director KYC despite current existing-person KYC; actual engine reuses it.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.resignDirector",
+          "routingCorrect": true,
+          "correct": false,
+          "modelConfidence": 0.95
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": true,
+          "correct": false,
+          "modelConfidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B03",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": false,
+      "outcomeCorrect": false,
+      "reviewCorrect": false,
+      "notes": "Correct office task/date amendment and director preservation; stale task.extracted.effDate remains 1 November as in Gemini. Review incorrectly proposes swap to the same playbook, creating an unnecessary change_request proposal. Draft says it will not process the director appointment, rather than that this message leaves it unchanged. Client asked the director appointment to continue. Bank/form/tenancy statements require staff verification; no new task or register effects.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "change_request",
+          "playbookId": "hk.changeOffice",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B04",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "reviewCorrect": false,
+      "notes": "Correct information target and both supplied contact subfields, with date and missing ID/address preserved. Review returns only contactInfo instead of the required full checklist, but engine preserves existing items. As in Gemini, equivalent contact formatting creates a false conflict, and reply asks to confirm the recipient's own details instead of Wong's. All three intake repeats agree on structure.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "provide_information",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B05",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "notes": "Safe original low-confidence (0.50) untargeted cancellation goes to pending triage; both tasks remain open and no reply is drafted. A fresh repeat nevertheless assigns the director task despite its own description saying the target is unknown; confidence remains 0.50, so the human triage guard would still apply. This is repeat target instability, not an executed cancellation.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "cancel_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.5
+        }
+      ]
+    },
+    {
+      "id": "B06",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "languageDefect": true,
+      "languageOnlyDraftDefect": true,
+      "notes": "Correct genuine prospect, takeover and annual-return tasks; all three samples include both services. No incorporation, invented anniversary or deadline. Initial intake wrongly labels SC email tc; draft consequently entirely TC, unlike requested SC. Correct service coverage and HK$1,927 invoice from supplied facts, but language needs correction. Transfer company number appears only in first extraction; repeat client identification still carries it. All three intakes consistently choose the wrong tc language; person representation varies. Fresh repeat LIN XIAO transliteration was not supplied as an English legal name.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.transferIn",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.95
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.annualReturn",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        }
+      ]
+    },
+    {
+      "id": "B07",
+      "routingCorrect": false,
+      "clientIdentificationCorrect": false,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "notes": "Major sender-classification failure: correctly describes phishing and recommends no payment, but client.kind=new_prospect despite no client/service enquiry. Engine creates a bogus Accounts Receivable prospect, implicit takeover task plus a custom fraud-verification task, proposed HK$800 custom fee, HK$2,022 invoice and pending reply to the suspicious sender. No payment, bank change or external send occurred. Unsupported_request description is accepted as describing an unexecuted incoming demand; wrong client classification and ensuing engine effects are scored separately. Both fresh repeats use unclear and would have stopped at triage.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        }
+      ]
+    },
+    {
+      "id": "B08",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "notes": "Same correct deterministic known-auditor path as Gemini: linked office-task third-party event, no LLM, prospect, new task, draft or proof marked received. Existing task unchanged."
+    },
+    {
+      "id": "B09",
+      "routingCorrect": false,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "incorrectRoutingIndices": [
+        0
+      ],
+      "incorrectActionIndices": [
+        0
+      ],
+      "correctRoutingIndices": [
+        1
+      ],
+      "notes": "As in Gemini, client identification abstains and original ingestion stops at triage; no disclosure, prospect, appointment or reply. Still emits start_request for appointment from an unauthenticated sender (confidence .75), rejected under the same grading convention even though description calls for staff verification. Also assigns the sender's email to Lee Siu Ling, unsupported by source. Descriptive question about disclosure is accepted as an unexecuted demand, not permission. Fresh repeats vary question vs unsupported classification; all retain unclear client identity.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": false,
+          "correct": false,
+          "modelConfidence": 0.75
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "routingCorrect": false,
+      "requiredIntentsMissed": 1,
+      "distinctServiceIntentsOmitted": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "incorrectRoutingIndices": [
+        0
+      ],
+      "notes": "Selects start_request:hk.custom directly rather than the predeclared unsupported_request/planner route. This recognizes bank-assistance intent but bypasses custom planning and its dedicated approval proposal: task params are empty, no plan call/custom_plan approval, generic fixed HK$800 invoice. Draft acknowledges bank discretion and promises scope/quote later, while simultaneously presenting an invoice and saying work has begun. Pending send approval remains; no bank or external action. The preregistered intent/type scorer counts one missing unsupported_request, which is a route mismatch, not omission of a distinct bank-assistance service. All three samples take this direct custom path.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.custom",
+          "routingCorrect": false,
+          "correct": false,
+          "modelConfidence": 0.85
+        }
+      ]
+    }
+  ]
+}
