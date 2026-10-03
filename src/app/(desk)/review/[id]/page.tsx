@@ -8,7 +8,7 @@ import { deliveryPayload } from "@/domain/mail-delivery";
 import { getProposal } from "@/domain/proposals";
 import { getTask, tasksForRequest } from "@/domain/engine";
 import { itemLabel, money } from "@/domain/labels";
-import { attachment, client, document, invoice, invoiceLine, mailDelivery, message, request as requestT } from "@/db/schema";
+import { attachment, client, document, invoice, invoiceLine, mailDelivery, message, proposal, request as requestT } from "@/db/schema";
 import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
 import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction, resumeApprovalAction, closeInterruptedAction, reviewInvoiceDatesAction } from "@/server/actions";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
@@ -130,6 +130,8 @@ export default async function Review({ params }: { params: Promise<{ id: string 
     const tasks = [] as Awaited<ReturnType<typeof getTask>>[];
     for (const tid of (p.payload.taskIds as string[]) ?? []) tasks.push(await getTask(ctx, tid));
     if (!tasks.length && reqId && !isCosts) for (const t of await tasksForRequest(ctx, reqId)) tasks.push(await getTask(ctx, t.id));
+    const awaitingPlan = tasks.some(t => t.params.planStatus === "proposed");
+    const planCards = awaitingPlan ? await ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.kind, "custom_plan"), eq(proposal.status, "pending"), inArray(proposal.taskId, tasks.map(t => t.id)))) : [];
     const pbNames = new Map((await listPlaybooks(ctx)).map((x) => [x.id, x.name.en]));
     const extraDocIds = (p.payload.attachDocumentIds as string[] | undefined) ?? [];
     const extraDocs = extraDocIds.length ? await ctx.db.select().from(document).where(inArray(document.id, extraDocIds)) : [];
@@ -150,20 +152,21 @@ export default async function Review({ params }: { params: Promise<{ id: string 
               {evidence && showSentEmailCheck(p.payload, evidence) && <p className="small muted">Sent email check: {evidence.invoiceFound ? "current invoice attachment found" : "current invoice attachment not found"}; {evidence.uploadLinkFound ? "upload link found" : "upload link not found"}. Staff confirmation is still required.</p>}
               {evidenceMessages.map(m => <p className="small" key={m.id}><Link className="lnk" href={`/inbox/${m.conversationId}`}>View sent email: {m.subject ?? "Reply"}</Link></p>)}
               {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the standard template. Check the wording before sending.</div>}
-              <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">
+              {awaitingPlan && <div className="banner amber">Review and approve the proposed scope and fee before sending. {planCards.map(card => <span key={card.id}><Link href={`/review/${card.id}`}>Review the plan</Link> </span>)}</div>}
+              <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/" disabled={awaitingPlan}>
                 <div className="fld"><label className="f" htmlFor="to">To</label><input id="to" type="email" name="to" defaultValue={draft.toAddrs.join(", ")} /></div>
                 <div className="fld"><label className="f" htmlFor="subject">Subject</label><input id="subject" type="text" name="subject" defaultValue={draft.subject ?? ""} /></div>
                 <div className="fld"><label className="f" htmlFor="text">Message</label><textarea id="text" name="text" defaultValue={draft.text ?? ""} style={{ minHeight: 360 }} lang={draft.language === "en" ? "en" : draft.language === "sc" ? "zh-Hans" : "zh-Hant"} /></div>
                 {(attachInvoice || extraDocs.length > 0) && <p className="small muted" style={{ marginTop: 10 }}>Attached: {[attachInvoice && <a key="inv" className="lnk" href={`/api/invoices/${inv!.id}/pdf`} target="_blank">{inv!.number}.pdf</a>, ...extraDocs.map((d) => <a key={d.id} className="lnk" href={`/api/docs/${d.id}`} target="_blank">{d.title}</a>)].filter(Boolean).map((x, i) => <span key={i}>{i > 0 && ", "}{x}</span>)}</p>}
               </ReviewForm>
-              <div style={{ marginTop: 24 }}>
+              {!awaitingPlan && <div style={{ marginTop: 24 }}>
                 <h3>Handled elsewhere?</h3>
                 <p className="small muted">Mark done after delivering this message{attachInvoice ? ", the invoice and upload details" : ""} by any medium. This records completion{attachInvoice ? " and marks the invoice sent" : ""}.</p>
                 <ActionForm action={approve} submit="Mark done" tone="secondary">
                   <input type="hidden" name="completedOutside" value="on" />
                   <div className="fld"><label className="f" htmlFor="outside-note">Note (optional)</label><input id="outside-note" name="note" placeholder="e.g. sent by WeChat" /></div>
                 </ActionForm>
-              </div>
+              </div>}
             </div>
           </div>
           <div className="stack">
@@ -219,7 +222,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
                   ))}
                   <tr><td><b>Total</b></td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}><b>{money(inv.totalCents)}</b></td></tr>
                 </tbody></table>
-                <p className="small muted" style={{ marginBottom: 0 }}>{isCosts ? (inv.termsDays ? `Payable within ${inv.termsDays} days.` : "Payable on receipt.") : inv.termsDays ? `${inv.termsDays} days credit. Work starts now.` : "Payable upfront. Work starts once paid."}</p>
+                <p className="small muted" style={{ marginBottom: 0 }}>{inv.termsDays ? `Payable within ${inv.termsDays} days.` : "Payable on receipt."}</p>
               </div>
             )}
           </div>
@@ -348,10 +351,13 @@ export default async function Review({ params }: { params: Promise<{ id: string 
       </ReviewForm></div></>);
   }
   const verb: Record<string, string> = { match_payment: "Record payment", cancel_task: "Cancel task", change_request: "Apply change", revise_invoice: "Issue revised invoice", triage: "Mark handled" };
+  const confirmCustomer = p.kind === "triage" && p.payload.reason === "confirm_prospect";
+  const enquiry = confirmCustomer ? p.payload.intake as Intake : null;
   const srcMsg = p.payload.messageId ? await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }) : null;
   return (<>{header}<div className="card" style={{ maxWidth: 760 }}>{taskLink}{summary}
     {srcMsg && srcMsg.direction === "in" && <><h3>Message</h3><p className="small muted">{srcMsg.fromName} &lt;{srcMsg.fromAddr}&gt;</p><div className="draft">{srcMsg.text}</div></>}
-    {p.kind === "triage" && <p className="small muted">Start the work by hand from <Link href="/new">New request</Link> if needed.</p>}
-    <div style={{ marginTop: 16 }}><ReviewForm action={approve} submit={verb[p.kind] ?? "Approve"} redirectTo="/" /></div>
+    {enquiry && <><h3>Proposed customer and work</h3><p>{enquiry.client.companyName ?? enquiry.client.senderName}{enquiry.client.companyNumber ? ` · ${enquiry.client.companyNumber}` : ""}</p><ul>{enquiry.actions.map((a, i) => <li key={i}>{a.description ?? "Review the requested service against the message above."}</li>)}</ul><p className="small muted">Confirm only if this is a genuine enquiry about our services. This creates the customer, proposed work and a draft reply for a separate review. Nothing is sent.</p></>}
+    {p.kind === "triage" && !confirmCustomer && <p className="small muted">Start the work by hand from <Link href="/new">New request</Link> if needed.</p>}
+    <div style={{ marginTop: 16 }}><ReviewForm action={approve} submit={confirmCustomer ? "Confirm customer and prepare work" : verb[p.kind] ?? "Approve"} redirectTo="/" /></div>
   </div></>);
 }

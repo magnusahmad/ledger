@@ -1,0 +1,286 @@
+{
+  "date": "2026-10-03",
+  "configuredModel": "google/gemini-3.8-flash",
+  "checker": null,
+  "reviewer": "Codex coding agent independently inspecting every original email, frozen expectation, raw output, source facts, rendered reply and database effects; no separate external/human/company secretary reviewer.",
+  "grading": "Initial disposition under revised confirmation/quote-first policy is distinct from full customer workflow completion. Frozen original required intent/type checks preserved. Repeats only measure consistency/schema; confidence is uncalibrated model self-report.",
+  "stats": {
+    "naturalIntake": {
+      "correctRoutingAndParticulars": 10,
+      "incorrectRoutingAndParticulars": 0,
+      "incorrectActionsCaught": 0,
+      "catchRecall": null,
+      "unnecessaryEvidenceFlags": 0,
+      "checker": null
+    },
+    "requiredIntents": 8,
+    "missedFrozenRequiredIntentTypeChecks": 2,
+    "distinctServiceIntentsOmitted": 0,
+    "separateServicesNotPreparedBeforeStaffConfirmation": 2,
+    "intakeLanguage": {
+      "correct": 9,
+      "total": 9
+    },
+    "initialDisposition": {
+      "correct": 10,
+      "total": 10
+    },
+    "fullApprovalWorkflowMeasured": false,
+    "replies": {
+      "generated": 5,
+      "acceptable": 5,
+      "needingRevision": 0
+    },
+    "schema": {
+      "valid": 35,
+      "attempts": 35,
+      "originalOutputs": 17,
+      "freshRepeatOutputs": 18,
+      "repairCalls": 0,
+      "providerParseErrors": 0
+    },
+    "draftRegenerations": 0,
+    "repeatAgreement": {
+      "coreRouting": {
+        "equalPairs": 25,
+        "pairs": 27
+      },
+      "strictStructured": {
+        "equalPairs": 23,
+        "pairs": 27
+      }
+    },
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 78854,
+        "medianMs": 6218.0,
+        "p95Ms": 17533
+      },
+      "modelRoutedIngestion": {
+        "n": 9,
+        "totalMs": 78840,
+        "medianMs": 8002,
+        "p95Ms": 17533
+      },
+      "individualModelCalls": {
+        "n": 35,
+        "totalMs": 166004,
+        "medianMs": 4590,
+        "p95Ms": 7666
+      },
+      "checkerOverheadMs": 0
+    },
+    "usage": {
+      "networkAttempts": 35,
+      "successful": 35,
+      "jevAttempts": 0,
+      "costUsd": 0.19668075000000002,
+      "returnedModels": [
+        "google/gemini-3.8-flash"
+      ]
+    },
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    }
+  },
+  "judgments": [
+    {
+      "id": "B01",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Hypothetical enquiry stays question-only, no work/invoice; holding reply makes no unsupported fee/deadline claim.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.95
+        }
+      ],
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "languageCorrect": true
+    },
+    {
+      "id": "B02",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Both tasks and distinct dates correct; Lee reuses per_p2. No share-transfer work or duplicate identity.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.resignDirector",
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.98
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.98
+        }
+      ],
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "languageCorrect": true
+    },
+    {
+      "id": "B03",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Office extracted/checklist/effective date agree at 2026-11-20 and due date is 2026-12-05; director remains 2026-10-15.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "change_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.98
+        }
+      ],
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "languageCorrect": true
+    },
+    {
+      "id": "B04",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Wong contact details received without conflict, missing identity/address evidence retained; reply faithful.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "provide_information",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.98
+        }
+      ],
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "languageCorrect": true
+    },
+    {
+      "id": "B05",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Uncertain cancellation remains untargeted at confidence 0.5; staff triage, no cancellation executed.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "cancel_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.5
+        }
+      ]
+    },
+    {
+      "id": "B06",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 2,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Both services named in summary/combined quotation question; confirmation card only. Two frozen start keys absent. Subsequent confirmation/quote not assessed live.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.95
+        }
+      ],
+      "staffConfirmationRequired": true,
+      "separateRequestedServicesPrepared": false
+    },
+    {
+      "id": "B07",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Supplier classified unclear and triaged; no client/work/reply/bank changes.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "general_correspondence",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B08",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Known auditor logged deterministically on linked task, no LLM or proof receipt.",
+      "actionJudgments": []
+    },
+    {
+      "id": "B09",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Unverified identity and verification question; no appointment proposal, disclosure, prospect or work.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.95
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "initialDispositionCorrect": true,
+      "fullWorkflowAssessed": false,
+      "requiredIntentsMissed": 0,
+      "distinctServiceIntentsOmitted": 0,
+      "notes": "Custom request planned with proposed HK$1800 and plan approval card. Reply describes proposed scope and commencement only after confirmation; no bank-acceptance guarantee.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "particularsCorrect": true,
+          "confidence": 0.95
+        }
+      ],
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "languageCorrect": true
+    }
+  ]
+}

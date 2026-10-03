@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Ctx } from "@/lib/ctx";
 import { llmCall } from "@/db/schema";
 import type { LlmMessage } from "@/integrations/types";
+import { PersonRefZ } from "./schemas";
 
 export class AgentError extends Error {
   constructor(message: string, readonly agent: string, readonly raw?: unknown) { super(message); }
@@ -29,6 +30,12 @@ export async function callAgent<T extends z.ZodType>(ctx: Ctx, opts: {
     { role: "user", content: opts.user } as LlmMessage,
   ];
   const jsonSchema = jsonSchemaOf(opts.schema);
+  // An explicit mode:none object represents no person. Avoid the extra object-or-null
+  // union on the wire without restricting any real person or attachment attribution.
+  if (opts.agent === "intake") {
+    const schema = jsonSchema as { properties: { actions: { items: { properties: { person: unknown } } } } };
+    schema.properties.actions.items.properties.person = jsonSchemaOf(PersonRefZ);
+  }
   let lastError = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const started = Date.now();

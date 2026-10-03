@@ -6,7 +6,7 @@ import { redraftAction } from "@/server/actions";
 
 type Action = (prev: ActionResult | null, form: FormData) => Promise<ActionResult>;
 
-export function ReviewForm({ action, submit, children, redirectTo, tone }: { action: Action; submit: string; children?: ReactNode; redirectTo?: string; tone?: "danger" | "secondary" }) {
+export function ReviewForm({ action, submit, children, redirectTo, tone, disabled = false }: { action: Action; submit: string; children?: ReactNode; redirectTo?: string; tone?: "danger" | "secondary"; disabled?: boolean }) {
   const [state, run, pending] = useActionState(action, null);
   const [shownAt] = useState(() => new Date().toISOString());
   const router = useRouter();
@@ -16,7 +16,7 @@ export function ReviewForm({ action, submit, children, redirectTo, tone }: { act
       <input type="hidden" name="shownAt" value={shownAt} />
       {children}
       <div className="row" style={{ marginTop: 14 }}>
-        <button className={`btn${tone === "danger" ? " danger" : tone === "secondary" ? " sec2" : ""}`} disabled={pending}>{pending ? "Working…" : submit}</button>
+        <button className={`btn${tone === "danger" ? " danger" : tone === "secondary" ? " sec2" : ""}`} disabled={pending || disabled}>{pending ? "Working…" : submit}</button>
         {state?.error && <span className="small" role="alert" style={{ color: "var(--red)" }}>{state.error}</span>}
         {state?.ok && <span className="small" style={{ color: "var(--ok)" }}>{state.message ?? "Done"}</span>}
       </div>

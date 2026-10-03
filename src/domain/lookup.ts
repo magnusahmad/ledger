@@ -6,14 +6,16 @@ import { appointment, client, contact, person } from "@/db/schema";
 
 export async function findClientsBySenderEmail(ctx: Ctx, email: string) {
   const e = email.trim().toLowerCase();
-  const out = new Map<string, { client: typeof client.$inferSelect; personId: string | null; contactId: string | null; via: string }>();
+  const out = new Map<string, { client: typeof client.$inferSelect; personId: string | null; contactId: string | null; via: string; instructing: boolean }>();
   const contacts = await ctx.db.select({ c: contact, cl: client }).from(contact).innerJoin(client, eq(client.id, contact.clientId))
     .where(and(eq(contact.firmId, ctx.firmId), sql`lower(${contact.email}) = ${e}`));
-  for (const { c, cl } of contacts) out.set(cl.id, { client: cl, personId: c.personId, contactId: c.id, via: `contact (${c.role ?? "contact"})` });
+  for (const { c, cl } of contacts) out.set(cl.id, { client: cl, personId: c.personId, contactId: c.id, via: `contact (${c.role ?? "contact"})`, instructing: !!c.isInstructing });
   const officers = await ctx.db.select({ p: person, cl: client }).from(person)
     .innerJoin(appointment, eq(appointment.personId, person.id)).innerJoin(client, eq(client.id, appointment.clientId))
     .where(and(eq(person.firmId, ctx.firmId), sql`lower(${person.email}) = ${e}`, or(isNull(appointment.toDate), sql`${appointment.toDate} > ${ctx.clock.today()}`)));
-  for (const { p, cl } of officers) if (!out.has(cl.id)) out.set(cl.id, { client: cl, personId: p.id, contactId: null, via: "officer" });
-    else if (!out.get(cl.id)!.personId) out.get(cl.id)!.personId = p.id;
+  for (const { p, cl } of officers) {
+    if (!out.has(cl.id)) out.set(cl.id, { client: cl, personId: p.id, contactId: null, via: "officer", instructing: true });
+    else { const found = out.get(cl.id)!; found.instructing = true; found.personId ??= p.id; }
+  }
   return [...out.values()];
 }

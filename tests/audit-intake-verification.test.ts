@@ -20,9 +20,9 @@ beforeEach(async () => {
   ctx.llm.on("draft", goodDraft);
 });
 
-async function incoming() {
+async function incoming(text = "Please change our office.") {
   return ingestMessage(ctx, { channel: "email", provider: "fake", providerMessageId: `audit-verify-${delivery++}`, from: { email: "director@kbtrading.example", name: "CHAN Tai Man" },
-    to: ["desk@caineroad.example"], cc: [], subject: "Office move", text: "Please change our office.", receivedAt: ctx.clock.now(), attachments: [] });
+    to: ["desk@caineroad.example"], cc: [], subject: "Office move", text, receivedAt: ctx.clock.now(), attachments: [] });
 }
 const PATHS = ["review", "portal", "information", "change"] as const;
 type Path = typeof PATHS[number];
@@ -31,7 +31,7 @@ async function setDate(path: Path, taskId: string, token: string, value: string)
   if (path === "portal") return portalSubmitField(ctx, token, { taskId, key: "effDate", value });
   ctx.llm.set("intake", intake({ actions: [action({ type: path === "information" ? "provide_information" : "change_request", taskId, fields: [{ key: "effDate", value, quote: value }] })] }));
   ctx.llm.set("review", review({ items: [] }));
-  return processInbound(ctx, (await incoming()).id);
+  return processInbound(ctx, (await incoming(`Please set the effective date to ${value}.`)).id);
 }
 
 describe("Final intake reporter verification", () => {

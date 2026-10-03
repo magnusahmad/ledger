@@ -6,7 +6,7 @@ import { makeCtx, resetDb, type TestCtx } from "./helpers";
 import { action, intake, goodDraft } from "./agent-fixtures";
 import { seedDemo } from "@/db/seed-demo";
 import { pollMail } from "@/channels/mail-poller";
-import { pendingProposals } from "@/domain/proposals";
+import { approveProposal, pendingProposals } from "@/domain/proposals";
 import { createRequest, startTask, taskEvents, getTask, tasksForRequest } from "@/domain/engine";
 import { addThirdParty, linkThirdParty, markSenderNotClient, partiesForTask } from "@/domain/third-parties";
 import { addOffPlatformStep, putOnHold } from "@/domain/off-platform";
@@ -53,6 +53,8 @@ describe("Third parties", () => {
     ctx.llm.on("intake", intake({ client: { kind: "new_prospect", clientId: null, companyName: null, companyNumber: null, senderName: "Peter Ho", reason: "Unknown sender" }, actions: [action({ type: "start_request", playbookId: "hk.changeOffice" })] }));
     ctx.mail.deliver({ from: { email: "peter.ho@lawfirm.example", name: "Peter Ho" }, subject: "Re: share charge", text: "We act for the lender. Please confirm the registered office address." });
     await pollMail(ctx);
+    const [confirmation] = await pendingProposals(ctx, { kind: "triage" });
+    await approveProposal(ctx, confirmation.id); // Staff mistakenly confirmed this legacy prospect.
     const [p] = await pendingProposals(ctx, { kind: "send_message" });
     const prospectId = p.clientId!;
     await markSenderNotClient(ctx, p.payload.messageId ? (await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) }))!.conversationId : "", { as: "third_party", name: "Peter Ho", organisation: "Ho & Partners (lender's solicitors)", role: "law_firm" });

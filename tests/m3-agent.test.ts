@@ -29,7 +29,7 @@ function startAppointment(name = "WONG Ka Man", conf = 0.95) {
 
 describe("Intake: new requests", () => {
   it("an email asking to appoint a director opens one appointment task and drafts a reply in the sender's language, sending nothing yet", async () => {
-    ctx.llm.on("intake", intake({ language: "tc", actions: [startAppointment()] }));
+    ctx.llm.on("intake", intake({ language: "tc", actions: [action({ ...startAppointment(), fields: [{ key: "effDate", value: "2026-10-15", quote: "10月15號" }] })] }));
     ctx.llm.on("draft", goodDraft);
     const r = await inbound("陳生：想加黃嘉敏做董事，10月15號生效。");
 
@@ -176,7 +176,7 @@ describe("Agent reliability", () => {
   it("a draft missing the invoice number is regenerated once, then falls back to the template", async () => {
     ctx.llm.on("intake", intake({ actions: [startAppointment()] }));
     ctx.llm.on("draft", { subject: "Hi", body: "Dear Mr Chan, we'll handle it. Karen" });
-    await inbound("Please appoint WONG Ka Man.");
+    await inbound("Please appoint WONG Ka Man from 15 October.");
     expect(ctx.llm.callsFor("draft")).toHaveLength(2);
     const [p] = await pendingProposals(ctx);
     const draft = await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) });
@@ -196,7 +196,7 @@ describe("Agent reliability", () => {
   it("every agent call is logged against the message it processed", async () => {
     ctx.llm.on("intake", intake({ actions: [startAppointment()] }));
     ctx.llm.on("draft", goodDraft);
-    const r = await inbound("Please appoint WONG Ka Man.");
+    const r = await inbound("Please appoint WONG Ka Man from 15 October.");
     const calls = await ctx.db.select().from(llmCall);
     expect(calls.map((c) => c.agent).sort()).toEqual(["draft", "intake"]);
     expect(calls.every((c) => c.messageId === r.messageId)).toBe(true);
@@ -205,7 +205,7 @@ describe("Agent reliability", () => {
   it("the intake prompt gives the agent today's date, the client's open tasks and the playbook catalogue, and never protected information", async () => {
     ctx.llm.on("intake", intake({ actions: [startAppointment()] }));
     ctx.llm.on("draft", goodDraft);
-    await inbound("Please appoint WONG Ka Man.");
+    await inbound("Please appoint WONG Ka Man from 15 October.");
     const prompt = JSON.stringify(ctx.llm.callsFor("intake")[0].messages);
     expect(prompt).toContain("2026-09-29");
     expect(prompt).toContain("hk.appointDirector");

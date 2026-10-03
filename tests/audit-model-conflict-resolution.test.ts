@@ -10,7 +10,7 @@ import { applyReview } from "@/agent/review";
 
 let ctx: TestCtx;
 beforeEach(async () => {
-  await resetDb(); ctx = makeCtx(); await seedDemo(ctx);
+  await resetDb(); ctx = makeCtx(); await seedDemo(ctx, { demoEmail: "director@kbtrading.example" });
   ctx.llm.on("draft", goodDraft); ctx.llm.on("review", review({ items: [] }));
 });
 it("an information review cannot overwrite an already received address by omitting its conflict assessment", async () => {
@@ -41,9 +41,9 @@ it.each(["change_request", "provide_information"] as const)("a %s model review w
   const outside = await createPerson(ctx, { nameEn: "Unlinked replacement" });
   const r = await startManualRequest(ctx, { clientId: "cli_c1", items: [{ playbookId: "hk.appointDirector", person: { personId: old.id }, fields: { effDate: "2026-11-01" } }], confirm: false });
   const before = await getTask(ctx, r.taskIds[0]);
-  ctx.llm.on("intake", intake({ actions: [action({ type, taskId: before.id, fields: [{ key: "corrAddr", value: "REPLACEMENT ADDRESS", quote: "replacement" }, { key: "effDate", value: "2026-12-01", quote: "replacement" }] })] }));
+  ctx.llm.on("intake", intake({ actions: [action({ type, taskId: before.id, fields: [{ key: "corrAddr", value: "REPLACEMENT ADDRESS", quote: "REPLACEMENT ADDRESS" }, { key: "effDate", value: "2026-12-01", quote: "2026-12-01" }] })] }));
   ctx.llm.set("review", review({ items: [], switchPerson: { personId: outside.id, nameEn: outside.nameEn, nameZh: null } }));
-  const m = await ingestMessage(ctx, { clientId: "cli_c1", channel: "email", provider: "fake", providerMessageId: "blocked-replacement", from: { email: "director@kbtrading.example", name: "CHAN" }, to: [ctx.mail.address], cc: [], subject: "Change director details", text: "Please check the replacement's identity before changing these details.", receivedAt: ctx.clock.now(), attachments: [] });
+  const m = await ingestMessage(ctx, { clientId: "cli_c1", channel: "email", provider: "fake", providerMessageId: "blocked-replacement", from: { email: "director@kbtrading.example", name: "CHAN" }, to: [ctx.mail.address], cc: [], subject: "Change director details", text: "The replacement's address is REPLACEMENT ADDRESS, effective 2026-12-01. Please check the replacement's identity before changing these details.", receivedAt: ctx.clock.now(), attachments: [] });
   await processInbound(ctx, m.id);
   expect(ctx.llm.callsFor("review").at(-1)).toBeDefined();
   const after = await getTask(ctx, before.id);

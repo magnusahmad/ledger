@@ -6,7 +6,7 @@ import { startManualRequest } from "@/domain/manual";
 import { getPlaybook, savePlaybookVersion } from "@/domain/playbooks";
 
 let ctx: TestCtx;
-beforeEach(async () => { await resetDb(); ctx = makeCtx(); await seedDemo(ctx); });
+beforeEach(async () => { await resetDb(); ctx = makeCtx(); await seedDemo(ctx, { demoEmail: "director@kbtrading.example" }); });
 
 it("a manually agreed resignation derives its canonical date and pinned deadline from the last day in office", async () => {
   const r = await startManualRequest(ctx, { clientId: "cli_c1", confirm: false, items: [{ playbookId: "hk.resignDirector", person: { personId: "per_p1" }, fields: { lastDay: "2026-11-30" } }] });

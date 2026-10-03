@@ -1,0 +1,135 @@
+{
+  "baselineCommit": "cb2ad78a518f0dca6efed1d32c76d8a88436f5dd",
+  "priorArtifactChecks": {
+    "eval/results/emails-eval/controls.json": "304671c795fa338f7bb2bb02afa65a9e0ff4ae0c1e87f7afadf50393c99da099",
+    "eval/results/emails-eval/judgments.json": "63575db63610c910704d02f5cf8e159f8be4aad939769d06fe490c230f96c176",
+    "eval/results/emails-eval/report.md": "2e8d1fd2bfad9e0e2bfed113815b6bfc7e8c4686c7ad7e2d9bd30c7fda2de841",
+    "eval/results/emails-eval/results.json": "427cb37afa5af6eea6df496ab661c91399d2f78bc279ffcaa35853cd6267938c",
+    "eval/results/emails-eval/README.md": "baa533cd4e9dbd514ced88cc90fdfdb35c40a46c91720d879cffd29b740339b7",
+    "eval/results/emails-eval/latency.json": "993ed38309e8d6a520a40713a1fa4296e81d359763875fdaa9a167e69935434f",
+    "eval/results/emails-eval-2/judgments.json": "c3f65895425d98568c2f740163609ad7c55745bebd749139081bcc3dedc62b7a",
+    "eval/results/emails-eval-2/report.md": "8246f05d0aa656b91ad25479211e0ea3f350796f4ec70ea357334e103fea8405",
+    "eval/results/emails-eval-2/results.json": "8c6b4301adc1f3378566b1301d4ec46c44acd9897a643f8b770b5718dc48c65b",
+    "eval/results/emails-eval-2/README.md": "623690f60695454d2bdb65333265e3cdfcd9b8035404219ceb32dfc069efbe53",
+    "eval/results/emails-eval-2/latency.json": "0e90dc3d3397f0ebb8655d950e8216e461ca89507d1c71d024f25f0bd5746f11",
+    "eval/results/emails-eval-2-glm-flash/judgments.json": "1ae2b8b19d5e923578d2d8c3360171a049f56fd7d45e0b2f8d593d127933596f",
+    "eval/results/emails-eval-2-glm-flash/report.md": "94c874031272511626bd13449726ed4af493b884665cf659a0ccf4c03c4fa7ff",
+    "eval/results/emails-eval-2-glm-flash/results.json": "16ab3ee46f79ba018b7d9f9031dc35a16210654ae73c5b364a7de443864f717d",
+    "eval/results/emails-eval-2-glm-flash/README.md": "01940a63c03f11e69b7687deea8a98256b1cdeb37460761e4e02798b82f4ca09",
+    "eval/results/emails-eval-2-glm-flash/model-catalogue.json": "b64b43f47da20468044acc5b9a391c66f3764cc35d58ead136dc8986306cebf6",
+    "eval/results/emails-eval-2-glm-flash/latency.json": "6db1d6033e4c8960884b4bffab12badfa378150ece9e66dbcd82fa0b93252764",
+    "eval/results/emails-eval-2-sonnet-55/judgments.json": "884dd617649057d527a352ef6f1773aff22d6077a2bfc6b48c9491dbdb7e47b0",
+    "eval/results/emails-eval-2-sonnet-55/report.md": "21e8e64f8e63eed632792b04e3d7885849b7164f009f823a92939c0a197d281f",
+    "eval/results/emails-eval-2-sonnet-55/results.json": "9a9314aa9c1d7e1ee375a7b1c2ffc6c1deaad1923a6f0f4e5d7d869d2183bcc0",
+    "eval/results/emails-eval-2-sonnet-55/README.md": "d03521df62e106e6af4add50ce51aa6c41b4b32b93bb16993ab579271d0730ea",
+    "eval/results/emails-eval-2-sonnet-55/model-catalogue.json": "ff1c8ae589275da5afe711225ae1a9c2bacda6421df6e955c6bc0141210871c6",
+    "eval/results/emails-eval-2-sonnet-55/latency.json": "6f911627f9d547ba17f6284e468d58926cf71731232130ecac040862b18d76d9",
+    "eval/results/emails-eval-2-sonnet-55-strict/results.json": "2bcfeca94baf461901123f83ad882cfd099b15591660c773dc49b3c3bfd4d445",
+    "eval/results/emails-eval-2-sonnet-55-strict/README.md": "b2556a1426ff57a6e503c9887727c9e13c040476ec87835f1881b248fcc5d6ba",
+    "eval/results/emails-eval-2-sonnet-55-strict/model-catalogue.json": "ff1c8ae589275da5afe711225ae1a9c2bacda6421df6e955c6bc0141210871c6",
+    "eval/results/emails-eval-2-sonnet-55-strict/latency.json": "85e657a280334b4fe1731bac748520b985b5cabef90fdb1a4c1189d15d6b863d"
+  },
+  "source": [
+    {
+      "path": "src/agent/prompts.ts",
+      "sha256": "c7f8a196339fb15346fecb3995c5207888f1ace2b6586ab791f45f74df76eacf"
+    },
+    {
+      "path": "src/agent/call.ts",
+      "sha256": "ff73029c8408ed12d9acf7b126c0b43e1db6a0730c6320007450005f60da5db2"
+    },
+    {
+      "path": "src/agent/context.ts",
+      "sha256": "a2fdfbde136f7f8804afe8df59a7bc5226575f928e4ea32677af0b21d8a79c67"
+    },
+    {
+      "path": "src/agent/draft.ts",
+      "sha256": "b2adb328eba5d6da986347a5fada8b726a1c91793a077975d27e18da21a4a18f"
+    },
+    {
+      "path": "src/agent/review.ts",
+      "sha256": "9106ff71aec15657155165df098ddf7cf00a148d0c0adaa0578d1c4833213b1a"
+    },
+    {
+      "path": "src/agent/schemas.ts",
+      "sha256": "16e25fe788423b462eeae0ac64b0a6efaefc3ada3d30b52a3f7614bdb973d74d"
+    },
+    {
+      "path": "src/domain/engine.ts",
+      "sha256": "348323556ba4bd8d8e28baadc1d179d0a29ec88cd52a40004be293ce52ac080a"
+    },
+    {
+      "path": "src/domain/handlers.ts",
+      "sha256": "44ba849fc73c2b67d2e8bee81c583804a895ad052bb6bce18c3edb4b6fd39010"
+    },
+    {
+      "path": "src/domain/inbound.ts",
+      "sha256": "657aa1a89d5e911bdd151712012279de89ea49dbf55f2ff84996633e8c23e2b4"
+    },
+    {
+      "path": "src/domain/lookup.ts",
+      "sha256": "9011cf3d1b1708aeb40504579b5dd694e12aa7c260f4b5a7f68cdfeb9cec2162"
+    },
+    {
+      "path": "src/domain/sending.ts",
+      "sha256": "197ac6a66dbdef4bf873dad51abd512b3bf635d5b831a14248ab18b76494f827"
+    },
+    {
+      "path": "src/domain/email-evidence.ts",
+      "sha256": "3fc4a2ac8b0631f3e77097df804c63090e4633259f3e65b2e5e83a3dea7cc057"
+    },
+    {
+      "path": "eval/email-cases-2.ts",
+      "sha256": "9c2cd0c82db073e97ec694eecc55e4ca57f5ed441994d9bbe8a007164710b584"
+    },
+    {
+      "path": "scripts/eval-emails.ts",
+      "sha256": "9250ba75d4ea4e048608e705ee767330df803cea5c0fd0e3bdb7195eb3bc1716"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "sha256": "f1f856e150462b68d6db438081a256a1fe9290e9c32a62e83578ffa1c275f0d1"
+    },
+    {
+      "path": "src/app/(desk)/review/[id]/client.tsx",
+      "sha256": "e78e979d4ca31b5cab18b9f0e42bc0064bd1b1023aec1f4c8cb972e9cc988d48"
+    },
+    {
+      "path": "src/app/(desk)/review/[id]/page.tsx",
+      "sha256": "7e0150991d68cf9cba60dfb2d2812e8ad49672155f26252b28077faf1a3171c5"
+    },
+    {
+      "path": "tests/audit-intake-verification.test.ts",
+      "sha256": "26c9e793fd8880a21f5b6b9512cd35d2dfc9907221da00c8a2f628415bb4ae90"
+    },
+    {
+      "path": "tests/audit-model-conflict-resolution.test.ts",
+      "sha256": "66a523c6b694972ec8da55457003708ede561e8362b5ffd76c89dd4909b6ab6e"
+    },
+    {
+      "path": "tests/audit-task-event-dates.test.ts",
+      "sha256": "b096e2533ef95f10337992b5ccf6e32f7f853b46f446ff60fa31a134287b49e9"
+    },
+    {
+      "path": "tests/m3-agent.test.ts",
+      "sha256": "ec8d6c1d879d00aa063b0e07f7ac58b116409cfc4b736adaceb5b39ac010af2f"
+    },
+    {
+      "path": "tests/m4-email.test.ts",
+      "sha256": "9e47e8e58e4411bbfcd67208ec8ea785f3f07da83e8a21129d45f00198652320"
+    },
+    {
+      "path": "tests/third-parties.test.ts",
+      "sha256": "1e08e4d40499827051f182a8c3b10dc562f98cc45af5d0525720b6dcbcfe9459"
+    },
+    {
+      "path": "tests/email-wiring.test.ts",
+      "sha256": "1f88ac7343605213ab7dda3c1388b6435230dd66aa86885c4ef36e5ebb002528"
+    },
+    {
+      "path": "tests/email-wiring-ui.test.ts",
+      "sha256": "4ab8b556d47eb8bf9b3dbd7af3c7867e73511cd1cba5469bce39b68c7bd2541c"
+    }
+  ],
+  "note": "Final source includes an additional forged-thread history guard verified red/green after this live run. All ten matched inputs have no authorized thread history, so the recorded prompts are unaffected by that guard. No changed model prompts after the live run."
+}

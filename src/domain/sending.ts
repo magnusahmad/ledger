@@ -11,6 +11,7 @@ import { enqueue } from "./jobs";
 export async function completeSending(ctx: Ctx, taskIds: string[], requestId: string | null, note?: string, approvingId?: string, invoiceId?: string) {
   const tasks = await Promise.all(taskIds.map(id => getTask(ctx, id)));
   const linked = requestId ? await Promise.all((await tasksForRequest(ctx, requestId)).map(t => getTask(ctx, t.id))) : tasks;
+  if ([...tasks, ...linked].some(t => t.params.planStatus === "proposed")) throw new Error("Review and approve the custom plan before completing delivery");
   const inv = await invoiceForRequest(ctx, requestId);
   const id = invoiceId ?? inv?.id;
   if (id) {

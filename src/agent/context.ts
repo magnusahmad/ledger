@@ -78,13 +78,13 @@ export type Snapshot = NonNullable<Awaited<ReturnType<typeof clientSnapshot>>>;
 
 export async function playbookCatalogue(ctx: Ctx, jurisdictions: string[]) {
   const lib = requirementLibrary();
-  const pbs = (await listPlaybooks(ctx)).filter((p) => jurisdictions.includes(p.jurisdiction));
+  const pbs = (await listPlaybooks(ctx)).filter((p) => jurisdictions.includes(p.jurisdiction) && !p.id.endsWith(".custom"));
   return pbs.map((p) => ({
     playbookId: p.id,
     jurisdiction: p.jurisdiction,
     name: p.name.en,
     whenToUse: p.whenToUse,
-    person: p.personSelection ?? "none",
+    person: p.personSelection === "new" ? "existing_or_new" : p.personSelection ?? "none",
     fields: p.requirements.map((r) => ({ key: r.key, label: lib[r.key]?.label.en ?? r.key, hint: lib[r.key]?.extractionHint ?? null, aboutPerson: r.scope === "person" })),
   }));
 }

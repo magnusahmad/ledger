@@ -117,7 +117,11 @@ async function setChecklistAtomic(ctx: Ctx, taskId: string, checklist: Task["che
   const effective = checklist.find(e => e.key === effectiveDateRequirement(pb));
   if (effective?.status === "received" && effective.value && !isIsoDate(effective.value)) throw new Error("Choose a valid event date");
   const effectiveDate = effective?.status === "received" && isIsoDate(effective.value) ? effective.value : before.effectiveDate;
-  await ctx.db.update(taskT).set({ checklist, ...(effectiveDate !== before.effectiveDate ? { effectiveDate, dueDate: await computeDueDate(ctx, pb, before.clientId, effectiveDate) } : {}) }).where(eq(taskT.id, taskId));
+  const dateKey = effectiveDateRequirement(pb);
+  const extracted = dateKey && effective?.status === "received" && isIsoDate(effective.value)
+    ? { ...before.extracted, [dateKey]: { ...(before.extracted[dateKey] as Record<string, unknown> | undefined), value: effective.value, source: effective.source ?? reason } }
+    : before.extracted;
+  await ctx.db.update(taskT).set({ checklist, extracted, ...(effectiveDate !== before.effectiveDate ? { effectiveDate, dueDate: await computeDueDate(ctx, pb, before.clientId, effectiveDate) } : {}) }).where(eq(taskT.id, taskId));
   const changes = checklist.filter((e) => {
     const b = before.checklist.find((x) => x.key === e.key && (x.personId ?? null) === (e.personId ?? null));
     return !b || b.status !== e.status || b.value !== e.value || b.documentId !== e.documentId || b.optional !== e.optional;

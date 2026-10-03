@@ -15,6 +15,7 @@ import { itemLabel, PROTECTED_KEYS } from "@/domain/labels";
 import { createProposal, pendingProposals } from "@/domain/proposals";
 import { resolvePerson } from "@/domain/people";
 import { isIsoDate } from "@/domain/dates";
+import { compatibleContactInfo } from "@/domain/records";
 
 export async function runReview(ctx: Ctx, taskId: string, change: { kind: "information" | "change"; description: string; newFields?: { key: string; value: string }[]; messageId?: string | null }): Promise<Review> {
   const t = await getTask(ctx, taskId);
@@ -49,7 +50,7 @@ async function applyReviewAtomic(ctx: Ctx, taskId: string, r: Review, opts: Para
   const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
   const out: ReviewOutcome = { questions: [...r.questionsForClient], proposals: [], personChanged: false };
   const personRefKeys = new Set(pb.requirements.filter((x) => x.scope === "person").map((x) => x.key));
-  const conflicts = [...r.conflicts];
+  const conflicts = r.conflicts.filter(c => c.key !== "contactInfo" || !compatibleContactInfo(c.onFile, c.incoming));
   const conflictingKeys = new Set(conflicts.map(c => c.key));
   const noteConflict = (key: string, onFile: string, incoming: string) => {
     if (conflictingKeys.has(key)) return;
@@ -93,7 +94,7 @@ async function applyReviewAtomic(ctx: Ctx, taskId: string, r: Review, opts: Para
     }
     const cur = next[idx];
     if (conflictingKeys.has(it.key)) continue;
-    if (opts.kind === "information" && it.value && cur.value && ["on_file", "received"].includes(cur.status) && it.value.trim() !== cur.value.trim()) {
+    if (opts.kind === "information" && it.value && cur.value && ["on_file", "received"].includes(cur.status) && !(it.key === "contactInfo" ? compatibleContactInfo(cur.value, it.value) : it.value.trim() === cur.value.trim())) {
       noteConflict(it.key, cur.value, it.value);
       continue;
     }
@@ -128,7 +129,7 @@ async function applyReviewAtomic(ctx: Ctx, taskId: string, r: Review, opts: Para
     out.proposals.push(p.id);
     out.questions.push(c.question);
   }
-  if (r.playbookFit !== "ok" && r.suggestedPlaybookId) {
+  if (r.playbookFit !== "ok" && r.suggestedPlaybookId && !(r.playbookFit === "swap" && r.suggestedPlaybookId === t.playbookId)) {
     const p = await createProposal(ctx, { kind: "change_request", title: r.playbookFit === "swap" ? `Switch to ${r.suggestedPlaybookId}` : `Add ${r.suggestedPlaybookId}`, summary: r.summary, clientId: opts.clientId, taskId, requestId: t.requestId, payload: { taskId, mode: r.playbookFit, playbookId: r.suggestedPlaybookId } });
     out.proposals.push(p.id);
   }

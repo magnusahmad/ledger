@@ -68,11 +68,15 @@ describe("Email channel", () => {
     expect(p).toMatchObject({ kind: "send_message", clientId: "cli_c1" });
   });
 
-  it("an email from an unknown address creates a prospect client and adds the onboarding task alongside the request", async () => {
+  it("staff confirmation of an unknown sender's enquiry creates a prospect and adds onboarding alongside the request", async () => {
     ctx.llm.on("intake", intake({ client: { kind: "new_prospect", clientId: null, companyName: "Blue Harbour Trading Limited", companyNumber: "3345678", senderName: "Sam Lee", reason: "Unknown sender" }, actions: [action({ type: "start_request", playbookId: "hk.appointDirector", person: { mode: "new", personId: null, nameEn: "Jane DOE", nameZh: null, email: null } })] }));
     ctx.llm.on("draft", goodDraft);
     ctx.mail.deliver({ from: { email: "sam@venture.example", name: "Sam Lee" }, subject: "Change of director", text: "We need to appoint Jane Doe." });
     await pollMail(ctx);
+    expect(await ctx.db.query.client.findFirst({ where: eq(client.nameEn, "Blue Harbour Trading Limited") })).toBeUndefined();
+    const [confirmation] = await pendingProposals(ctx, { kind: "triage" });
+    expect(confirmation.payload.reason).toBe("confirm_prospect");
+    await approveProposal(ctx, confirmation.id);
     const c = await ctx.db.query.client.findFirst({ where: eq(client.nameEn, "Blue Harbour Trading Limited") });
     expect(c).toMatchObject({ lifecycle: "prospect", companyNumber: "3345678" });
     const [p] = await pendingProposals(ctx, { kind: "send_message" });
@@ -87,6 +91,8 @@ describe("Email channel", () => {
     ctx.llm.on("draft", goodDraft);
     ctx.mail.deliver({ from: { email: "sam@venture.example", name: "Sam Lee" }, subject: "Office", text: "Can you move our office?" });
     await pollMail(ctx);
+    const [confirmation] = await pendingProposals(ctx, { kind: "triage" });
+    await approveProposal(ctx, confirmation.id);
     const prospect = await ctx.db.query.client.findFirst({ where: eq(client.nameEn, "Sam Lee") });
     expect(prospect).toMatchObject({ lifecycle: "prospect" });
     ctx.llm.set("intake", intake({ client: { kind: "existing", clientId: prospect!.id, companyName: "Blue Harbour Trading Limited", companyNumber: "3345678", senderName: "Sam Lee", reason: "Same sender" }, actions: [action({ type: "general_correspondence" })] }));

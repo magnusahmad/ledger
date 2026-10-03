@@ -20,6 +20,10 @@ import { PROTECTED_KEYS } from "./labels";
 const PERSON_FIELD: Record<string, string> = { fullName: "nameEn", chiName: "nameZh", idNo: "idNumber", resAddr: "residentialAddress", corrAddr: "correspondenceAddress" };
 
 onApprove("send_message", async (ctx, p, opts) => {
+  for (const taskId of p.payload.taskIds as string[] ?? []) {
+    const t = await getTask(ctx, taskId);
+    if (t.params.planStatus === "proposed") throw new Error("Review and approve the custom plan before sending its quote or invoice");
+  }
   if (p.payload.purpose === "reminder") {
     const current = p.payload.invoiceId ? await ctx.db.query.invoice.findFirst({ where: (i, { and, eq }) => and(eq(i.id, p.payload.invoiceId as string), eq(i.firmId, ctx.firmId)) }) : null;
     if (!current || !["sent", "part_paid"].includes(current.status) || current.paidCents >= current.totalCents) throw new Error("This payment reminder is no longer current");
@@ -121,7 +125,13 @@ onApprove("conflict", async (ctx, p, opts) => {
   }
 });
 
-onApprove("triage", async () => { /* acknowledged: staff handle it by hand */ });
+onApprove("triage", async (ctx, p) => {
+  if (p.payload.reason === "confirm_prospect") {
+    const { confirmProspect } = await import("./inbound");
+    await confirmProspect(ctx, p);
+  }
+  // Other triage cards are acknowledged; staff handle them by hand.
+});
 
 onApprove("change_request", async (ctx, p) => {
   const { taskId, mode, playbookId } = p.payload as { taskId: string; mode: "swap" | "add"; playbookId: string };

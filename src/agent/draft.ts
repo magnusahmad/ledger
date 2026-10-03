@@ -9,6 +9,7 @@ import { parseMoneyCents } from "@/domain/money-input";
 
 export type ReplyFacts = {
   language: Lang;
+  workStatus?: "proposed" | "awaiting_approval" | "started";
   /** "meeting": confirms what was agreed in person or by phone, rather than answering a message. */
   context?: "message" | "meeting" | "costs" | "chase" | "letter" | "change";
   recipientName: string;
@@ -27,6 +28,7 @@ export type ReplyFacts = {
 
 export function draftProblems(f: ReplyFacts, body: string): string[] {
   const p: string[] = [];
+  if (f.workStatus && f.workStatus !== "started" && /(?:\b(?:have|has|already|we've)\s+(?:already\s+)?started\b|\bwork\s+has\s+begun\b|已(?:經|经)?(?:開始|开始|着手|著手))/.test(body)) p.push("Work is awaiting approval; do not claim it has started.");
   if (f.invoice && !body.includes(f.invoice.number)) p.push(`The body must include the invoice number ${f.invoice.number} exactly.`);
   if (f.invoice && !hasInvoiceTotal(body, f.invoice.totalFormatted)) p.push(`The body must state the invoice total ${f.invoice.totalFormatted}.`);
   if (f.uploadUrl && !body.includes(f.uploadUrl)) p.push(`The body must include the upload link ${f.uploadUrl} exactly.`);
@@ -57,8 +59,11 @@ export async function draftEmail(ctx: Ctx, facts: ReplyFacts, opts: { messageId?
         user: `${opts.purpose ? `Purpose: ${opts.purpose}\n\n` : ""}FACTS:\n\`\`\`json\n${JSON.stringify(facts, null, 1)}\n\`\`\`${extra}`,
         schema: DraftZ,
       });
-      const problems = draftProblems(facts, d.body);
-      if (problems.length === 0) return { ...d, source: "agent" };
+      // The model places the financial section; the application renders its exact
+      // amounts, localized terms and bank details from authoritative facts.
+      const body = d.body.replaceAll("{{invoice}}", financeBlock(facts));
+      const problems = draftProblems(facts, body);
+      if (problems.length === 0) return { ...d, body, source: "agent" };
       extra = `\n\nYour previous draft had problems:\n- ${problems.join("\n- ")}\nFix them.`;
     } catch (e) {
       if (!(e instanceof AgentError)) throw e;
@@ -168,9 +173,15 @@ export function templateEmail(f: ReplyFacts): { subject: string; body: string } 
   for (const q of f.questions) out.push(`${t.q} ${q.question}\n${q.facts}`);
   if (f.clarifications.length) out.push(`${t.ask}\n${list(f.clarifications)}`);
   if (f.invoice) {
-    out.push([t.inv(f.invoice.number, f.invoice.totalFormatted), t.terms(f.invoice.terms), f.invoice.paymentInstructions ? `${t.pay}\n${f.invoice.paymentInstructions}` : ""].filter(Boolean).join("\n"));
+    out.push(financeBlock(f));
   }
   if (f.uploadUrl) out.push(`${t.link}\n${f.uploadUrl}`);
   out.push(f.signOff);
   return { subject: t.subject(f.clientName), body: out.join("\n\n") };
+}
+
+function financeBlock(f: ReplyFacts): string {
+  if (!f.invoice) return "";
+  const t = T[f.language] ?? T.en;
+  return [t.inv(f.invoice.number, f.invoice.totalFormatted), ...f.invoice.lines.map(l => `- ${l.description}: ${l.amount}`), t.terms(f.invoice.terms), f.invoice.paymentInstructions ? `${t.pay}\n${f.invoice.paymentInstructions}` : ""].filter(Boolean).join("\n");
 }

@@ -57,7 +57,7 @@ export const ReviewZ = z.object({
     status: z.enum(["needed", "received", "not_needed", "on_file"]),
     value: z.string().nullable(),
     reason: z.string().nullable(),
-  })).describe("Full list of requirement items that should be on the checklist after this change"),
+  })).describe("Only requirement items whose status or value changes; omit unchanged items"),
   switchPerson: z.object({ nameEn: z.string(), nameZh: z.string().nullable(), personId: z.string().nullable() }).nullable()
     .describe("Set when the task is now about a different person (e.g. a different appointee)"),
   effectiveDate: z.string().nullable(),

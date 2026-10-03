@@ -13,7 +13,8 @@ import { runReview, applyReview } from "@/agent/review";
 import { planCustomTask } from "@/agent/planner";
 import { draftEmail, type ReplyFacts } from "@/agent/draft";
 import { AgentError } from "@/agent/call";
-import type { Intake, IntakeAction } from "@/agent/schemas";
+import { IntakeZ, type Intake, type IntakeAction } from "@/agent/schemas";
+import { actionEvidenceProblems } from "./email-evidence";
 import { findClientsBySenderEmail } from "./lookup";
 import { handleThirdPartyMail } from "./third-parties";
 import { addContact, compatibleContactInfo, contactInfoPatch, createClient, getPersonProtected, updatePerson } from "./records";
@@ -87,6 +88,7 @@ async function ingestMessageAtomic(ctx: Ctx, m: Parameters<typeof ingestMessage>
     fromAddr: m.from.email?.toLowerCase() ?? null, fromName: m.from.name ?? null, toAddrs: m.to, ccAddrs: m.cc,
     subject: m.subject, text: m.text, html: m.html ?? null, status: out ? "sent" : "received", at: m.receivedAt, viaMailbox: out,
     processedAt: out ? ctx.clock.now() : null,
+    intake: !out && m.clientId && ["paste", "portal"].includes(m.channel) ? { selectedClientId: m.clientId } : null,
   }).returning();
   for (const a of m.attachments) {
     const docId = ctx.ids.next("doc");
@@ -112,27 +114,49 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   });
 }
 
-async function processInboundAtomic(ctx: Ctx, messageId: string): Promise<ProcessResult> {
+/** Only the claimed human-approval handler can create a customer from intake. */
+export async function confirmProspect(ctx: Ctx, card: { payload: Record<string, unknown> }) {
+  if (!ctx.assertExecution || card.payload.reason !== "confirm_prospect") throw new Error("New customers require staff confirmation");
+  await ctx.assertExecution(ctx);
+  const messageId = String(card.payload.messageId);
+  return ctx.db.transaction(async db => {
+    const tx = { ...ctx, db: db as unknown as Ctx["db"] };
+    await db.execute(sql`select id from message where id = ${messageId} and firm_id = ${ctx.firmId} for update`);
+    const source = await db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) });
+    if (!source || Crypto.sha256(source.text ?? "") !== card.payload.sourceHash) throw new Error("The enquiry changed; staff must review it again");
+    const intake = IntakeZ.parse(card.payload.intake);
+    if (intake.client.kind !== "new_prospect") throw new Error("This is not a new customer enquiry");
+    const result = await processInboundAtomic(tx, messageId, intake);
+    const stored = await db.query.message.findFirst({ where: eq(message.id, messageId) });
+    await db.update(message).set({ intake: { ...stored!.intake, processingResult: result } }).where(eq(message.id, messageId));
+    return result;
+  });
+}
+
+async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspect?: Intake): Promise<ProcessResult> {
   const msg = await ctx.db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) });
   if (!msg) throw new Error("Message not found");
   const conv = (await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, msg.conversationId) }))!;
   const result: ProcessResult = { messageId, clientId: null, requestId: null, taskIds: [], proposalIds: [] };
-  if (msg.processedAt) return (msg.intake?.processingResult as ProcessResult | undefined) ?? result;
+  if (msg.processedAt && !confirmedProspect) return (msg.intake?.processingResult as ProcessResult | undefined) ?? result;
   // Mail from a known third party (bank, law firm, official...) is logged on their tasks, not read as an instruction.
   if (await handleThirdPartyMail(ctx, msg)) return result;
   const atts = await ctx.db.select().from(attachment).where(eq(attachment.messageId, messageId));
 
   const matches = msg.fromAddr ? await findClientsBySenderEmail(ctx, msg.fromAddr) : [];
-  const candidateIds = [...new Set([...(conv.clientId ? [conv.clientId] : []), ...matches.map((x) => x.client.id)])];
+  // A thread reference is context, never proof of the current sender's authority.
+  const selected = typeof msg.intake?.selectedClientId === "string" ? msg.intake.selectedClientId : null;
+  const candidateIds = [...new Set([...(selected ? [selected] : []), ...matches.filter(x => x.instructing).map((x) => x.client.id)])];
   const history = await ctx.db.select().from(message).where(and(eq(message.conversationId, conv.id))).orderBy(asc(message.at));
 
   let intake: Intake;
   let snapshots: Snapshot[];
   try {
-    ({ intake, snapshots } = await runIntake(ctx, {
+    if (confirmedProspect) { intake = confirmedProspect; snapshots = []; }
+    else ({ intake, snapshots } = await runIntake(ctx, {
       messageId, messageAt: msg.at, from: { email: msg.fromAddr, name: msg.fromName }, subject: msg.subject, text: msg.text ?? "",
       attachments: atts.map((a) => ({ filename: a.filename, mime: a.mime })), candidateClientIds: candidateIds,
-      threadHistory: history.filter((h) => h.id !== messageId && (h.status === "sent" || h.status === "received")).map((h) => ({ direction: h.direction, at: h.at.toISOString(), text: h.text ?? "" })),
+      threadHistory: candidateIds.length && (!conv.clientId || candidateIds.includes(conv.clientId)) ? history.filter((h) => h.id !== messageId && (h.status === "sent" || h.status === "received")).map((h) => ({ direction: h.direction, at: h.at.toISOString(), text: h.text ?? "" })) : [],
     }));
   } catch (e) {
     if (!(e instanceof AgentError)) throw e;
@@ -145,7 +169,12 @@ async function processInboundAtomic(ctx: Ctx, messageId: string): Promise<Proces
   let clientId: string | null = null;
   if (intake.client.kind === "existing" && intake.client.clientId && candidateIds.includes(intake.client.clientId)) clientId = intake.client.clientId;
   else if (intake.client.kind === "new_prospect") {
-    clientId = await createProspect(ctx, intake, msg);
+    if (confirmedProspect) clientId = await createProspect(ctx, intake, msg);
+    else {
+      const p = await createProposal(ctx, { kind: "triage", title: `Confirm new customer enquiry: ${intake.client.companyName ?? msg.fromName ?? msg.fromAddr}`, summary: intake.summary, payload: { messageId, reason: "confirm_prospect", intake, sourceHash: Crypto.sha256(msg.text ?? "") } });
+      await markProcessed(ctx, messageId, { intake });
+      return { ...result, proposalIds: [p.id] };
+    }
   }
   if (!clientId) {
     const p = await createProposal(ctx, { kind: "triage", title: `Which client is this? ${msg.fromName ?? msg.fromAddr}`, summary: intake.client.reason, payload: { messageId, candidates: candidateIds, intake } });
@@ -169,6 +198,13 @@ async function processInboundAtomic(ctx: Ctx, messageId: string): Promise<Proces
   const trustedPersonIds = new Set(snapshot ? [...snapshot.officers.map(o => o.personId), ...snapshot.members.map(m => m.personId), ...snapshot.significantControllers.map(c => c.personId), ...snapshot.openTasks.flatMap(t => [t.personId, ...t.checklist.map(e => e.personId)])].filter((id): id is string => !!id) : []);
   const actions: IntakeAction[] = [];
   for (const a of intake.actions.filter(confident)) {
+    const pb = a.playbookId ? await getPlaybook(ctx, a.playbookId).catch(() => null) : a.taskId ? await getTask(ctx, a.taskId).then(t => t.clientId === clientId ? getPlaybook(ctx, t.playbookId, t.playbookVersion) : null).catch(() => null) : null;
+    const problems = actionEvidenceProblems(a, msg.text ?? "", pb ? effectiveDateRequirement(pb) : null);
+    if (problems.length) {
+      const p = await createProposal(ctx, { kind: "triage", title: "Check the extracted instruction", summary: problems.join(" "), clientId, payload: { messageId, action: a, reason: "action_evidence" } });
+      result.proposalIds.push(p.id);
+      continue;
+    }
     if (a.person?.mode === "existing" && (!a.person.personId || !trustedPersonIds.has(a.person.personId))) {
       const p = await createProposal(ctx, { kind: "triage", title: "Check which person this instruction concerns", clientId, summary: "The named person was not in this client's supplied context. Staff must identify them before applying the instruction.", payload: { messageId, action: a } });
       result.proposalIds.push(p.id);
@@ -183,7 +219,7 @@ async function processInboundAtomic(ctx: Ctx, messageId: string): Promise<Proces
     if (pb && pb.jurisdiction !== cl.jurisdiction) {
       const p = await createProposal(ctx, { kind: "triage", title: "Check request jurisdiction", clientId, payload: { messageId, action: a }, summary: `${pb.name.en} does not cover ${cl.jurisdiction}` });
       result.proposalIds.push(p.id);
-    } else if (pb) validStarts.push({ a, pbId: pb.id });
+    } else if (pb && !pb.id.endsWith(".custom")) validStarts.push({ a, pbId: pb.id });
     else unsupported.push({ ...a, type: "unsupported_request", description: a.description ?? `Request for ${a.playbookId}` });
   }
   if (cl.jurisdiction === "HK" && cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s) => ONBOARDING.has(s.pbId))) {
@@ -508,7 +544,7 @@ export async function invoiceReplyFacts(ctx: Ctx, invoiceId: string, lang: Lang)
   return {
     number: inv.number, totalFormatted: money(inv.totalCents, inv.currency),
     lines: inv.lines.map(l => ({ description: l.description, amount: money(l.amountCents, inv.currency) })),
-    terms: inv.totalCents === 0 ? (lang === "en" ? "no payment is due; work starts once you approve the request" : lang === "tc" ? "毋須付款；確認要求後開始處理" : "无需付款；确认要求后开始处理") : inv.termsDays ? (lang === "en" ? `payable within ${inv.termsDays} days; we have started work` : `${inv.termsDays}天內付款；我們已開始處理`) : (lang === "en" ? "payable on receipt; we start work once payment arrives" : "收到發票後付款；收到款項後即開始處理"),
+    terms: inv.totalCents === 0 ? (lang === "en" ? "no payment is due" : lang === "tc" ? "毋須付款" : "无需付款") : inv.termsDays ? (lang === "en" ? `payable within ${inv.termsDays} days` : lang === "tc" ? `${inv.termsDays}天內付款` : `${inv.termsDays}天内付款`) : (lang === "en" ? "payable on receipt" : lang === "tc" ? "收到發票後付款" : "收到发票后付款"),
     paymentInstructions: inv.totalCents === 0 ? null : Object.entries(details).map(([k, v]) => `${k}: ${v}`).join("\n"),
   };
 }
@@ -516,6 +552,10 @@ export async function invoiceReplyFacts(ctx: Ctx, invoiceId: string, lang: Lang)
 /** Builds recipient, invoice and link facts and drafts the outbound message. */
 export async function composeReply(ctx: Ctx, o: { clientId: string; conversationId: string; inReplyTo: typeof message.$inferSelect | null; facts: ReplyFacts; requestId: string | null; messageId?: string | null; to?: string[]; purpose?: string; invoiceId?: string | null; subject?: string }) {
   const f = o.facts;
+  if (f.newRequests.length) {
+    const requested = o.requestId ? await tasksForRequest(ctx, o.requestId) : [];
+    f.workStatus = requested.some(t => t.params.planStatus === "proposed") ? "proposed" : "awaiting_approval";
+  }
   const firm = await getFirm(ctx);
   const cl = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, o.clientId) }))!;
   const contacts = await ctx.db.query.contact.findMany({ where: (c, { eq }) => eq(c.clientId, o.clientId) });

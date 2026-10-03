@@ -1,0 +1,737 @@
+{
+  "phase": "Complete",
+  "redRuns": [
+    {
+      "suite": "tests/email-wiring.test.ts",
+      "initialFailures": 14,
+      "note": "Initial red established the missing behavior; an invalid payment fixture was corrected and rerun to expose the intended Chinese-terms assertion."
+    },
+    {
+      "suite": "tests/email-wiring-ui.test.ts",
+      "expectedFailures": 1,
+      "rule": "Quote submission must be disabled while the custom plan awaits approval."
+    },
+    {
+      "suite": "tests/email-wiring.test.ts",
+      "expectedFailures": 1,
+      "rule": "Direct completeSending cannot bypass custom-plan approval."
+    },
+    {
+      "suite": "isolated forged-thread confidentiality assertion",
+      "expectedFailures": 1,
+      "rule": "Unverified forged reply header must not expose prior private thread history; observed assertion failure before implementation."
+    },
+    {
+      "suite": "tests/email-wiring.test.ts",
+      "expectedFailures": 1,
+      "rule": "Invoice placeholder must render exact localized financial facts and bank instructions; observed 16 passing/1 failing before rendering was implemented."
+    }
+  ],
+  "greenRuns": [
+    {
+      "suite": "tests/email-wiring.test.ts",
+      "passed": 17,
+      "note": "Focused database regression run before the additional thread-history assertion."
+    },
+    {
+      "suite": "tests/email-wiring-ui.test.ts",
+      "passed": 1
+    },
+    {
+      "suite": "isolated forged-thread confidentiality assertion",
+      "passed": 1
+    },
+    {
+      "suite": "Final relevant email, dates, conflict, transport and evaluation suite",
+      "passed": 124,
+      "files": 15,
+      "durationSeconds": 55.77,
+      "note": "Includes all seven corrected fixtures and both new email-wiring test files. Extra engine/manual/approval/tenant checks underway."
+    },
+    {
+      "suite": "Final relevant engine, manual, approval, registers and intake suite",
+      "passed": 81,
+      "files": 8,
+      "durationSeconds": 23.92
+    }
+  ],
+  "typecheck": {
+    "passed": true,
+    "command": "npm run typecheck"
+  },
+  "lint": {
+    "passed": true,
+    "command": "npm run lint -- --ignore-pattern '.next-*/**'",
+    "existingWarnings": 5,
+    "note": "Unqualified lint also scans pre-existing alternate Next build output and fails on generated JS; explicit generated-output ignore keeps the repository-wide source scan."
+  },
+  "ui": {
+    "checks": [
+      {
+        "language": "en",
+        "type": "confirmation",
+        "id": "prp_000195",
+        "width": 375,
+        "scrollWidth": 375,
+        "heading": "Confirm new customer enquiry: Fictional Harbour Company Limited",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-en-375.png"
+      },
+      {
+        "language": "en",
+        "type": "confirmation",
+        "id": "prp_000195",
+        "width": 768,
+        "scrollWidth": 768,
+        "heading": "Confirm new customer enquiry: Fictional Harbour Company Limited",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-en-768.png"
+      },
+      {
+        "language": "en",
+        "type": "confirmation",
+        "id": "prp_000195",
+        "width": 1280,
+        "scrollWidth": 1280,
+        "heading": "Confirm new customer enquiry: Fictional Harbour Company Limited",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-en-1280.png"
+      },
+      {
+        "language": "en",
+        "type": "confirmation",
+        "id": "prp_000195",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "heading": "Confirm new customer enquiry: Fictional Harbour Company Limited",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-en-1440.png"
+      },
+      {
+        "language": "tc",
+        "type": "confirmation",
+        "id": "prp_000199",
+        "width": 375,
+        "scrollWidth": 375,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-tc-375.png"
+      },
+      {
+        "language": "tc",
+        "type": "confirmation",
+        "id": "prp_000199",
+        "width": 768,
+        "scrollWidth": 768,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-tc-768.png"
+      },
+      {
+        "language": "tc",
+        "type": "confirmation",
+        "id": "prp_000199",
+        "width": 1280,
+        "scrollWidth": 1280,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-tc-1280.png"
+      },
+      {
+        "language": "tc",
+        "type": "confirmation",
+        "id": "prp_000199",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-tc-1440.png"
+      },
+      {
+        "language": "sc",
+        "type": "confirmation",
+        "id": "prp_000203",
+        "width": 375,
+        "scrollWidth": 375,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-sc-375.png"
+      },
+      {
+        "language": "sc",
+        "type": "confirmation",
+        "id": "prp_000203",
+        "width": 768,
+        "scrollWidth": 768,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-sc-768.png"
+      },
+      {
+        "language": "sc",
+        "type": "confirmation",
+        "id": "prp_000203",
+        "width": 1280,
+        "scrollWidth": 1280,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-sc-1280.png"
+      },
+      {
+        "language": "sc",
+        "type": "confirmation",
+        "id": "prp_000203",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "heading": "Confirm new customer enquiry: \u865b\u69cb\u6d77\u6e2f\u6709\u9650\u516c\u53f8",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "Confirm customer and prepare work",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/confirmation-sc-1440.png"
+      },
+      {
+        "language": "en",
+        "type": "plan-guard",
+        "id": "prp_000219",
+        "width": 375,
+        "scrollWidth": 375,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0001",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-en-375.png"
+      },
+      {
+        "language": "en",
+        "type": "plan-guard",
+        "id": "prp_000219",
+        "width": 768,
+        "scrollWidth": 768,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0001",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-en-768.png"
+      },
+      {
+        "language": "en",
+        "type": "plan-guard",
+        "id": "prp_000219",
+        "width": 1280,
+        "scrollWidth": 1280,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0001",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-en-1280.png"
+      },
+      {
+        "language": "en",
+        "type": "plan-guard",
+        "id": "prp_000219",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0001",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-en-1440.png"
+      },
+      {
+        "language": "tc",
+        "type": "plan-guard",
+        "id": "prp_000235",
+        "width": 375,
+        "scrollWidth": 375,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0002",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-tc-375.png"
+      },
+      {
+        "language": "tc",
+        "type": "plan-guard",
+        "id": "prp_000235",
+        "width": 768,
+        "scrollWidth": 768,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0002",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-tc-768.png"
+      },
+      {
+        "language": "tc",
+        "type": "plan-guard",
+        "id": "prp_000235",
+        "width": 1280,
+        "scrollWidth": 1280,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0002",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-tc-1280.png"
+      },
+      {
+        "language": "tc",
+        "type": "plan-guard",
+        "id": "prp_000235",
+        "width": 1440,
+        "scrollWidth": 1440,
+        "heading": "Approve reply and invoice to CHAN Tai Man",
+        "buttons": [
+          {
+            "text": "\u2630",
+            "disabled": false
+          },
+          {
+            "text": "Dismiss",
+            "disabled": false
+          },
+          {
+            "text": "EN",
+            "disabled": false
+          },
+          {
+            "text": "\u7e41",
+            "disabled": false
+          },
+          {
+            "text": "\u7b80",
+            "disabled": false
+          },
+          {
+            "text": "Approve and send with invoice",
+            "disabled": true
+          },
+          {
+            "text": "CRCS-2026-0002",
+            "disabled": false
+          },
+          {
+            "text": "HK$1,800",
+            "disabled": false
+          }
+        ],
+        "status": 200,
+        "path": "test-results/email-wiring-ui/plan-guard-tc-1440.png"
+      }
+    ],
+    "errors": [],
+    "resetViewport": 1280
+  },
+  "broadRun": {
+    "command": "npx vitest run",
+    "files": 115,
+    "tests": 874,
+    "passed": 867,
+    "failed": 7,
+    "durationSeconds": 1246.39,
+    "failureCause": "Seven older fixtures relied on absent date evidence or an email clientId without a trusted sender record. Source messages now contain quoted dates and fixtures explicitly link the sender; business assertions retained. No production change was needed to fix these failures.",
+    "failedFiles": [
+      "tests/audit-intake-verification.test.ts",
+      "tests/audit-model-conflict-resolution.test.ts",
+      "tests/audit-task-event-dates.test.ts",
+      "tests/m3-agent.test.ts"
+    ]
+  },
+  "finalRelevantSuite": {
+    "passed": 205,
+    "files": 23,
+    "failed": 0,
+    "note": "The two final green runs together include all seven corrected broad-suite failures; only fixture source/sender setup changed after the broad run."
+  },
+  "artifactCredentialScanPassed": true,
+  "priorArtifactsUnchanged": 27
+}
