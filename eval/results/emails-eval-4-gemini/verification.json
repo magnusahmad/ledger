@@ -1,0 +1,42 @@
+{
+  "redRun": {
+    "command": "npx vitest run tests/emails-eval-batches.test.ts",
+    "outcome": "2 new tests failed with Unknown email evaluation batch: 4; 5 existing tests passed",
+    "environmentNote": "Initial sandbox attempt could not connect to localhost Postgres (EPERM); rerun with authorized network access produced expected assertion failures."
+  },
+  "greenRun": {
+    "command": "npx vitest run tests/emails-eval-batches.test.ts tests/emails-eval-run.test.ts tests/emails-eval-ingestion.test.ts tests/emails-eval.test.ts tests/emails-eval-sonnet-schema.test.ts",
+    "outcome": "27 tests passed across 5 files",
+    "durationSeconds": 2.8
+  },
+  "typecheck": {
+    "command": "npm run typecheck",
+    "exitCode": 0
+  },
+  "lint": {
+    "command": "npx eslint eval/email-cases-4.ts eval/email-batches.ts tests/emails-eval-batches.test.ts",
+    "exitCode": 0
+  },
+  "diffCheck": {
+    "command": "git diff --check",
+    "exitCode": 0
+  },
+  "productionChanges": false,
+  "uiChanges": false,
+  "liveEvaluation": {
+    "command": "npx tsx scripts/eval-emails.ts --batch 4 --no-jev --model google/gemini-3.8-flash --output-dir eval/results/emails-eval-4-gemini",
+    "status": "completed",
+    "exitCode": 0
+  },
+  "preservation": {
+    "frozenSourceFiles": 209,
+    "previousArtifactFiles": 62,
+    "changedSource": [],
+    "changedPrior": []
+  },
+  "credentials": {
+    "checkedConfiguredSecretValues": true,
+    "filesScanned": 7,
+    "leakedFiles": []
+  }
+}

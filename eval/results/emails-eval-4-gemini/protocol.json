@@ -1,0 +1,15 @@
+{
+  "frozenAt": "2026-10-03T09:48:57.829311+00:00",
+  "cases": "eval/email-cases-4.ts",
+  "grading": "Every expected request must have the right service, phase, task/person, supplied facts and disposition; a safe but incomplete draft is a failure. Prospect confirmation is acceptable initial disposition, not completed client onboarding. Advisory holding is safe handling, not a substantive answer. Custom fee is a staff-review proposal, not verified pricing.",
+  "schema": "Validate every initial and repeated output with unchanged production Zod schema.",
+  "consistency": "All 3 pairwise comparisons per email: core language/client/type/task/playbook; strict additionally person/date/normalized field values; phase-aware core additionally purpose/questionTopic. Original intake plus two identical fresh repeats, no repeated side effects.",
+  "guards": "Inspect all raw drafts, retry instructions, final drafts, events and effects. Distinguish genuine catches from benign wording false positives. No unsafe intake proposal means unsafe-action recall cannot be estimated.",
+  "cost": "Sum actual provider usage.cost for all completions, including repeats and regeneration; exclude previous runs.",
+  "limits": [
+    "Ten fictional emails; initial preparation/disposition only; no live attachments or transport authentication",
+    "No human approvals, external sends, real filings, register updates or downstream completion",
+    "No production code/prompt tuning after holdout freeze; no model-based grading"
+  ],
+  "isolation": "Dedicated harbourline_emails_eval database, reset and seeded separately per email; all business integrations faked; only model endpoint allowed"
+}
