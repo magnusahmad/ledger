@@ -1,13 +1,14 @@
 // The task engine: deterministic step progression over playbook data.
 // Understanding what the client means is the agent layer's job (src/agent); this module
 // only decides what happens next given the task's state.
-import { and, asc, eq, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { businessRegistration, cddRecord, client as clientT, invoice, person as personT, request as requestT, task as taskT, taskEvent, proposal, signEnvelope, taskAction, type ChecklistEntry } from "@/db/schema";
+import { businessRegistration, cddRecord, client as clientT, filing, invoice, invoiceLine, message, person as personT, request as requestT, task as taskT, taskEvent, proposal, signEnvelope, taskAction, type ChecklistEntry } from "@/db/schema";
 import type { PlaybookDef, StepDef, StepKind } from "./playbook-types";
-import { getPlaybook } from "./playbooks";
+import { getPlaybook, effectiveDateRequirement } from "./playbooks";
 import { addDays, addMonths, isIsoDate } from "./dates";
 import { financialYearEnds } from "./fye-periods";
+import { itemKind } from "./labels";
 import { knownPersonName } from "./names";
 
 export type Task = typeof taskT.$inferSelect & { checklist: (ChecklistEntry & { optional?: boolean })[]; _steps?: StepDef[] };
@@ -15,12 +16,9 @@ export type Extracted = Record<string, { value: string; source?: string | null; 
 
 // ---------- Step entry hooks (registered by documents, signing, screening, messaging modules) ----------
 export type StepHook = (ctx: Ctx, task: Task, step: StepDef, index: number, pb: PlaybookDef) => Promise<void>;
-const enterHooks = new Map<StepKind, StepHook[]>();
-export function onEnterStep(kind: StepKind, hook: StepHook) {
-  const list = enterHooks.get(kind) ?? [];
-  list.push(hook);
-  enterHooks.set(kind, list);
-}
+// One hook per step kind, replaced on re-registration (a dev reload re-runs the registering module).
+const enterHooks = new Map<StepKind, StepHook>();
+export function onEnterStep(kind: StepKind, hook: StepHook) { enterHooks.set(kind, hook); }
 export function clearStepHooks() { enterHooks.clear(); }
 
 // ---------- Requests ----------
@@ -40,8 +38,8 @@ export async function getRequest(ctx: Ctx, id: string) {
 }
 
 // ---------- Events ----------
-export async function logEvent(ctx: Ctx, taskId: string, kind: string, summary: string, data: Record<string, unknown> = {}, actor = "system") {
-  await ctx.db.insert(taskEvent).values({ id: ctx.ids.next("evt"), firmId: ctx.firmId, taskId, kind, summary, data, actor, at: ctx.clock.now() });
+export async function logEvent(ctx: Ctx, taskId: string, kind: string, summary: string, data: Record<string, unknown> = {}, actor = "system", at = ctx.clock.now()) {
+  await ctx.db.insert(taskEvent).values({ id: ctx.ids.next("evt"), firmId: ctx.firmId, taskId, kind, summary, data, actor, at });
 }
 
 export async function taskEvents(ctx: Ctx, taskId: string) {
@@ -78,7 +76,7 @@ export async function buildChecklist(ctx: Ctx, pb: PlaybookDef, opts: { clientId
     const personId = r.scope === "person" ? opts.personId ?? null : null;
     const base = { key: r.key, personId, optional: !!r.optional };
     const ex = opts.extracted?.[r.key];
-    if (ex?.value) {
+    if (ex?.value && (itemKind(r.key) !== "file" || ex.documentId)) {
       out.push({ ...base, status: "received", value: ex.value, source: ex.source ?? null, documentId: ex.documentId ?? null, confidence: ex.confidence ?? null });
       continue;
     }
@@ -104,8 +102,22 @@ export function outstanding(t: Pick<Task, "checklist">) {
 }
 
 export async function setChecklist(ctx: Ctx, taskId: string, checklist: Task["checklist"], reason: string, actor = "system") {
-  const before = await getTask(ctx, taskId);
-  await ctx.db.update(taskT).set({ checklist }).where(eq(taskT.id, taskId));
+  return ctx.db.transaction(async db => {
+    const txCtx = { ...ctx, db: db as unknown as Ctx["db"] };
+    await db.execute(sql`select id from task where id = ${taskId} and firm_id = ${ctx.firmId} for update`);
+    return setChecklistAtomic(txCtx, taskId, checklist, reason, actor);
+  });
+}
+
+async function setChecklistAtomic(ctx: Ctx, taskId: string, checklist: Task["checklist"], reason: string, actor: string) {
+  const before = await assertTaskAmendable(ctx, taskId);
+  const dateEntries = checklist.filter(e => /Date$|^lastDay$/.test(e.key) && e.status === "received");
+  if (dateEntries.some(e => e.value && !isIsoDate(e.value))) throw new Error("Choose a valid date");
+  const pb = await getPlaybook(ctx, before.playbookId, before.playbookVersion);
+  const effective = checklist.find(e => e.key === effectiveDateRequirement(pb));
+  if (effective?.status === "received" && effective.value && !isIsoDate(effective.value)) throw new Error("Choose a valid event date");
+  const effectiveDate = effective?.status === "received" && isIsoDate(effective.value) ? effective.value : before.effectiveDate;
+  await ctx.db.update(taskT).set({ checklist, ...(effectiveDate !== before.effectiveDate ? { effectiveDate, dueDate: await computeDueDate(ctx, pb, before.clientId, effectiveDate) } : {}) }).where(eq(taskT.id, taskId));
   const changes = checklist.filter((e) => {
     const b = before.checklist.find((x) => x.key === e.key && (x.personId ?? null) === (e.personId ?? null));
     return !b || b.status !== e.status || b.value !== e.value || b.documentId !== e.documentId || b.optional !== e.optional;
@@ -115,6 +127,19 @@ export async function setChecklist(ctx: Ctx, taskId: string, checklist: Task["ch
     await logEvent(ctx, taskId, "checklist.updated", reason, { changes: [...changes, ...removed] }, actor);
     await invalidatePreparation(ctx, taskId, reason);
   }
+}
+
+/** Amendments before filing rebuild preparation. Recorded statutory actions are
+ * immutable source history and require separately approved corrective work. */
+export async function assertTaskAmendable(ctx: Ctx, taskId: string) {
+  const t = await getTask(ctx, taskId);
+  if (t.status !== "open") throw new Error("This task is closed or complete. Start a separate corrective request; the original work must remain unchanged.");
+  const recorded = await ctx.db.query.filing.findFirst({ where: and(eq(filing.firmId, ctx.firmId), eq(filing.sourceTaskId, taskId)) });
+  const registered = await ctx.db.query.taskEvent.findFirst({ where: and(eq(taskEvent.firmId, ctx.firmId), eq(taskEvent.taskId, taskId), eq(taskEvent.kind, "register.updated")) });
+  if (recorded || registered || Object.values(t.stepState).some(state => !!(state as { applied?: boolean }).applied)) {
+    throw new Error("This task has a recorded filing or approved register change. Start a separate corrective request and review the correction with staff; do not amend the original statutory work.");
+  }
+  return t;
 }
 
 // ---------- Tasks ----------
@@ -162,10 +187,16 @@ export async function startTask(ctx: Ctx, t: {
   dueDate?: string | null;
 }): Promise<Task> {
   const pb = await getPlaybook(ctx, t.playbookId);
-  const cl = await ctx.db.query.client.findFirst({ where: eq(clientT.id, t.clientId) });
+  const cl = await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, t.clientId), eq(clientT.firmId, ctx.firmId)) });
   if (!cl) throw new Error("Client not found");
+  if (pb.jurisdiction !== cl.jurisdiction) throw new Error("Playbook jurisdiction does not match the client");
+  const dates = [t.dueDate, t.params?.effectiveDate, ...Object.entries(t.extracted ?? {}).filter(([k]) => /Date$|^lastDay$/.test(k)).map(([, v]) => v.value)];
+  if (dates.some(d => d != null && !isIsoDate(d))) throw new Error("Choose a valid date");
+  if (Object.values(t.extracted ?? {}).some(v => v.value.includes("\u0000"))) throw new Error("Fields cannot contain NUL characters");
   const checklist = await buildChecklist(ctx, pb, { clientId: t.clientId, personId: t.personId, extracted: t.extracted });
-  const eff = t.extracted?.effDate?.value ?? (t.params?.effectiveDate as string | undefined) ?? null;
+  const dateKey = effectiveDateRequirement(pb);
+  const eff = (dateKey ? t.extracted?.[dateKey]?.value : null) ?? (t.params?.effectiveDate as string | undefined) ?? null;
+  if (eff != null && !isIsoDate(eff)) throw new Error("Choose a valid event date");
   const effectiveDate = isIsoDate(eff) ? eff : null;
   const extracted: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(t.extracted ?? {})) extracted[k] = v;
@@ -243,7 +274,18 @@ async function stepCompletion(ctx: Ctx, t: Task, step: StepDef, idx: number, pb:
 async function runEnterHooks(ctx: Ctx, t: Task, pb: PlaybookDef, idx: number) {
   const step = pb.steps[idx];
   if (!step) return;
-  for (const h of enterHooks.get(step.kind) ?? []) await h(ctx, await getTask(ctx, t.id), step, idx, pb);
+  const h = enterHooks.get(step.kind);
+  if (h) await h(ctx, await getTask(ctx, t.id), step, idx, pb);
+}
+
+/** Replace an obsolete human preview at the existing statutory gate without
+ * rerunning preparation, signatures or recorded filing. */
+export async function refreshStatutoryApproval(ctx: Ctx, taskId: string) {
+  const t = await getTask(ctx, taskId);
+  if (t.status !== "open" || t.holdReason || (await taskBlockers(ctx, taskId)).length) return;
+  const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
+  const kind = pb.steps[t.stepIndex]?.kind;
+  if (kind === "register" || kind === "file") await runEnterHooks(ctx, t, pb, t.stepIndex);
 }
 
 const REOPENABLE: StepKind[] = ["kyc", "screen", "generate", "sign", "file", "register"];
@@ -258,9 +300,10 @@ export async function invalidatePreparation(ctx: Ctx, taskId: string, reason: st
   // Structured share instructions are derived from the checklist too.
   const params = { ...t.params };
   delete params.structured;
+  delete params.controllerPlan;
   await ctx.db.update(taskT).set({ stepIndex: collectIdx, stepState, params }).where(eq(taskT.id, taskId));
   await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(
-    eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending"),
+    eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), inArray(proposal.status, ["pending", "processing", "recovery"]),
     inArray(proposal.kind, ["record_filing", "register_change", "send_signing", "screening_review"]),
   ));
   await ctx.db.update(signEnvelope).set({ status: "voided" }).where(and(eq(signEnvelope.firmId, ctx.firmId), eq(signEnvelope.taskId, taskId)));
@@ -268,7 +311,7 @@ export async function invalidatePreparation(ctx: Ctx, taskId: string, reason: st
 }
 
 export async function taskBlockers(ctx: Ctx, taskId: string) {
-  return ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending"), inArray(proposal.kind, ["conflict", "cancel_task", "change_request"])));
+  return ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), inArray(proposal.status, ["pending", "processing", "recovery"]), inArray(proposal.kind, ["conflict", "cancel_task", "change_request"])));
 }
 
 /** Every human approval rechecks the authoritative task, not the browser's old card. */
@@ -278,6 +321,8 @@ export async function assertTaskReady(ctx: Ctx, taskId: string, kind: StepKind) 
   if (currentStep(t)?.kind !== kind) throw new Error(`This task is no longer at the ${kind} step`);
   if (outstanding(t).length) throw new Error("Required information is still outstanding");
   if ((await taskBlockers(ctx, taskId)).length) throw new Error("Resolve the pending conflict, change or cancellation before continuing");
+  const proof = await ctx.db.query.taskAction.findFirst({ where: and(eq(taskAction.firmId, ctx.firmId), eq(taskAction.taskId, taskId), eq(taskAction.status, "open"), lte(taskAction.beforeStep, t.stepIndex)) });
+  if (proof) throw new Error(`Complete the off-platform proof step before continuing: ${proof.title}`);
   return t;
 }
 
@@ -290,7 +335,8 @@ export function waitingOnFor(t: Pick<Task, "status" | "holdReason">, step: StepD
 
 /** Moves the task forward through every step whose completion condition holds. */
 export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps: StepDef[] }> {
-  for (let guard = 0; guard < 40; guard++) {
+  const limit = Math.max(40, (await getTask(ctx, taskId))._steps.length + 2);
+  for (let guard = 0; guard < limit; guard++) {
     const t = await getTask(ctx, taskId);
     if (t.status !== "open") return t;
     // On hold: nothing moves until staff release it.
@@ -328,11 +374,61 @@ export async function advance(ctx: Ctx, taskId: string): Promise<Task & { _steps
   throw new Error(`advance(${taskId}) did not settle`);
 }
 
-export async function cancelTask(ctx: Ctx, taskId: string, reason: string, actor = ctx.userId) {
+export async function cancelTask(ctx: Ctx, taskId: string, reason: string, actor = ctx.userId, preserveProposalId?: string) {
+  return ctx.db.transaction(async db => {
+    const txCtx = { ...ctx, db: db as unknown as Ctx["db"] };
+    const initial = await getTask(txCtx, taskId);
+    const req = initial.requestId ? await getRequest(txCtx, initial.requestId) : null;
+    // Approval delivery fences take invoice before tasks; use the same order.
+    if (req?.invoiceId) await db.execute(sql`select id from invoice where id = ${req.invoiceId} and firm_id = ${ctx.firmId} for update`);
+    await db.execute(sql`select id from task where id = ${taskId} and firm_id = ${ctx.firmId} for update`);
+    return cancelTaskAtomic(txCtx, taskId, reason, actor, preserveProposalId);
+  });
+}
+
+async function cancelTaskAtomic(ctx: Ctx, taskId: string, reason: string, actor: string, preserveProposalId?: string) {
+  const cancelled = await assertTaskAmendable(ctx, taskId);
+  if (cancelled.requestId) {
+    const req = await getRequest(ctx, cancelled.requestId);
+    const inv = req.invoiceId ? await ctx.db.query.invoice.findFirst({ where: and(eq(invoice.id, req.invoiceId), eq(invoice.firmId, ctx.firmId)) }) : null;
+    if (inv?.status === "draft") {
+      await ctx.db.execute(sql`select id from invoice where id = ${inv.id} and firm_id = ${ctx.firmId} for update`);
+      const { assertInvoiceDraftEditable } = await import("./invoices");
+      await assertInvoiceDraftEditable(ctx, inv.id);
+    }
+  }
+  const cards = cancelled.requestId ? await ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.requestId, cancelled.requestId), eq(proposal.kind, "send_message"), inArray(proposal.status, ["pending", "processing", "recovery"]))) : [];
   await ctx.db.update(taskT).set({ status: "cancelled", completedAt: ctx.clock.now() }).where(eq(taskT.id, taskId));
-  await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), eq(proposal.status, "pending")));
+  await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.taskId, taskId), inArray(proposal.status, ["pending", "processing", "recovery"]), preserveProposalId ? ne(proposal.id, preserveProposalId) : undefined));
   await ctx.db.update(signEnvelope).set({ status: "voided" }).where(and(eq(signEnvelope.firmId, ctx.firmId), eq(signEnvelope.taskId, taskId)));
+  if (cancelled.requestId) {
+    // Every request draft was based on the complete task list. A changed list needs a fresh approval.
+    await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.requestId, cancelled.requestId), eq(proposal.kind, "send_message"), inArray(proposal.status, ["pending", "processing", "recovery"])));
+  }
   await logEvent(ctx, taskId, "task.cancelled", reason, {}, actor);
+  if (cancelled.requestId) {
+    const req = await getRequest(ctx, cancelled.requestId);
+    const inv = req.invoiceId ? await ctx.db.query.invoice.findFirst({ where: and(eq(invoice.id, req.invoiceId), eq(invoice.firmId, ctx.firmId)) }) : null;
+    const remaining = (await tasksForRequest(ctx, req.id)).filter(t => t.status === "open");
+    if (inv?.status === "draft") {
+      const { recalcTotal, voidInvoice } = await import("./invoices");
+      await ctx.db.delete(invoiceLine).where(and(eq(invoiceLine.invoiceId, inv.id), eq(invoiceLine.taskId, taskId), eq(invoiceLine.firmId, ctx.firmId)));
+      await recalcTotal(ctx, inv.id);
+      if (!remaining.length) await voidInvoice(ctx, inv.id, reason);
+      else if (cards.length) {
+        const original = await ctx.db.query.message.findFirst({ where: and(eq(message.id, cards[0].payload.messageId as string), eq(message.firmId, ctx.firmId)) });
+        if (original) {
+          const { composeReply, emptyFacts, newRequestFacts } = await import("./inbound");
+          const { createProposal } = await import("./proposals");
+          const lang = original.language === "tc" || original.language === "sc" ? original.language : "en";
+          const ids = remaining.map(t => t.id);
+          const draft = await composeReply(ctx, { clientId: cancelled.clientId, conversationId: original.conversationId, inReplyTo: null, facts: { ...emptyFacts(lang), newRequests: await newRequestFacts(ctx, ids, lang) }, requestId: req.id, to: original.toAddrs, purpose: "request" });
+          const fresh = await createProposal(ctx, { kind: "send_message", title: "Approve updated reply and invoice", clientId: cancelled.clientId, requestId: req.id, summary: reason, payload: { messageId: draft.id, requestId: req.id, taskIds: ids, draftSource: draft.source, purpose: "request" } });
+          await ctx.db.update(message).set({ proposalId: fresh.id }).where(eq(message.id, draft.id));
+        }
+      }
+    }
+  }
 }
 
 export async function tasksForRequest(ctx: Ctx, requestId: string) {

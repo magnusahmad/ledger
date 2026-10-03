@@ -1,7 +1,7 @@
 [
   {
     "id": "hk.appointDirector",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Directors",
     "name": {
@@ -139,7 +139,7 @@
         "role": "director"
       }
     ],
-    "feeCents": 180000,
+    "feeCents": 80000,
     "complianceNotes": [
       "File ND2A within 15 days after the appointment takes effect.",
       "The appointee signs the consent to act on ND2A itself, so ND2A goes out in the e-signature pack.",
@@ -151,7 +151,7 @@
   },
   {
     "id": "hk.resignDirector",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Directors",
     "name": {
@@ -250,7 +250,7 @@
         "role": "director"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 60000,
     "complianceNotes": [
       "File ND2A within 15 days after the resignation takes effect.",
       "The resigning director may also notify the Registrar directly using Form ND4.",
@@ -261,7 +261,7 @@
   },
   {
     "id": "hk.changeParticulars",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -348,7 +348,7 @@
         "kind": "update_person_particulars"
       }
     ],
-    "feeCents": 120000,
+    "feeCents": 50000,
     "complianceNotes": [
       "File ND2B within 15 days after the change in particulars.",
       "Only the correspondence address and a partial ID number appear on the public register. The residential address and full ID number are protected information, but must still be kept in the company’s records.",
@@ -358,7 +358,7 @@
   },
   {
     "id": "hk.changeSecretary",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -459,7 +459,7 @@
         "role": "secretary"
       }
     ],
-    "feeCents": 180000,
+    "feeCents": 80000,
     "complianceNotes": [
       "File ND2A within 15 days after the change.",
       "An individual secretary must ordinarily reside in Hong Kong. A corporate secretary must have its registered office or a place of business in Hong Kong.",
@@ -470,7 +470,7 @@
   },
   {
     "id": "hk.changeOffice",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -563,7 +563,7 @@
         "kind": "change_registered_office"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 60000,
     "complianceNotes": [
       "File NR1 within 15 days after the change.",
       "The registered office must be an address in Hong Kong. A PO box is not accepted.",
@@ -574,7 +574,7 @@
   },
   {
     "id": "hk.changeName",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -668,7 +668,7 @@
         "kind": "change_name"
       }
     ],
-    "feeCents": 350000,
+    "feeCents": 150000,
     "complianceNotes": [
       "The change needs a special resolution of members, and NNC2 must be filed within 15 days after it is passed.",
       "The new name only takes effect when the Registrar issues the certificate of change of name.",
@@ -685,7 +685,7 @@
   },
   {
     "id": "hk.incorporation",
-    "version": 3,
+    "version": 4,
     "jurisdiction": "HK",
     "category": "New client onboarding",
     "name": {
@@ -820,7 +820,7 @@
         "kind": "activate_client"
       }
     ],
-    "feeCents": 880000,
+    "feeCents": 280000,
     "complianceNotes": [
       "NNC1 is filed together with the business registration application, so both certificates issue together.",
       "A private company needs at least one individual director and a company secretary resident in Hong Kong.",
@@ -841,7 +841,7 @@
   },
   {
     "id": "hk.transferIn",
-    "version": 4,
+    "version": 5,
     "jurisdiction": "HK",
     "category": "New client onboarding",
     "name": {
@@ -979,7 +979,7 @@
         "kind": "activate_client"
       }
     ],
-    "feeCents": 380000,
+    "feeCents": 120000,
     "complianceNotes": [
       "Reconcile the handed-over registers against a fresh company search before relying on them.",
       "Check whether the annual return, SCR and business registration are up to date. Gaps become the client’s first matters.",
@@ -995,7 +995,7 @@
   },
   {
     "id": "hk.annualReturn",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -1074,7 +1074,7 @@
         "kind": "record_annual_return"
       }
     ],
-    "feeCents": 120000,
+    "feeCents": 60000,
     "complianceNotes": [
       "A private company files NAR1 within 42 days after each anniversary of incorporation.",
       "Late filing attracts a higher registration fee that increases with delay, and can lead to prosecution.",
@@ -1091,7 +1091,7 @@
   },
   {
     "id": "hk.agm",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -1175,7 +1175,7 @@
         "kind": "record_agm"
       }
     ],
-    "feeCents": 250000,
+    "feeCents": 80000,
     "complianceNotes": [
       "A private company holds its AGM within 9 months after its accounting reference period ends.",
       "Members can pass a written resolution instead of meeting, or unanimously agree to dispense with AGMs.",
@@ -1186,7 +1186,7 @@
   },
   {
     "id": "hk.brRenewal",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -1249,7 +1249,7 @@
         "kind": "renew_br"
       }
     ],
-    "feeCents": 50000,
+    "feeCents": 38000,
     "complianceNotes": [
       "IRD normally issues a demand note before expiry. Track the expiry date here rather than relying on the post.",
       "Renewal can be for 1 or 3 years.",
@@ -1340,7 +1340,7 @@
   },
   {
     "id": "hk.allotShares",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Shares",
     "name": {
@@ -1473,7 +1473,7 @@
         "kind": "update_controllers"
       }
     ],
-    "feeCents": 280000,
+    "feeCents": 120000,
     "complianceNotes": [
       "File NSC1 within one month after the allotment.",
       "Directors need members’ approval to allot shares unless an existing general authority covers it (Cap. 622 s.140).",
@@ -1484,7 +1484,7 @@
   },
   {
     "id": "hk.transferShares",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Shares",
     "name": {
@@ -1622,7 +1622,7 @@
         "kind": "update_controllers"
       }
     ],
-    "feeCents": 300000,
+    "feeCents": 138000,
     "complianceNotes": [
       "Stamp duty on Hong Kong stock is 0.1% of the higher of consideration and value, payable by each of buyer and seller (0.2% in total) since 17 November 2023, plus HK$5 on the instrument.",
       "Contract notes must be stamped within 2 days after execution in Hong Kong (30 days if executed outside); the instrument is stamped after the notes.",
@@ -1633,7 +1633,7 @@
   },
   {
     "id": "hk.updateControllers",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -1706,7 +1706,7 @@
         "kind": "update_controllers"
       }
     ],
-    "feeCents": 80000,
+    "feeCents": 50000,
     "complianceNotes": [
       "The SCR is kept at the registered office or a prescribed place and must be available to law enforcement officers on demand.",
       "Particulars must be confirmed with the controller before entry (Cap. 622 Part 12, Div. 2)."
@@ -1715,7 +1715,7 @@
   },
   {
     "id": "hk.deregistration",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Closing",
     "name": {
@@ -1806,7 +1806,7 @@
         "kind": "deregister"
       }
     ],
-    "feeCents": 480000,
+    "feeCents": 300000,
     "complianceNotes": [
       "All members must agree; the company must not have started business or have ceased business for at least 3 months, have no outstanding liabilities, not be a party to legal proceedings, have no immovable property in Hong Kong, and not be a parent of a company with such property (Cap. 622 s.750).",
       "The IRD notice of no objection must accompany NDR1.",
@@ -1826,7 +1826,7 @@
   },
   {
     "id": "hk.changeFye",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -1897,7 +1897,7 @@
         "kind": "change_fye"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 70000,
     "complianceNotes": [
       "An accounting reference period cannot exceed 18 months, and the period cannot be extended more than once in 5 years except in limited cases (Cap. 622 s.371).",
       "Notify the IRD of the change of accounting date."
@@ -1906,7 +1906,7 @@
   },
   {
     "id": "hk.reserveDirector",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Directors",
     "name": {
@@ -2004,7 +2004,7 @@
         "role": "reserve_director"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 50000,
     "complianceNotes": [
       "Only for a private company with one member who is also its sole director (Cap. 622 s.455).",
       "The reserve director must be 18 or over."
@@ -2013,7 +2013,7 @@
   },
   {
     "id": "hk.changeAuditor",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -2091,7 +2091,7 @@
         "kind": "change_auditor"
       }
     ],
-    "feeCents": 180000,
+    "feeCents": 70000,
     "complianceNotes": [
       "An outgoing auditor’s resignation must include a statement of circumstances (Cap. 622 s.417).",
       "Removing an auditor before the end of term needs a members’ resolution with special notice."
@@ -2100,7 +2100,7 @@
   },
   {
     "id": "hk.amendArticles",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -2179,7 +2179,7 @@
       }
     ],
     "registerEffects": [],
-    "feeCents": 250000,
+    "feeCents": 200000,
     "complianceNotes": [
       "A special resolution needs at least 75% of the votes.",
       "Deliver a copy of the resolution and the amended articles within 15 days (Cap. 622 s.622 and s.90)."
@@ -2188,7 +2188,7 @@
   },
   {
     "id": "hk.buyback",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Shares",
     "name": {
@@ -2280,7 +2280,7 @@
         "kind": "buyback_shares"
       }
     ],
-    "feeCents": 450000,
+    "feeCents": 350000,
     "complianceNotes": [
       "A buy-back out of capital needs a solvency statement from every director and a special resolution (Cap. 622 Part 5).",
       "Treasury share rules from 2025 do not change the private company process; verify with the company secretary."
@@ -2289,7 +2289,7 @@
   },
   {
     "id": "hk.bankSignatory",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "Changes in particulars",
     "name": {
@@ -2362,7 +2362,7 @@
       }
     ],
     "registerEffects": [],
-    "feeCents": 120000,
+    "feeCents": 60000,
     "complianceNotes": [
       "Banks usually require their own mandate form and a certified copy of the resolution."
     ],
@@ -2370,7 +2370,7 @@
   },
   {
     "id": "hk.dormant",
-    "version": 3,
+    "version": 4,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -2448,7 +2448,7 @@
         "status": "dormant"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 100000,
     "complianceNotes": [
       "A dormant company is exempt from preparing audited accounts and holding AGMs, but must still file annual returns."
     ],
@@ -2506,7 +2506,7 @@
   },
   {
     "id": "hk.custom",
-    "version": 2,
+    "version": 3,
     "jurisdiction": "HK",
     "category": "One-off",
     "name": {
@@ -2559,7 +2559,7 @@
     ],
     "documents": [],
     "registerEffects": [],
-    "feeCents": 100000,
+    "feeCents": 80000,
     "complianceNotes": [
       "Staff review the planned checklist and fee before anything is sent."
     ],
@@ -2567,7 +2567,7 @@
   },
   {
     "id": "hk.resignSecretary",
-    "version": 1,
+    "version": 2,
     "jurisdiction": "HK",
     "category": "Company secretary",
     "name": {
@@ -2664,7 +2664,7 @@
         "role": "secretary"
       }
     ],
-    "feeCents": 150000,
+    "feeCents": 60000,
     "complianceNotes": [
       "Use ND4 only after checking the resigning secretary’s direct notification obligation.",
       "Confirm the notice declaration and obtain the resigning secretary’s signature before filing.",
@@ -2674,7 +2674,7 @@
   },
   {
     "id": "hk.lateFiling",
-    "version": 1,
+    "version": 2,
     "jurisdiction": "HK",
     "category": "Enforcement",
     "name": {
@@ -2736,7 +2736,7 @@
     ],
     "documents": [],
     "registerEffects": [],
-    "feeCents": 150000,
+    "feeCents": 80000,
     "complianceNotes": [
       "The late registration fee rises with the delay and can't be waived.",
       "Continued default can lead to a warning letter and prosecution of the company and its officers."
@@ -2745,7 +2745,7 @@
   },
   {
     "id": "hk.warningLetter",
-    "version": 1,
+    "version": 2,
     "jurisdiction": "HK",
     "category": "Enforcement",
     "name": {
@@ -2808,7 +2808,7 @@
     ],
     "documents": [],
     "registerEffects": [],
-    "feeCents": 200000,
+    "feeCents": 120000,
     "complianceNotes": [
       "Work starts before payment: missing the reply-by date risks prosecution.",
       "Keep evidence of filing before the date in case prosecution proceeds."
@@ -2817,7 +2817,7 @@
   },
   {
     "id": "hk.prosecution",
-    "version": 1,
+    "version": 2,
     "jurisdiction": "HK",
     "category": "Enforcement",
     "name": {
@@ -2888,7 +2888,7 @@
     ],
     "documents": [],
     "registerEffects": [],
-    "feeCents": 350000,
+    "feeCents": 200000,
     "complianceNotes": [
       "The court date is a hard deadline; missing it can lead to a conviction in the company's absence.",
       "Directors and the company secretary can be personally liable for filing offences.",

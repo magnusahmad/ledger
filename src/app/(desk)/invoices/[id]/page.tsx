@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
 import { bankTransaction, client, invoice, invoiceLine, payment, reminder, task } from "@/db/schema";
 import { money } from "@/domain/labels";
@@ -11,7 +11,7 @@ import { markPaidAction } from "@/server/actions";
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = getCtx();
-  const inv = await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, id) });
+  const inv = await ctx.db.query.invoice.findFirst({ where: and(eq(invoice.id, id), eq(invoice.firmId, ctx.firmId)) });
   if (!inv) notFound();
   const cl = (await ctx.db.query.client.findFirst({ where: eq(client.id, inv.clientId) }))!;
   const lines = await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, id)).orderBy(asc(invoiceLine.sort));

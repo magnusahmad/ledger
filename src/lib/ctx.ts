@@ -21,4 +21,8 @@ export type Ctx = {
   storage: Storage;
   /** The signed-in user (single demo user in this build). */
   userId: string;
+  /** Fence an approved execution at each external effect boundary. */
+  assertExecution?: (ctx: Ctx) => Promise<void>;
+  deferApprovalInvalidation?: boolean;
+  completeExecution?: (ctx: Ctx) => Promise<void>;
 };

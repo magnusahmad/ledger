@@ -1,7 +1,7 @@
 // Chasing: tasks waiting on the client for information or signatures get a reminder drafted
 // on a set rhythm, escalated as the statutory deadline gets close or after repeated chases.
 // Every reminder is a draft for approval; nothing goes out on its own.
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { hkDate } from "@/lib/clock";
 import { conversation, firm, message, request as requestT, task as taskT, taskAction, type Lang } from "@/db/schema";
@@ -10,6 +10,7 @@ import { daysBetween } from "./dates";
 import { composeReply, emptyFacts, newRequestFacts } from "./inbound";
 import { createProposal, pendingProposals } from "./proposals";
 import { addOffPlatformStep } from "./off-platform";
+import { invitedSignatureRecipients } from "./chase-state";
 import { plural } from "@/lib/display";
 
 export type ChaseRules = { firstAfterDays: number; repeatEveryDays: number; escalateWithinDays: number; escalateAfterChases: number };
@@ -27,7 +28,7 @@ export async function setChaseRules(ctx: Ctx, r: ChaseRules) {
 }
 
 /** Events that mean the client was just asked, or just did something: the chase clock restarts. */
-const TOUCH = new Set(["task.created", "step.entered", "message.sent", "message.mailbox_reply", "portal.upload", "agent.information", "agent.change", "signing.signed", "chase.sent"]);
+const TOUCH = new Set(["task.created", "step.entered", "message.sent", "message.mailbox_reply", "portal.upload", "agent.information", "agent.change", "signing.sent", "signing.signed", "chase.sent"]);
 
 const SIGNATURES: Record<Lang, string> = { en: "Signatures on the documents we sent for e-signature", tc: "簽署我們以電子方式發送的文件", sc: "签署我们以电子方式发送的文件" };
 const DEADLINE_CLOSE: Record<Lang, string> = {
@@ -46,7 +47,7 @@ export async function runChasers(ctx: Ctx): Promise<number> {
     const t = await getTask(ctx, row.id);
     const step = currentStep(t);
     const owesInfo = step?.kind === "collect" && outstanding(t).length > 0;
-    const owesSignature = step?.kind === "sign";
+    const owesSignature = step?.kind === "sign" && (await invitedSignatureRecipients(ctx, t.id)).length > 0;
     if (!owesInfo && !owesSignature) continue;
     if ((await pendingProposals(ctx, { taskId: t.id, kind: "send_message" })).some((p) => p.payload.purpose === "chase")) continue;
 
@@ -60,16 +61,17 @@ export async function runChasers(ctx: Ctx): Promise<number> {
     if (daysBetween(hkDate(last.at), today) < wait) continue;
 
     const escalation = (!!t.dueDate && daysBetween(today, t.dueDate) <= rules.escalateWithinDays) || chasesSince >= rules.escalateAfterChases;
-    await draftChase(ctx, t.id, { escalation, owesSignature });
-    drafted++;
+    if (await draftChase(ctx, t.id, { escalation, owesSignature }, rules)) drafted++;
   }
   return drafted;
 }
 
-async function draftChase(ctx: Ctx, taskId: string, o: { escalation: boolean; owesSignature: boolean }) {
+async function draftChase(ctx: Ctx, taskId: string, o: { escalation: boolean; owesSignature: boolean }, rules: ChaseRules) {
   const t = await getTask(ctx, taskId);
-  const cl = (await ctx.db.query.client.findFirst({ where: (c, { eq }) => eq(c.id, t.clientId) }))!;
-  const contacts = await ctx.db.query.contact.findMany({ where: (c, { eq }) => eq(c.clientId, t.clientId) });
+  const before = JSON.stringify(t);
+  const invited = o.owesSignature ? await invitedSignatureRecipients(ctx, t.id) : [];
+  const cl = (await ctx.db.query.client.findFirst({ where: (c, { and, eq }) => and(eq(c.id, t.clientId), eq(c.firmId, ctx.firmId)) }))!;
+  const contacts = await ctx.db.query.contact.findMany({ where: (c, { and, eq }) => and(eq(c.clientId, t.clientId), eq(c.firmId, ctx.firmId)) });
   const to = contacts.find((c) => c.isInstructing && c.email) ?? contacts.find((c) => c.email);
   const lang = (to?.language ?? cl.messageLang) as Lang;
   const req = t.requestId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, t.requestId) }) : null;
@@ -80,16 +82,35 @@ async function draftChase(ctx: Ctx, taskId: string, o: { escalation: boolean; ow
   const needed = o.owesSignature ? [SIGNATURES[lang]] : item.needed;
   const facts = { ...emptyFacts(lang), context: "chase" as const, newRequests: [{ ...item, needed, onFile: [], alreadyReceived: [] }], extraNotes: o.escalation ? [DEADLINE_CLOSE[lang]] : [] };
   const lastIn = (await ctx.db.select().from(message).where(and(eq(message.conversationId, convId), eq(message.direction, "in"))).orderBy(desc(message.at)).limit(1))[0] ?? null;
-  const draft = await composeReply(ctx, { clientId: t.clientId, conversationId: convId, inReplyTo: lastIn, facts, requestId: t.requestId, to: to?.email ? [to.email] : undefined, purpose: "update" });
+  const draft = await composeReply(ctx, { clientId: t.clientId, conversationId: convId, inReplyTo: lastIn, facts, requestId: t.requestId, to: o.owesSignature ? invited : to?.email ? [to.email] : undefined, purpose: "update" });
   const who = to?.name ?? cl.nameEn;
   const what = o.owesSignature ? "signatures outstanding" : `${plural(needed.length, "item")} outstanding`;
-  const p = await createProposal(ctx, {
-    kind: "send_message", title: `${o.escalation ? "Escalate: " : "Chase "}${who}: ${what}`, summary: `${t.title}${t.dueDate ? `, due ${t.dueDate}` : ""}`,
-    clientId: t.clientId, requestId: t.requestId, taskId: t.id, payload: { messageId: draft.id, requestId: t.requestId, taskIds: [], draftSource: draft.source, purpose: "chase", escalation: o.escalation },
+  // Drafting can await a model. Serialize only publication, then re-read the
+  // current task and activity so a committed upload/hold cannot leave stale work.
+  return ctx.db.transaction(async db => {
+    const txCtx = { ...ctx, db: db as unknown as Ctx["db"] };
+    await db.execute(sql`select id from task where id = ${taskId} and firm_id = ${ctx.firmId} for update`);
+    const current = await getTask(txCtx, taskId);
+    const touches = (await taskEvents(txCtx, taskId)).filter(e => TOUCH.has(e.kind));
+    const last = touches.at(-1);
+    const lastClientSide = [...touches].reverse().find(e => e.kind !== "chase.sent");
+    const previousChases = touches.filter(e => e.kind === "chase.sent" && (!lastClientSide || e.at > lastClientSide.at)).length;
+    const delay = previousChases ? rules.repeatEveryDays : rules.firstAfterDays;
+    const duplicated = (await pendingProposals(txCtx, { taskId, kind: "send_message" })).some(p => p.payload.purpose === "chase");
+    const signatures = o.owesSignature ? await invitedSignatureRecipients(txCtx, taskId) : [];
+    if (current.status !== "open" || current.holdReason || before !== JSON.stringify(current) || duplicated || !last || daysBetween(hkDate(last.at), ctx.clock.today()) < delay || (o.owesSignature && JSON.stringify(invited) !== JSON.stringify(signatures))) {
+      await db.update(message).set({ status: "failed" }).where(and(eq(message.id, draft.id), eq(message.firmId, ctx.firmId)));
+      return false;
+    }
+    const p = await createProposal(txCtx, {
+      kind: "send_message", title: `${o.escalation ? "Escalate: " : "Chase "}${who}: ${what}`, summary: `${t.title}${t.dueDate ? `, due ${t.dueDate}` : ""}`,
+      clientId: t.clientId, requestId: t.requestId, taskId: t.id, payload: { messageId: draft.id, requestId: t.requestId, taskIds: [], draftSource: draft.source, purpose: "chase", escalation: o.escalation },
+    });
+    await db.update(message).set({ proposalId: p.id }).where(and(eq(message.id, draft.id), eq(message.firmId, ctx.firmId)));
+    if (o.escalation) {
+      const hasCall = (await db.select().from(taskAction).where(and(eq(taskAction.firmId, ctx.firmId), eq(taskAction.taskId, t.id), eq(taskAction.status, "open")))).some(a => a.title.startsWith("Call "));
+      if (!hasCall) await addOffPlatformStep(txCtx, t.id, { title: `Call ${who} about what's outstanding`, waitingOn: "us", dueDate: ctx.clock.today() });
+    }
+    return true;
   });
-  await ctx.db.update(message).set({ proposalId: p.id }).where(eq(message.id, draft.id));
-  if (o.escalation) {
-    const hasCall = (await ctx.db.select().from(taskAction).where(and(eq(taskAction.taskId, t.id), eq(taskAction.status, "open")))).some((a) => a.title.startsWith("Call "));
-    if (!hasCall) await addOffPlatformStep(ctx, t.id, { title: `Call ${who} about what's outstanding`, waitingOn: "us", dueDate: ctx.clock.today() });
-  }
 }

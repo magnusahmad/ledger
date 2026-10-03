@@ -5,12 +5,13 @@ import type { Ctx } from "@/lib/ctx";
 import { knownPersonName, sameValue } from "./names";
 import { client as clientT, document, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
-import { advance, getTask, logEvent, outstanding, setChecklist, tasksForRequest } from "./engine";
+import { advance, assertTaskAmendable, getTask, logEvent, outstanding, setChecklist, tasksForRequest, type Task } from "./engine";
 import { getPlaybook } from "./playbooks";
 import { itemLabel, itemKind } from "./labels";
-import { getPersonProtected, updatePerson } from "./records";
+import { contactInfoPatch, getPersonProtected, updatePerson } from "./records";
 import { createProposal } from "./proposals";
 import { extractFromDocument } from "@/agent/extract";
+import { isIsoDate } from "./dates";
 import { AgentError } from "@/agent/call";
 
 export class PortalError extends Error {}
@@ -45,20 +46,34 @@ export async function portalView(ctx: Ctx, token: string, langOverride?: Lang) {
 
 async function taskInRequest(ctx: Ctx, token: string, taskId: string) {
   const r = await requestByToken(ctx, token);
-  const t = await ctx.db.query.task.findFirst({ where: and(eq(taskT.id, taskId), eq(taskT.requestId, r.id)) });
+  const [t] = await ctx.db.select().from(taskT).where(and(eq(taskT.id, taskId), eq(taskT.requestId, r.id), eq(taskT.firmId, ctx.firmId))).for("update");
   if (!t || t.status !== "open") throw new PortalError("That item isn't part of this request");
-  return { r, t: await getTask(ctx, taskId) };
+  return { r, t: await assertTaskAmendable(ctx, taskId) };
+}
+
+type PortalItem = { taskId: string; key: string; expectedPersonId?: string | null };
+function assertRenderedPerson(t: Task, item: PortalItem) {
+  const entry = t.checklist.find(e => e.key === item.key && (!e.personId || e.personId === t.personId));
+  if (item.expectedPersonId !== undefined && item.expectedPersonId !== (entry?.personId ?? null)) throw new PortalError("The person for this item changed. Refresh this link before sending.");
 }
 
 const PERSON_FIELD: Record<string, "nameEn" | "nameZh" | "idNumber" | "residentialAddress" | "correspondenceAddress"> = { fullName: "nameEn", chiName: "nameZh", idNo: "idNumber", resAddr: "residentialAddress", corrAddr: "correspondenceAddress" };
 
-export async function portalUpload(ctx: Ctx, token: string, u: { taskId: string; key: string; filename: string; mime: string; content: Buffer }) {
+export async function portalUpload(ctx: Ctx, token: string, u: PortalItem & { filename: string; mime: string; content: Buffer }) {
+  return ctx.db.transaction(async db => portalUploadAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, token, u));
+}
+
+async function portalUploadAtomic(ctx: Ctx, token: string, u: Parameters<typeof portalUpload>[2]) {
   const { t } = await taskInRequest(ctx, token, u.taskId);
+  assertRenderedPerson(t, u);
   const entry = t.checklist.find((e) => e.key === u.key && (!e.personId || e.personId === t.personId));
   if (!entry) throw new PortalError("That item isn't needed for this task");
+  if (itemKind(u.key, t.params) !== "file") throw new PortalError("Enter a typed value for this item; it does not accept a file upload");
   if (u.content.length > 15 * 1024 * 1024) throw new PortalError("Files must be under 15 MB");
+  if (!u.content.length) throw new PortalError("Choose a file with readable content");
   const id = ctx.ids.next("doc");
-  const key = `uploads/${t.clientId}/${id}-${u.filename.replace(/[^\w.\-]/g, "_")}`;
+  // Display names are metadata; object keys must not inherit filesystem limits.
+  const key = `uploads/${t.clientId}/${id}`;
   await ctx.storage.put(key, u.content);
   await ctx.db.insert(document).values({ id, firmId: ctx.firmId, clientId: t.clientId, taskId: t.id, personId: entry.personId ?? null, kind: u.key === "idCopy" ? "id_copy" : u.key === "addrProof" ? "address_proof" : u.key === "selfie" ? "selfie" : "upload", title: u.filename, storageKey: key, mime: u.mime, sha256: Crypto.sha256(u.content), source: "upload", requirementKey: u.key, createdAt: ctx.clock.now() });
   const next = t.checklist.map((e) => e === entry ? { ...e, status: "received" as const, documentId: id, source: "Uploaded through the secure link" } : e);
@@ -85,7 +100,7 @@ async function applyExtraction(ctx: Ctx, taskId: string, personId: string, field
   let next = t.checklist;
   for (const f of fields) {
     const field = PERSON_FIELD[f.key];
-    if (!field || !f.value) continue;
+    if (!field || !f.value || t.personId !== personId || !t.checklist.some(e => e.key === f.key && e.personId === personId)) continue;
     const stored = (person as Record<string, unknown>)[field] as string | null;
     const onFile = field === "nameEn" ? knownPersonName(stored) : stored;
     if (onFile && !sameValue(onFile, f.value)) {
@@ -99,15 +114,26 @@ async function applyExtraction(ctx: Ctx, taskId: string, personId: string, field
   await setChecklist(ctx, taskId, next, `Details read from ${source}`, "agent");
 }
 
-export async function portalSubmitField(ctx: Ctx, token: string, f: { taskId: string; key: string; value: string }) {
+export async function portalSubmitField(ctx: Ctx, token: string, f: PortalItem & { value: string }) {
+  return ctx.db.transaction(async db => portalSubmitFieldAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, token, f));
+}
+
+async function portalSubmitFieldAtomic(ctx: Ctx, token: string, f: Parameters<typeof portalSubmitField>[2]) {
   const { t } = await taskInRequest(ctx, token, f.taskId);
+  assertRenderedPerson(t, f);
   const value = f.value.trim();
   if (!value) throw new PortalError("Enter a value");
+  if (itemKind(f.key, t.params) === "file") throw new PortalError("Upload a document for this item");
+  if ((/Date$|^lastDay$/.test(f.key) && !isIsoDate(value)) || value.includes("\u0000")) throw new PortalError("Enter a valid date or value");
   const entry = t.checklist.find((e) => e.key === f.key && (!e.personId || e.personId === t.personId));
   if (!entry) throw new PortalError("That item isn't needed for this task");
   if (entry.personId && PERSON_FIELD[f.key]) {
     const person = await getPersonProtected(ctx, entry.personId);
     if (!(person as Record<string, unknown>)[PERSON_FIELD[f.key]]) await updatePerson(ctx, entry.personId, { [PERSON_FIELD[f.key]]: value }, "Entered by the client on the secure link");
+  }
+  if (entry.personId && f.key === "contactInfo") {
+    const patch = contactInfoPatch(value, await getPersonProtected(ctx, entry.personId));
+    if (Object.keys(patch).length) await updatePerson(ctx, entry.personId, patch, "Entered by the client on the secure link");
   }
   const next = t.checklist.map((e) => e === entry ? { ...e, status: "received" as const, value: ["idNo", "resAddr"].includes(f.key) ? "Provided" : value, source: "Entered on the secure link" } : e);
   await setChecklist(ctx, t.id, next, `Client entered ${itemLabel(f.key)}`, "client");
@@ -115,14 +141,28 @@ export async function portalSubmitField(ctx: Ctx, token: string, f: { taskId: st
 }
 
 /** One submission from the upload link: every filled detail and file at once. Blank items stay outstanding. */
-export async function portalSubmit(ctx: Ctx, token: string, s: { fields: { taskId: string; key: string; value: string }[]; files: { taskId: string; key: string; filename: string; mime: string; content: Buffer }[] }) {
+export async function portalSubmit(ctx: Ctx, token: string, s: { fields: (PortalItem & { value: string })[]; files: (PortalItem & { filename: string; mime: string; content: Buffer })[] }) {
+  if (s.files.some(f => f.content.length > 15 * 1024 * 1024)) throw new PortalError("Files must be under 15 MB");
+  return ctx.db.transaction(async db => portalSubmitAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, token, s));
+}
+
+async function portalSubmitAtomic(ctx: Ctx, token: string, s: Parameters<typeof portalSubmit>[2]) {
   const fields = s.fields.filter((f) => f.value.trim());
   const files = s.files.filter((f) => f.content.length);
   if (!fields.length && !files.length) throw new PortalError("Fill in at least one item before sending");
   // Check everything belongs to this link's request before saving any of it.
   for (const x of [...fields, ...files]) {
     const { t } = await taskInRequest(ctx, token, x.taskId);
+    assertRenderedPerson(t, x);
     if (!t.checklist.some((e) => e.key === x.key && (!e.personId || e.personId === t.personId))) throw new PortalError("That item isn't needed for this task");
+  }
+  for (const f of fields) {
+    const { t } = await taskInRequest(ctx, token, f.taskId);
+    if (itemKind(f.key, t.params) === "file") throw new PortalError("Upload a document for this item");
+  }
+  for (const f of files) {
+    const { t } = await taskInRequest(ctx, token, f.taskId);
+    if (itemKind(f.key, t.params) !== "file") throw new PortalError("Enter a typed value for this item; it does not accept a file upload");
   }
   for (const f of fields) await portalSubmitField(ctx, token, f);
   for (const f of files) await portalUpload(ctx, token, f);

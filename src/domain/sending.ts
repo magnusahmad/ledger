@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { message, proposal } from "@/db/schema";
+import { mailDelivery, message, proposal } from "@/db/schema";
 import { advance, getTask, logEvent, markStepState, tasksForRequest } from "./engine";
 import { invoiceForRequest } from "./outbound";
 import { markInvoiceSent } from "./invoices";
+import { deliveryConfirmedUnsent, deliveryInvoiceDates, type InvoiceDeliveryDates } from "./mail-delivery";
 import { enqueue } from "./jobs";
 
 /** Staff confirmation of delivery by any medium; never sends a message. */
@@ -15,7 +16,19 @@ export async function completeSending(ctx: Ctx, taskIds: string[], requestId: st
   if (id) {
     const own = await ctx.db.query.invoice.findFirst({ where: (i, { and, eq }) => and(eq(i.id, id), eq(i.firmId, ctx.firmId)) });
     if (!own) throw new Error("Invoice not found");
-    await markInvoiceSent(ctx, id);
+    let dates: InvoiceDeliveryDates | undefined;
+    if (own.status === "draft") {
+      const attempts = await ctx.db.select({ delivery: mailDelivery }).from(mailDelivery)
+        .innerJoin(message, and(eq(message.firmId, ctx.firmId), eq(mailDelivery.sourceKey, sql`'message:' || ${message.id}`)))
+        .where(and(eq(mailDelivery.firmId, ctx.firmId), sql`${message.intake}->>'attachInvoiceId' = ${id}`));
+      for (const { delivery } of attempts) {
+        if (await deliveryConfirmedUnsent(ctx, delivery)) continue;
+        const pinned = deliveryInvoiceDates(ctx, delivery, id);
+        if (dates && (dates.issuedOn !== pinned.issuedOn || dates.dueOn !== pinned.dueOn || dates.pdfSha256 !== pinned.pdfSha256)) throw new Error("Conflicting delivered invoice PDFs need a separate financial review");
+        dates = pinned;
+      }
+    }
+    await markInvoiceSent(ctx, id, dates);
     await enqueue(ctx, "xero.sync_invoice", { invoiceId: id }, `xero.invoice:${id}`);
   }
   const cards = await ctx.db.select().from(proposal).where(and(eq(proposal.firmId, ctx.firmId), eq(proposal.kind, "send_message")));

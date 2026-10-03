@@ -7,5 +7,6 @@ export class LazyMail implements MailProvider {
   constructor(readonly name: string, readonly address: string, private factory: () => Promise<MailProvider>) {}
   private get() { return (this.inner ??= this.factory().catch((e) => { this.inner = null; throw e; })); }
   async fetchNew(cursor: string | null): Promise<{ messages: InboundMail[]; cursor: string | null }> { return (await this.get()).fetchNew(cursor); }
+  async reconcileDelivery(correlationId: string) { const p = await this.get(); return p.reconcileDelivery ? p.reconcileDelivery(correlationId) : { status: "unknown" as const }; }
   async send(m: OutboundMail): Promise<SentMail> { return (await this.get()).send(m); }
 }

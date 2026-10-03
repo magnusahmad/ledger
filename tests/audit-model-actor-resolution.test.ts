@@ -1,0 +1,51 @@
+// One classification control for the observed final MODEL03 mode/ID deviation.
+import { expect, it, vi } from "vitest";
+import { makeCtx, resetDb } from "./helpers";
+import { goodDraft } from "./agent-fixtures";
+import { seedDemo } from "@/db/seed-demo";
+import { ingestMessage, processInbound } from "@/domain/inbound";
+import { createRequest, startTask, tasksForRequest } from "@/domain/engine";
+import { createPerson } from "@/domain/records";
+import { appointment, person, significantController, shareMovement, filing, proposal } from "@/db/schema";
+import recorded from "../eval/fixtures/2026-10-03-model-candidate-results.json";
+import { INTAKE_CASES } from "../eval/robust-model-cases";
+import { todayData } from "@/server/queries";
+import { getPlaybook } from "@/domain/playbooks";
+
+vi.mock("server-only", () => ({}));
+
+it("the supplied director cessation date sets the playbook's 15-day filing deadline in Today while resolving existing actors without duplicate people or unapproved effects", async () => {
+  await resetDb();
+  const ctx = makeCtx({ now: "2026-10-03T02:00:00Z" });
+  await seedDemo(ctx, { demoEmail: "director@kbtrading.example" });
+  const earlier = await createRequest(ctx, { clientId: "cli_c1" });
+  const wong = await createPerson(ctx, { nameEn: "WONG Ka Man", nameZh: "黃嘉文" });
+  const office = await startTask(ctx, { requestId: earlier.id, clientId: "cli_c1", playbookId: "hk.changeOffice", extracted: { effDate: { value: "2026-10-15", source: "Earlier instruction" } } });
+  const director = await startTask(ctx, { requestId: earlier.id, clientId: "cli_c1", playbookId: "hk.appointDirector", personId: wong.id, extracted: { effDate: { value: "2026-10-15", source: "Earlier instruction" } } });
+  const peopleBefore = await ctx.db.select().from(person);
+  const registersBefore = { officers: await ctx.db.select().from(appointment), controllers: await ctx.db.select().from(significantController), shares: await ctx.db.select().from(shareMovement), filings: await ctx.db.select().from(filing) };
+  const value = recorded.results.find(r => r.id === "MODEL03")!.value;
+  ctx.llm.set("intake", value); ctx.llm.set("draft", goodDraft);
+  const message = await ingestMessage(ctx, { channel: "email", provider: "fake", providerMessageId: "model03-replay", from: { email: "director@kbtrading.example", name: "CHAN Tai Man" }, to: ["desk@caineroad.example"], cc: [], subject: "Fictional board replacement", text: INTAKE_CASES.find(c => c.id === "MODEL03")!.text, receivedAt: ctx.clock.now(), attachments: [] });
+  const result = await processInbound(ctx, message.id);
+  expect(result.clientId).toBe("cli_c1"); expect(result.requestId).not.toBe(earlier.id);
+  const tasks = await tasksForRequest(ctx, result.requestId!);
+  expect(tasks).toHaveLength(2);
+  const resignation = tasks.find(t => t.playbookId === "hk.resignDirector")!;
+  expect(resignation).toMatchObject({ personId: "per_p1", extracted: { lastDay: { value: "2026-11-30" } } });
+  expect(resignation.checklist.find(entry => entry.key === "lastDay")).toMatchObject({ status: "received", value: "2026-11-30" });
+  expect(tasks.find(t => t.playbookId === "hk.appointDirector")).toMatchObject({ personId: "per_p2", effectiveDate: "2026-12-01" });
+  expect(await ctx.db.select().from(person)).toEqual(peopleBefore);
+  expect({ officers: await ctx.db.select().from(appointment), controllers: await ctx.db.select().from(significantController), shares: await ctx.db.select().from(shareMovement), filings: await ctx.db.select().from(filing) }).toEqual(registersBefore);
+  expect(await ctx.db.query.task.findFirst({ where: (t, { eq }) => eq(t.id, office.id) })).toMatchObject({ effectiveDate: "2026-10-15", status: "open" });
+  expect(await ctx.db.query.task.findFirst({ where: (t, { eq }) => eq(t.id, director.id) })).toMatchObject({ personId: wong.id, effectiveDate: "2026-10-15", status: "open" });
+  expect(await ctx.db.select().from(proposal)).toContainEqual(expect.objectContaining({ requestId: result.requestId, kind: "send_message", status: "pending" }));
+  expect(ctx.mail.sent()).toHaveLength(0); expect(ctx.accounting.calls).toHaveLength(0);
+  const pb = await getPlaybook(ctx, resignation.playbookId, resignation.playbookVersion);
+  expect(pb.deadline).toMatchObject({ kind: "event", days: 15, from: "effectiveDate" });
+  const today = await todayData(ctx);
+  const visibleTask = today.working.find(t => t.id === resignation.id);
+  expect(visibleTask).toBeDefined();
+  expect.soft(resignation.dueDate, "The supplied 30 November cessation date must create the playbook's 15 December ND2A filing deadline").toBe("2026-12-15");
+  expect.soft(visibleTask!.dueDate, "Today must carry the actual task deadline for its deadline stamp").toBe("2026-12-15");
+});

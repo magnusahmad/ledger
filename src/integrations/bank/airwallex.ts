@@ -2,11 +2,13 @@
 // Sandbox base URL defaults to api-demo.airwallex.com; set AIRWALLEX_BASE_URL if Airwallex
 // has moved the sandbox host (their newer docs mention api.sandbox.airwallex.com).
 import type { BankDeposit, BankProvider } from "../types";
+import { bankAmountCents, bankTimestamp, validateBankDeposit } from "./validation";
 
 type Fetch = typeof fetch;
 
 export class AirwallexBank implements BankProvider {
   readonly name = "airwallex";
+  readonly reconciliationWindowMs = 30 * 86400_000;
   private token: { value: string; expires: number } | null = null;
   constructor(private o: { clientId: string; apiKey: string; baseUrl: string; globalAccountId?: string | null; fetch?: Fetch }) {}
   private f(): Fetch { return this.o.fetch ?? fetch; }
@@ -37,8 +39,23 @@ export class AirwallexBank implements BankProvider {
   async listDeposits(since: Date | null): Promise<BankDeposit[]> {
     const q = new URLSearchParams({ page_num: "0", page_size: "100" });
     if (since) q.set("from_created_at", since.toISOString());
-    const j = await this.call<{ items: Record<string, unknown>[] }>("GET", `/api/v1/deposits?${q}`);
-    return (j.items ?? []).filter((d) => !d.status || d.status === "SETTLED").map(mapDeposit);
+    const deposits: BankDeposit[] = [];
+    const seen = new Set<string>();
+    for (let page = 0; page < 10_000; page++) {
+      q.set("page_num", String(page));
+      const j = await this.call<{ items: Record<string, unknown>[]; has_more: boolean }>("GET", `/api/v1/deposits?${q}`);
+      if (!Array.isArray(j.items) || typeof j.has_more !== "boolean") throw new Error("Airwallex deposit pagination is invalid");
+      let progress = false;
+      for (const d of j.items) {
+        if (typeof d?.id !== "string" || !d.id) throw new Error("Airwallex deposit pagination contains an invalid provider identity");
+        if (!seen.has(d.id)) progress = true;
+        seen.add(d.id);
+        if (d.status === "SETTLED") deposits.push(mapDeposit(d));
+      }
+      if (j.has_more && !progress) throw new Error("Airwallex deposit pagination made no progress (empty or repeated page); retry the feed, cursor retained");
+      if (!j.has_more) return deposits;
+    }
+    throw new Error("Airwallex deposit pagination did not finish; cursor retained");
   }
 
   async simulateDeposit(d: { amountCents: number; currency: string; reference: string; payerName: string }): Promise<BankDeposit | null> {
@@ -48,7 +65,9 @@ export class AirwallexBank implements BankProvider {
       global_account_id: globalAccountId, amount: d.amountCents / 100, currency: d.currency, reference: d.reference,
       payer_name: d.payerName, payer_bankname: "HSBC Hong Kong", payer_country: "HK", status: "SETTLED",
     });
-    return mapDeposit(j);
+    // The documented simulation response has create_time, not settled_at.
+    // A pending simulation is not spendable and will be retrieved after settlement.
+    return j.status === "SETTLED" ? depositFacts(j, bankTimestamp(j.create_time), bankTimestamp(j.create_time)) : null;
   }
 
   async accountDetails(): Promise<Record<string, string>> {
@@ -67,14 +86,20 @@ export class AirwallexBank implements BankProvider {
 }
 
 export function mapDeposit(d: Record<string, unknown>): BankDeposit {
-  const amount = Number(d.amount ?? 0);
-  return {
-    providerTxId: String(d.id),
-    amountCents: Math.round(amount * 100),
-    currency: String(d.currency ?? "HKD"),
-    reference: (d.reference as string) ?? null,
-    payerName: (d.payer_name as string) ?? ((d.payer as Record<string, string> | undefined)?.name ?? null),
-    receivedAt: new Date(String(d.create_time ?? d.created_at ?? new Date().toISOString())),
+  if (d.status !== "SETTLED") throw new Error("Bank deposit is not settled");
+  return depositFacts(d, bankTimestamp(d.settled_at), bankTimestamp(d.created_at));
+}
+
+function depositFacts(d: Record<string, unknown>, receivedAt: Date, createdAt: Date): BankDeposit {
+  const deposit: BankDeposit = {
+    providerTxId: d.id as string,
+    amountCents: bankAmountCents(d.amount),
+    currency: d.currency as string,
+    reference: (d.reference ?? null) as string | null,
+    payerName: (d.payer_name ?? (d.payer as Record<string, unknown> | undefined)?.name ?? null) as string | null,
+    receivedAt, createdAt,
     raw: d,
   };
+  validateBankDeposit(deposit);
+  return deposit;
 }

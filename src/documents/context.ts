@@ -1,10 +1,11 @@
 // Everything a document template or form mapping needs, loaded once per generation.
-import { eq } from "drizzle-orm";
+import { and, eq, lte, or, isNull, gt } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { businessRegistration, client as clientT, significantController, person as personT } from "@/db/schema";
+import { businessRegistration, client as clientT, significantController } from "@/db/schema";
 import { getFirm } from "@/domain/firm";
 import { getPersonProtected, officersAsAt } from "@/domain/records";
 import { issuedAsAt, membersAsAt } from "@/domain/shares";
+import { registerPersonAsAt } from "@/domain/register-person";
 import { getTask } from "@/domain/engine";
 import { getPlaybook } from "@/domain/playbooks";
 import type { PlaybookDef } from "@/domain/playbook-types";
@@ -21,22 +22,22 @@ export function annualReturnDate(task: { periodKey: string | null }, client: { i
 export async function loadDocContext(ctx: Ctx, taskId: string) {
   const task = await getTask(ctx, taskId);
   const pb = await getPlaybook(ctx, task.playbookId, task.playbookVersion);
-  const client = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, task.clientId) }))!;
+  const client = (await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, task.clientId), eq(clientT.firmId, ctx.firmId)) }))!;
   const firm = await getFirm(ctx);
   const today = ctx.clock.today();
   const asAt = pb.id === "hk.annualReturn" ? annualReturnDate(task, client, today) : task.effectiveDate ?? today;
   const officers = await officersAsAt(ctx, client.id, asAt);
-  const directors = await Promise.all(officers.filter((o) => o.role === "director").map(async (o) => ({ ...o, protected: await getPersonProtected(ctx, o.personId) })));
+  const directors = await Promise.all(officers.filter((o) => o.role === "director").map(async (o) => ({ ...o, protected: await getPersonProtected(ctx, o.personId, { clientId: client.id, date: asAt }) })));
   const secretary = officers.find((o) => o.role === "secretary") ?? null;
   const holdings = await membersAsAt(ctx, client.id, asAt);
   const members = await Promise.all(holdings.map(async m => {
-    const p = await ctx.db.query.person.findFirst({ where: eq(personT.id, m.personId) });
+    const p = await registerPersonAsAt(ctx, client.id, m.personId, asAt);
     return { ...m, address: p?.correspondenceAddress, corporate: p?.kind === "corporate" } as typeof m & { address?: string | null; corporate?: boolean };
   }));
   const capital = await issuedAsAt(ctx, client.id, asAt);
-  const br = await ctx.db.query.businessRegistration.findFirst({ where: eq(businessRegistration.clientId, client.id) });
-  const scs = await ctx.db.select().from(significantController).where(eq(significantController.clientId, client.id));
-  const person = task.personId ? await getPersonProtected(ctx, task.personId) : null;
+  const br = await ctx.db.query.businessRegistration.findFirst({ where: and(eq(businessRegistration.clientId, client.id), eq(businessRegistration.firmId, ctx.firmId)) });
+  const scs = await ctx.db.select().from(significantController).where(and(eq(significantController.clientId, client.id), eq(significantController.firmId, ctx.firmId), lte(significantController.registrableFrom, asAt), or(isNull(significantController.ceasedOn), gt(significantController.ceasedOn, asAt))));
+  const person = task.personId ? await getPersonProtected(ctx, task.personId, { clientId: client.id, date: asAt }) : null;
   const values: Record<string, string> = {};
   for (const e of task.checklist) if (e.value && (!e.personId || e.personId === task.personId)) values[e.key] = e.value;
   for (const [k, v] of Object.entries(task.extracted)) if (!values[k] && typeof (v as { value?: string })?.value === "string") values[k] = (v as { value: string }).value;

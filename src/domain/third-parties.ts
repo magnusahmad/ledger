@@ -82,7 +82,13 @@ export async function markSenderNotClient(ctx: Ctx, conversationId: string, o: {
     const rc = await ctx.db.query.client.findFirst({ where: eq(clientT.id, realClient) });
     throw new ThirdPartyError(`${email} is a contact of ${rc?.nameEn ?? "a client"}; remove the contact first`);
   }
-  const party = await addThirdParty(ctx, { name: o.name || email, organisation: o.organisation, email, role: o.as === "ignore" ? "ignore" : o.role ?? "other" });
+  const role = o.as === "ignore" ? "ignore" : o.role ?? "other";
+  let party = await addThirdParty(ctx, { name: o.name || email, organisation: o.organisation, email, role });
+  if (party.role !== role) {
+    const [updated] = await ctx.db.update(thirdParty).set({ role }).where(and(eq(thirdParty.id, party.id), eq(thirdParty.firmId, ctx.firmId))).returning();
+    await audit(ctx, "third_party.classify", "third_party", party.id, { from: party.role, to: role });
+    party = updated;
+  }
 
   if (cl?.lifecycle === "prospect") {
     const tasks = await ctx.db.select().from(taskT).where(and(eq(taskT.clientId, cl.id), eq(taskT.status, "open")));

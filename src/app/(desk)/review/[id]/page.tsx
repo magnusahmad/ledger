@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
+import { readApprovedInput } from "@/domain/approval-execution";
+import { invoiceDateReviewContext } from "@/domain/invoice-delivery-review";
+import { deliveryPayload } from "@/domain/mail-delivery";
 import { getProposal } from "@/domain/proposals";
 import { getTask, tasksForRequest } from "@/domain/engine";
 import { itemLabel, money } from "@/domain/labels";
-import { attachment, client, document, invoice, invoiceLine, message, request as requestT } from "@/db/schema";
+import { attachment, client, document, invoice, invoiceLine, mailDelivery, message, request as requestT } from "@/db/schema";
 import { ReviewForm, RedraftButtons, InlineEdit, AutoRedirect } from "./client";
-import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction } from "@/server/actions";
+import { approveAction, rejectAction, invoiceNumberAction, lineAmountAction, resumeApprovalAction, closeInterruptedAction, reviewInvoiceDatesAction } from "@/server/actions";
 import { ActionButton, ActionForm } from "@/components/ActionForm";
-import { deliveryEvidence } from "@/domain/delivery-evidence";
+import { deliveryEvidence, showSentEmailCheck } from "@/domain/delivery-evidence";
 import { DeadlineStamp, StatusPill, ago, fmt } from "@/components/ui";
 import { languageLabel, plural, sentence, valueText } from "@/lib/display";
 import { getPlaybook, listPlaybooks } from "@/domain/playbooks";
@@ -45,6 +48,62 @@ export default async function Review({ params }: { params: Promise<{ id: string 
         : <ActionButton action={reject} tone="secondary" confirm="Dismiss this without acting?">Dismiss</ActionButton>)}
     </div>
   );
+  if (p.status === "processing" || p.status === "recovery") {
+    const saved = readApprovedInput(ctx, p);
+    const sourceKey = p.payload.messageId ? `message:${p.payload.messageId}` : null;
+    const journal = sourceKey ? await ctx.db.query.mailDelivery.findFirst({ where: and(eq(mailDelivery.firmId, ctx.firmId), eq(mailDelivery.sourceKey, sourceKey)) }) : null;
+    const exact = journal ? deliveryPayload(ctx, journal) : null;
+    const dateReview = await invoiceDateReviewContext(ctx, p.id);
+    const edits = saved?.opts.edits ?? {};
+    const recipients = exact?.to ?? (typeof edits.to === "string" ? edits.to.split(/[,;\s]+/).filter(Boolean) : edits.to as string[] | undefined) ?? saved?.sourceMessage?.toAddrs ?? [];
+    const body = exact?.text ?? String(edits.text ?? saved?.sourceMessage?.text ?? "");
+    const approvedSigners = p.kind === "send_signing" ? (saved?.payload.signers ?? []) as { personId: string; name: string; email: string | null; role: string }[] : [];
+    const invitationKeys = approvedSigners.map(s => `signer:${saved!.payload.envelopeId}:${s.personId}`);
+    const invitations = invitationKeys.length ? await ctx.db.select().from(mailDelivery).where(and(eq(mailDelivery.firmId, ctx.firmId), inArray(mailDelivery.sourceKey, invitationKeys))) : [];
+    const approvedEmails = (edits.emails ?? {}) as Record<string, string>;
+    return <>{header}
+      <div className="banner amber"><strong>{p.status === "processing" ? "In progress" : "Delivery needs review"}</strong>. The approved action has not been confirmed complete. {p.recoveryError}</div>
+      <div className="card">
+        <h2>Approved inputs</h2>
+        {p.kind === "send_signing" && <>
+          <h3>Documents approved for signature</h3>
+          {saved?.signingDocuments?.length ? <ul className="small" style={{ paddingLeft: 18, overflowWrap: "anywhere" }}>{saved.signingDocuments.map(d => <li key={d.id}>{d.title}</li>)}</ul> : <p className="small muted">Original document titles were not recorded for this older approval.</p>}
+          <h3>Approved signing recipients</h3>
+          {approvedSigners.map(s => {
+            const invitation = invitations.find(d => d.sourceKey === `signer:${saved!.payload.envelopeId}:${s.personId}`);
+            const to = invitation ? deliveryPayload(ctx, invitation).to : [approvedEmails[s.personId] ?? s.email ?? "No email recorded"];
+            const state = invitation?.status === "sent" && invitation.result?.providerMessageId ? "Invitation confirmed" : invitation && invitation.status !== "prepared" ? "Delivery needs review" : "Not yet sent";
+            return <div key={s.personId} className="signer-recovery" style={{ marginBottom: 14, overflowWrap: "anywhere" }}><p className="small" style={{ marginBottom: 4 }}><strong>{s.name}</strong></p><p className="small" style={{ margin: "0 0 4px" }}>{to.join(", ")}</p><p className="small muted" style={{ margin: 0 }}>{state}</p></div>;
+          })}
+        </>}
+        {!!recipients.length && <p className="small">To: {recipients.join(", ")}</p>}
+        {!!body && <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{body.replace(/\/sign\/[A-Za-z0-9]+/g, "/sign/[personal link]")}</p>}
+        {!!exact?.attachments?.length && <p className="small">Attached: {exact.attachments.map(a => a.filename).join(", ")}</p>}
+        <p className="small muted">Recovery checks the original approved content and current task facts. A changed draft needs a fresh staff review.</p>
+        <ActionButton action={resumeApprovalAction.bind(null, p.id)}>Check and resume approved action</ActionButton>
+      </div>
+      {dateReview && !dateReview.hasDates && <div className="card" style={{ marginTop: 18 }}>
+        <h2>Review original invoice dates</h2>
+        <p className="small">This older delivery did not record its invoice dates. <a className="lnk" href={`/api/review/${p.id}/invoice`} target="_blank" rel="noreferrer">View the original approved invoice PDF</a>. Enter the issue date printed on that PDF and calculate its due date using the original {dateReview.invoice.termsDays}-day credit terms. This completes bookkeeping only after delivery is confirmed, preserving the original PDF.</p>
+        <ReviewForm action={reviewInvoiceDatesAction.bind(null, p.id)} submit="Approve reviewed dates and complete original action" redirectTo="/">
+          <input type="hidden" name="journalId" value={dateReview.journal.id} /><input type="hidden" name="payloadHash" value={dateReview.journal.payloadHash} /><input type="hidden" name="pdfSha256" value={dateReview.pdfSha256} />
+          <div className="fld"><label className="f" htmlFor="original-issued-date">Issue date on the delivered invoice</label><input id="original-issued-date" name="issuedOn" type="date" required /></div>
+          <div className="fld"><label className="f" htmlFor="original-due-date">Due date using the original invoice credit terms</label><input id="original-due-date" name="dueOn" type="date" required /></div>
+          <label className="small"><input type="checkbox" name="checkedOriginalInvoice" required /> I checked the original invoice issue date and payment terms</label>
+          <div className="fld"><label className="f" htmlFor="invoice-date-note">Invoice date verification note</label><textarea id="invoice-date-note" name="note" required /></div>
+        </ReviewForm>
+      </div>}
+      <div className="card" style={{ marginTop: 18 }}>
+        <h2>After checking the mailbox</h2>
+        <p className="small">If the original action cannot be recovered, close it and request a fresh preview. The earlier message may already have reached the client. A new message still needs approval.</p>
+        <ReviewForm action={closeInterruptedAction.bind(null, p.id)} submit="Close interrupted action and request fresh review" redirectTo="/" tone="secondary">
+          <label className="small"><input type="checkbox" name="checkedMailbox" required /> I checked the mailbox and understand the previous message may have been delivered</label>
+          <div className="fld"><label className="f" htmlFor="recovery-note">Mailbox check note</label><textarea id="recovery-note" name="note" required /></div>
+        </ReviewForm>
+      </div>
+    </>;
+  }
+
   if (decided) {
     const recent = p.decidedAt && ctx.clock.now().getTime() - p.decidedAt.getTime() < 15_000;
     if (p.status === "superseded") {
@@ -88,7 +147,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
               <div className="sec-h"><h2>Reply</h2><RedraftButtons proposalId={p.id} current={(draft.language as "en" | "tc" | "sc") ?? "en"} /></div>
               {p.payload.purpose === "chase" && <div className={`banner ${p.payload.escalation ? "red" : "amber"}`}>{p.payload.escalation ? "Escalation: the deadline is close or earlier reminders went unanswered. A call to the client has been added to the task." : "Reminder: the client hasn’t sent what’s outstanding yet."}</div>}
               {!!p.payload.replaces && <div className="banner amber">Someone replied from the mailbox. Check what was delivered, then send anything still needed or mark the sending step done.</div>}
-              {evidence && <p className="small muted">Sent email check: {evidence.invoiceFound ? "current invoice attachment found" : "current invoice attachment not found"}; {evidence.uploadLinkFound ? "upload link found" : "upload link not found"}. Staff confirmation is still required.</p>}
+              {evidence && showSentEmailCheck(p.payload, evidence) && <p className="small muted">Sent email check: {evidence.invoiceFound ? "current invoice attachment found" : "current invoice attachment not found"}; {evidence.uploadLinkFound ? "upload link found" : "upload link not found"}. Staff confirmation is still required.</p>}
               {evidenceMessages.map(m => <p className="small" key={m.id}><Link className="lnk" href={`/inbox/${m.conversationId}`}>View sent email: {m.subject ?? "Reply"}</Link></p>)}
               {p.payload.draftSource === "template" && <div className="banner amber">Drafted from the standard template. Check the wording before sending.</div>}
               <ReviewForm action={approve} submit={`Approve and send${attachInvoice ? " with invoice" : ""}`} redirectTo="/">
@@ -158,7 +217,7 @@ export default async function Review({ params }: { params: Promise<{ id: string 
                   {lines.map((l) => (
                     <tr key={l.id}><td>{l.description}{l.kind === "disbursement" && <div className="small muted">Disbursement</div>}</td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inv.status === "draft" ? <InlineEdit action={lineAmountAction.bind(null, l.id)} name="amount" value={(l.amountCents / 100).toFixed(0)} display={money(l.amountCents)} label="Amount (HK$)" /> : money(l.amountCents)}</td></tr>
                   ))}
-                  <tr><td><b>Total</b></td><td style={{ textAlign: "right" }}><b>{money(inv.totalCents)}</b></td></tr>
+                  <tr><td><b>Total</b></td><td style={{ textAlign: "right", whiteSpace: "nowrap" }}><b>{money(inv.totalCents)}</b></td></tr>
                 </tbody></table>
                 <p className="small muted" style={{ marginBottom: 0 }}>{isCosts ? (inv.termsDays ? `Payable within ${inv.termsDays} days.` : "Payable on receipt.") : inv.termsDays ? `${inv.termsDays} days credit. Work starts now.` : "Payable upfront. Work starts once paid."}</p>
               </div>

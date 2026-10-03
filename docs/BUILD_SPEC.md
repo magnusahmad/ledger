@@ -11,7 +11,7 @@ Status: 29 September 2026. Owner: Magnus. Companion file: `docs/MILESTONES.md` (
 3. The founder reviews, edits if needed, and clicks **Approve and send**. The email goes out from the connected mailbox in the same thread, with the invoice PDF, payment instructions and a secure upload link. The invoice is created in Xero.
 4. The founder triggers a sandbox deposit into the Airwallex Global Account quoting the invoice number. Harbourline matches it, records the payment in Xero and moves every linked task through the payment gate.
 5. The investor (or the founder playing the client) replies with details and attachments, or uses the upload link. Harbourline attaches them to the task, extracts the fields, re-checks what is still needed, screens the new person against sanctions and PEP lists, generates the resolution and the **official Companies Registry form filled in**, and sends an e-signature request (after approval).
-6. After signing, the founder files on e-Registry (the Companies Registry has no third-party filing API) and records the filing reference. Harbourline updates the statutory registers as at the effective date, drafts the completion email, and the founder approves it. The task is done.
+6. After signing, the founder files on e-Registry and records the filing reference. (The Companies Registry does offer a filing interface for software, TPSI, which CSA Expert uses; Harbourline doesn't use it yet. See `docs/CR_TPSI.md`.) Harbourline updates the statutory registers as at the effective date, drafts the completion email, and the founder approves it. The task is done.
 
 Every step is visible on the task timeline. Every client-facing send, register change and filing record needs one click from a human.
 

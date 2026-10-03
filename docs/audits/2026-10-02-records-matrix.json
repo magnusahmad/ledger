@@ -1,0 +1,638 @@
+[
+  {
+    "id": "cn.changeLegalRep",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.changeOfficers",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.changeAddress",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.changeCapital",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.equityTransfer",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.annualReport",
+    "exercised": [
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "cn.beneficialOwners",
+    "exercised": [
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.appointDirector",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.resignDirector",
+    "exercised": [
+      "task",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeParticulars",
+    "exercised": [
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeSecretary",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeOffice",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeName",
+    "exercised": [
+      "task",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.incorporation",
+    "exercised": [
+      "pay",
+      "task",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.transferIn",
+    "exercised": [
+      "task",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.annualReturn",
+    "exercised": [
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.agm",
+    "exercised": [
+      "sign",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.brRenewal",
+    "exercised": [
+      "task",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.kycReview",
+    "exercised": [
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.allotShares",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.transferShares",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.updateControllers",
+    "exercised": [
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.deregistration",
+    "exercised": [
+      "task",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeFye",
+    "exercised": [
+      "sign",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.reserveDirector",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.changeAuditor",
+    "exercised": [
+      "sign",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.amendArticles",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.buyback",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.bankSignatory",
+    "exercised": [
+      "sign",
+      "task",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.dormant",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.mailHandling",
+    "exercised": [
+      "task",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.custom",
+    "exercised": [
+      "task",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.resignSecretary",
+    "exercised": [
+      "task",
+      "task",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.lateFiling",
+    "exercised": [
+      "task",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.warningLetter",
+    "exercised": [
+      "task",
+      "task",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "hk.prosecution",
+    "exercised": [
+      "task",
+      "task",
+      "task",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "mo.changeAdministrators",
+    "exercised": [
+      "pay",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "mo.quotaTransfer",
+    "exercised": [
+      "pay",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "mo.changeOffice",
+    "exercised": [
+      "pay",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "mo.amendArticles",
+    "exercised": [
+      "pay",
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "mo.approveAccounts",
+    "exercised": [
+      "pay",
+      "sign",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "tw.changeDirectors",
+    "exercised": [
+      "sign",
+      "file",
+      "task",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "tw.changeResponsiblePerson",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "tw.declaration221",
+    "exercised": [
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "tw.changeAddress",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  },
+  {
+    "id": "tw.capitalIncrease",
+    "exercised": [
+      "sign",
+      "file",
+      "register",
+      "confirm"
+    ],
+    "catalogue": "passed",
+    "portal": "EN/TC/SC passed",
+    "documents": "complete",
+    "lifecycle": "done",
+    "status": "done"
+  }
+]

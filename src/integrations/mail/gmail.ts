@@ -58,8 +58,19 @@ export class GmailMail implements MailProvider {
   async send(m: OutboundMail): Promise<SentMail> {
     const raw = await buildRaw(this.address, m);
     const r = await this.gmail.users.messages.send({ userId: "me", requestBody: { raw: raw.toString("base64url"), threadId: m.providerThreadId ?? undefined } });
-    const sent = await this.gmail.users.messages.get({ userId: "me", id: r.data.id!, format: "metadata", metadataHeaders: ["Message-ID"] });
-    const rfc = sent.data.payload?.headers?.find((h) => h.name?.toLowerCase() === "message-id")?.value ?? null;
-    return { providerMessageId: r.data.id!, providerThreadId: r.data.threadId ?? null, rfcMessageId: rfc };
+    if (!r.data.id) throw new Error("Gmail did not return a send acknowledgement");
+    let rfc = m.correlationId ? (m.correlationId.startsWith("<") ? m.correlationId : `<${m.correlationId}@harbourline.local>`) : null;
+    try {
+      const sent = await this.gmail.users.messages.get({ userId: "me", id: r.data.id, format: "metadata", metadataHeaders: ["Message-ID"] });
+      rfc = sent.data.payload?.headers?.find(h => h.name?.toLowerCase() === "message-id")?.value ?? rfc;
+    } catch { /* Provider acknowledgement remains valid if optional metadata is unavailable. */ }
+    return { providerMessageId: r.data.id, providerThreadId: r.data.threadId ?? null, rfcMessageId: rfc };
+  }
+
+  async reconcileDelivery(correlationId: string): Promise<{ status: "accepted"; sent: SentMail } | { status: "unknown" }> {
+    const found = await this.gmail.users.messages.list({ userId: "me", q: `in:sent rfc822msgid:${correlationId.replace(/^<|>$/g, "")}`, maxResults: 2 });
+    const matches = found.data.messages ?? [];
+    if (matches.length !== 1 || !matches[0].id) return { status: "unknown" };
+    return { status: "accepted", sent: { providerMessageId: matches[0].id, providerThreadId: matches[0].threadId, rfcMessageId: correlationId } };
   }
 }

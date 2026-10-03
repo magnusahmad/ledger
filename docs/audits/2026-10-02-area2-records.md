@@ -1,0 +1,51 @@
+# Area 2 — Sent history, duplicate capture and firm boundaries
+
+**Terminal status: CLEAR for this bounded Area 2 domain subset at immutable repair 72ec783 (local imported hash e5e2664).** The original reporter independently reran all eight Sent-history cases and 35 affected recovery/provider/job/poll controls: **43/43 passed in 87.80s**, nine files. The six distinct defects below are repaired; SENT04 reproduces the same duplicate-capture defect as SENT01. The previous Area 1 recovery guards remain green. This report retains the actual red history at 822686c. No implementation was edited by the reporter.
+
+## Original reporter final verification
+
+`npx vitest run tests/audit-sent-history.test.ts tests/audit-recovery.test.ts tests/audit-recovery-guards.test.ts tests/audit-recovery-store.test.ts tests/robust-approval-controls.test.ts tests/robust-mail-adapter.test.ts tests/robust-job-ownership.test.ts tests/robust-job-failure.test.ts tests/robust-poll-controls.test.ts`
+
+**9 files / 43 tests passed; 87.80s; exit 0**, logged at `/private/tmp/harbourline-robustness-20261002/area2-records-independent-green.log`. All original business assertions were preserved; no expected failure was skipped or accepted. The repaired migration ran against the reporter's own QA database. SENT06 now checks all foreign nonmutation and history-confidentiality assertions, and SENT03 reaches its chronological review-history check. SENT04 verifies both the own-RFC proof positive and concurrent poll/manual capture; SENT08 still preserves pending human review and invoice/upload text without sending.
+
+`npx tsc --noEmit --incremental false`, `npx eslint tests/audit-sent-history.test.ts` and `git diff --check` all passed. Typecheck/lint logs are `/private/tmp/harbourline-robustness-20261002/area2-records-final-typecheck.log` and `area2-records-final-lint.log`, both empty. The PG driver emitted nonfatal concurrent-query deprecation warnings in the stress/recovery run; no test failure.
+
+The intake original reporter owns the complementary seven mailbox/approval race tests and the `mailbox-replies`, `sending-outside`, `m4-email` legacy replay. Their results are not substituted for this reporter's direct replay or claimed here. No new reproducible defect was found in this bounded replay. No Area 3 work was started.
+
+## Historical red verification
+
+Database: `postgres://localhost/harbourline_robust_audit` only. Fictional `seedDemo` data, deterministic fixed timestamps and fixture LLM outputs, MemoryStorage and FakeMail; no environment credentials, live API, real mail or external data. Each case resets this database sequentially. Private harness substitutions, node_modules and logs are excluded from commits.
+
+- `npx vitest run tests/audit-sent-history.test.ts` at 822686c: **7 failed / 1 passed**, **8.02s**, log `/private/tmp/harbourline-robustness-20261002/area2-records-red.log`.
+- Same command after adding soft assertions to record all foreign-thread isolation failures: **7 failed / 1 passed**, **6.57s**, log `/private/tmp/harbourline-robustness-20261002/area2-records-red-confirmed.log`. No import/setup failure. The foreign-thread case now records wrong conversation ownership, modification of the foreign last-message timestamp, and disclosure of the foreign client name/history into the mailbox-review fixture input.
+- `npx tsc --noEmit`: passed, log `/private/tmp/harbourline-robustness-20261002/area2-records-typecheck.log` (empty).
+- `npx eslint tests/audit-sent-history.test.ts`: passed, zero errors/warnings, log `/private/tmp/harbourline-robustness-20261002/area2-records-lint.log` (empty).
+
+The duplicate barrier pauses after a successful real provider-ID lookup, allowing two independent callers to observe an absent message. It injects no exception, changes no database data and leaves the real savepoints/constraints active. Initial red runs observed both callers reaching this boundary. The committed barrier releases after five seconds if an implementation instead serializes before the lookup; its green acceptance conditions assert the business results, not that a repair retains this internal ordering. These are controlled concurrency tests, not process-kill tests.
+
+## Case matrix and actual bugs
+
+| Test | Expected business behavior | Actual result at 822686c | Initial classification | Final original-reporter replay |
+|---|---|---|---|---|
+| SENT01 | Concurrent capture of the same provider Sent item safely acknowledges both callers; one Sent row, one task event, one invoice/upload replacement; no send. | One caller succeeds; the other rejects with PostgreSQL 23505 on `message_provider_uq`. | **P2 bug**: capture's check-then-insert is not idempotent under concurrency. | **Passed at 72ec783** |
+| SENT02 | Concurrent different provider IDs for one RFC Message-ID yield one Sent history row/event/replacement. | Both calls succeed but two rows carry the same outgoing RFC Message-ID. | **P2 bug**: RFC-equivalent aliases duplicate Sent history (and task events). | **Passed at 72ec783** |
+| SENT03 | Capture 04:00 Sent, then a delayed 03:00 Sent; latest activity remains 04:00 and review history is chronological. | `conversation.lastMessageAt` regresses to 03:00. The chronological-review assertion is not reached in the initial red run. | **P2 bug**: older mailbox items move activity backwards. | **Passed at 72ec783** |
+| SENT04 | Fully approved Harbourline email's own RFC proof does not withdraw a newer draft; concurrent polling/manual capture keeps the receipt and one manual replacement without another send. | Own-proof-only control passes; concurrent poll/direct manual capture reports duplicate-provider constraint failure. | Same concurrency bug as SENT01, reproduced through `pollMail`; no separate self-proof defect filed. | **Passed at 72ec783** |
+| SENT05 | Valid acknowledgement in cli_c1's thread leaves unrelated cli_c2 draft/proposal/task/queued job/events byte-for-byte unchanged. | Unrelated pending proposal gains `deliveryEvidence: { invoiceFound: false, uploadLinkFound: false }`; other protected objects remain unchanged. | **P2 bug**: unrelated preview payload is rewritten. No positive delivery evidence or external effect is claimed. | **Passed at 72ec783** |
+| SENT06 | Unknown own provider thread + In-Reply-To referencing a foreign firm's parent RFC must create/join only an own-firm conversation; foreign records/history remain unchanged/private. | Own-firm outgoing message references foreign conversation; foreign timestamp changes 01:00→02:05; mailbox-review input receives foreign client name and confidential history. | **P1 bug**: unscoped RFC parent fallback crosses a firm boundary. | **Passed at 72ec783** |
+| SENT07 | Same provider message ID in a different firm's mailbox must not block legitimate independent capture. | Own-firm capture throws 23505 because the provider-message unique index omits firm. | **P2 bug**: firm-scoped domain lookup conflicts with global provider-ID uniqueness. | **Passed at 72ec783** |
+| SENT08 | Five captures `[new, new, old, old, new]` keep exactly one pending invoice/upload replacement and two actual Sent events; original wording/recipients retained; task unchanged and no mail sent. | **Passed** in both runs. | Positive once-only/human-approval control. | **Passed at 72ec783** |
+
+## Scope and limits
+
+Rules derive from AGENTS firm isolation/human approval, PRODUCT_SPEC threading and task history, and DECISIONS #36/#43. Cross-thread delivery evidence for a genuinely delivered invoice/link remains supported; SENT05 uses an unrelated recipient/client acknowledgement that supplies neither. The foreign fixture has a separate client, conversation, parent mail, pending draft/proposal and a closed task; it does not depend on outside authentication or RLS being implemented. The concrete wrong-context domain lookup is reported separately from deferred production authentication/RLS.
+
+Eight cases are the bounded Area 2 subset requested. No statutory/share, broad RLS/auth, live provider, UI or Area 3 work is claimed. The original reporter replayed the immutable repair and all eight cases are green; the report's clearance is confined to this stated subset and its affected recovery controls.
+
+## Fixer candidate verification
+
+Own independent reproduction of `tests/audit-sent-history.test.ts`: **7 failed/1 passed, 6.88s**, `fixer-area2-sent-red.log`, at the reported business assertions and provider uniqueness failures. The repair serializes durable provider/RFC identities after the initial lookup, repeats duplicate detection under transaction-scoped advisory locks, and retains only one capture's mailbox effects. RFC parent fallback, conversation, review history and task lookups are firm-scoped. Activity timestamps use the greater stored/received time. Delivery-evidence refresh requires intended recipient overlap, retaining the existing genuinely delivered invoice/link checks across different threads. Migration `0006_firm_mail_identity.sql` replaces the global provider-ID uniqueness index with `(firm_id, provider, provider_message_id)` without deleting or rewriting mail history.
+
+Combined original reporter cases: **15 passed, 27.40s** (`fixer-area2-green.log`) on the isolated migrated database. At the time of the fixer's publication, original reporter replay was still required; that replay is now recorded above.
+
+Relevant sequential command: `npx vitest run tests/m4-email.test.ts tests/m5-billing.test.ts tests/mailbox-replies.test.ts tests/sending-outside.test.ts tests/chasing.test.ts tests/audit-recovery.test.ts tests/audit-recovery-guards.test.ts tests/audit-recovery-store.test.ts tests/robust-approval-controls.test.ts`: **9 files passed, 86 tests passed, 176.30s**, `fixer-area2-relevant-green.log`. Includes cross-thread invoice attachment detection, actual process-kill recovery, immutable original approval inputs, foreign recovery guards, fake-store identity and fresh human approval after mailbox checking. TypeScript (`npx tsc --noEmit --incremental false`) and scoped ESLint both exited 0; `git diff --check` passed. All PG test processes ran sequentially against the fixer's isolated database; private harness patches and node_modules were excluded.

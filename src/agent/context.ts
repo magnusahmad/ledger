@@ -12,22 +12,22 @@ import type { PlaybookDef } from "@/domain/playbook-types";
 import { requirementLibrary } from "@/domain/playbooks";
 import { upcomingDeadlines } from "@/domain/deadlines";
 
-export async function clientSnapshot(ctx: Ctx, clientId: string) {
-  const c = await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) });
+export async function clientSnapshot(ctx: Ctx, clientId: string, opts: { messageAt?: Date } = {}) {
+  const c = await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, clientId), eq(clientT.firmId, ctx.firmId)) });
   if (!c) return null;
   const today = ctx.clock.today();
   const officers = await officersAsAt(ctx, clientId, today);
   const members = await membersAsAt(ctx, clientId, today).catch(() => []);
   const capital = await issuedAsAt(ctx, clientId, today).catch(() => []);
-  const scs = await ctx.db.select().from(significantController).where(and(eq(significantController.clientId, clientId)));
+  const scs = await ctx.db.select().from(significantController).where(and(eq(significantController.clientId, clientId), eq(significantController.firmId, ctx.firmId)));
   const contacts = await contactsFor(ctx, clientId);
   const tasks = await openTasksForClient(ctx, clientId);
   const docs = await ctx.db.select({ title: document.title, kind: document.kind, createdAt: document.createdAt }).from(document)
-    .where(eq(document.clientId, clientId)).orderBy(desc(document.createdAt)).limit(20);
-  const invoices = await ctx.db.select().from(invoice).where(eq(invoice.clientId, clientId)).orderBy(desc(invoice.createdAt)).limit(6);
-  const convs = await ctx.db.select({ id: conversation.id }).from(conversation).where(eq(conversation.clientId, clientId));
+    .where(and(eq(document.clientId, clientId), eq(document.firmId, ctx.firmId))).orderBy(desc(document.createdAt)).limit(20);
+  const invoices = await ctx.db.select().from(invoice).where(and(eq(invoice.clientId, clientId), eq(invoice.firmId, ctx.firmId))).orderBy(desc(invoice.createdAt)).limit(6);
+  const convs = await ctx.db.select({ id: conversation.id }).from(conversation).where(and(eq(conversation.clientId, clientId), eq(conversation.firmId, ctx.firmId)));
   const msgs = convs.length ? await ctx.db.select().from(message)
-    .where(and(inArray(message.conversationId, convs.map((x) => x.id)), inArray(message.status, ["received", "sent"])))
+    .where(and(eq(message.firmId, ctx.firmId), inArray(message.conversationId, convs.map((x) => x.id)), inArray(message.status, ["received", "sent"])))
     .orderBy(desc(message.at)).limit(8) : [];
   const personIds = [...new Set([...officers.map((o) => o.personId), ...members.map((m) => m.personId)])];
   const cdd: Record<string, string | null> = {};
@@ -70,7 +70,7 @@ export async function clientSnapshot(ctx: Ctx, clientId: string) {
     documentsOnFile: docs.map((d) => d.title),
     recentInvoices: invoices.map((i) => ({ number: i.number, status: i.status, total: money(i.totalCents, i.currency) })),
     upcomingDeadlines: deadlines,
-    recentMessages: msgs.reverse().map((m) => ({ direction: m.direction, at: m.at.toISOString().slice(0, 10), text: (m.text ?? "").slice(0, 600) })),
+    recentMessages: msgs.reverse().map((m) => ({ direction: m.direction, at: m.at.toISOString(), relationToInbound: opts.messageAt ? (m.at > opts.messageAt ? "later than the new message" : "at or before the new message") : null, text: (m.text ?? "").slice(0, 600) })),
   };
 }
 

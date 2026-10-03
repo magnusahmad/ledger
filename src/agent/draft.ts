@@ -5,11 +5,12 @@ import type { Lang } from "@/db/schema";
 import { callAgent, AgentError } from "./call";
 import { DraftZ } from "./schemas";
 import { DRAFT_SYSTEM } from "./prompts";
+import { parseMoneyCents } from "@/domain/money-input";
 
 export type ReplyFacts = {
   language: Lang;
   /** "meeting": confirms what was agreed in person or by phone, rather than answering a message. */
-  context?: "message" | "meeting" | "costs" | "chase" | "letter";
+  context?: "message" | "meeting" | "costs" | "chase" | "letter" | "change";
   recipientName: string;
   clientName: string;
   signOff: string;
@@ -27,10 +28,24 @@ export type ReplyFacts = {
 export function draftProblems(f: ReplyFacts, body: string): string[] {
   const p: string[] = [];
   if (f.invoice && !body.includes(f.invoice.number)) p.push(`The body must include the invoice number ${f.invoice.number} exactly.`);
-  if (f.invoice && !body.includes(f.invoice.totalFormatted.replace(/^HK\$/, "").split(".")[0])) p.push(`The body must state the invoice total ${f.invoice.totalFormatted}.`);
+  if (f.invoice && !hasInvoiceTotal(body, f.invoice.totalFormatted)) p.push(`The body must state the invoice total ${f.invoice.totalFormatted}.`);
   if (f.uploadUrl && !body.includes(f.uploadUrl)) p.push(`The body must include the upload link ${f.uploadUrl} exactly.`);
   if (!body.trim()) p.push("The body is empty.");
   return p;
+}
+
+function hasInvoiceTotal(body: string, total: string): boolean {
+  const expected = /^(HK\$|[A-Z]{3})\s*(.+)$/.exec(total);
+  if (!expected) return false;
+  // A complete money token, not a numeric substring. Preserve cents and currency
+  // while allowing ordinary grouping, whitespace and equivalent trailing zeros.
+  const currency = expected[1] === "HK$" ? "(?:HK\\$|HKD)" : expected[1];
+  const token = new RegExp(`(?<![A-Za-z0-9_$-])${currency}\\s*((?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d{1,2})?)(?![A-Za-z0-9]|[.,]\\d)`, "gi");
+  try {
+    const cents = parseMoneyCents(expected[2]);
+    for (const match of body.matchAll(token)) if (parseMoneyCents(match[1]) === cents) return true;
+  } catch { return false; }
+  return false;
 }
 
 export async function draftEmail(ctx: Ctx, facts: ReplyFacts, opts: { messageId?: string | null; taskId?: string | null; purpose?: string } = {}): Promise<{ subject: string; body: string; source: "agent" | "template" }> {
@@ -58,6 +73,7 @@ const T = {
     hi: (n: string) => `Dear ${n},`,
     thanks: "Thank you for your message.",
     thanksMeeting: "Thank you for meeting with us. As agreed, we will take care of the following.",
+    thanksChange: "We will take care of the following additional or replacement work. Please review the separate quote below.",
     thanksCosts: "We have paid the following on your behalf. Please find our invoice attached.",
     thanksChase: "A quick reminder: we still need a few things from you to complete the following.",
     thanksLetter: "We have received the attached letter for the company. Here is what needs to happen next.",
@@ -83,6 +99,7 @@ const T = {
     hi: (n: string) => `${n}您好：`,
     thanks: "多謝您的訊息。",
     thanksMeeting: "多謝您抽空與我們會面。按我們商討的安排，我們會跟進以下事項。",
+    thanksChange: "我們會跟進以下新增或替代事項，請查閱下列獨立報價。",
     thanksCosts: "我們已代您支付以下費用，隨函附上發票。",
     thanksChase: "溫馨提示：為完成以下事項，我們仍需您提供部分資料。",
     thanksLetter: "我們收到隨附給公司的信件，以下是接下來需要處理的事項。",
@@ -108,6 +125,7 @@ const T = {
     hi: (n: string) => `${n}您好：`,
     thanks: "感谢您的信息。",
     thanksMeeting: "感谢您抽空与我们会面。按我们商定的安排，我们会跟进以下事项。",
+    thanksChange: "我们会跟进以下新增或替代事项，请查阅下列独立报价。",
     thanksCosts: "我们已代您支付以下费用，随函附上发票。",
     thanksChase: "温馨提示：为完成以下事项，我们仍需您提供部分资料。",
     thanksLetter: "我们收到随附给公司的信件，以下是接下来需要处理的事项。",
@@ -133,7 +151,7 @@ const T = {
 
 export function templateEmail(f: ReplyFacts): { subject: string; body: string } {
   const t = T[f.language] ?? T.en;
-  const out: string[] = [t.hi(f.recipientName), f.context === "meeting" ? t.thanksMeeting : f.context === "costs" ? t.thanksCosts : f.context === "chase" ? t.thanksChase : f.context === "letter" ? t.thanksLetter : t.thanks];
+  const out: string[] = [t.hi(f.recipientName), f.context === "change" ? t.thanksChange : f.context === "meeting" ? t.thanksMeeting : f.context === "costs" ? t.thanksCosts : f.context === "chase" ? t.thanksChase : f.context === "letter" ? t.thanksLetter : t.thanks];
   const list = (xs: string[]) => xs.map((x) => `- ${x}`).join("\n");
   for (const r of f.newRequests) {
     const block = [t.newReq(r.title)];

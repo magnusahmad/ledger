@@ -1,5 +1,5 @@
 // Wires the engine's human-gated steps to proposals, and automatic steps to their work.
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { conversation, filing, message, proposal, request as requestT, task as taskT } from "@/db/schema";
 import { onEnterStep, markStepState, getTask, logEvent, advance, assertTaskReady } from "./engine";
@@ -14,6 +14,7 @@ import { getPlaybook } from "./playbooks";
 import { validRegisterDate } from "@/documents/register-export";
 import { approvalState, assertApprovalState, expireApproval } from "./approval-state";
 import { completeSending } from "./sending";
+import { lockRegisterPeople } from "./register-person";
 
 onEnterStep("generate", async (ctx, task, _step, idx) => {
   try {
@@ -68,17 +69,35 @@ onApprove("register_change", async (ctx, p) => {
   const taskId = p.payload.taskId as string;
   await assertTaskReady(ctx, taskId, "register");
   await assertApprovalState(ctx, taskId, p.payload.approvalState, p.id);
-  const changes = await planRegisterChanges(ctx, taskId);
-  const applied = changes.map(c => c.description);
-  if (JSON.stringify(applied) !== JSON.stringify(p.payload.preview)) {
-    await expireApproval(ctx, taskId, p.id);
-    throw new Error("The register changes differ from the preview. Preparation has restarted for a fresh approval.");
+  let expired = false;
+  try { await ctx.db.transaction(async db => {
+    await db.execute(sql`select id from task where id = ${taskId} and firm_id = ${ctx.firmId} for update`);
+    const task = await getTask(ctx, taskId);
+    await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`shares:${ctx.firmId}:${task.clientId}`}, 0))`);
+    const txCtx = { ...ctx, db: db as unknown as Ctx["db"] };
+    // Lock shared and future parties before checking the authoritative preview.
+    // Otherwise another company can change the working profile before enrollment.
+    await lockRegisterPeople(txCtx, task);
+    try { await assertTaskReady(txCtx, taskId, "register"); } catch (e) { expired = true; throw e; }
+    if (p.payload.approvalState !== await approvalState(txCtx, taskId)) {
+      expired = true;
+      throw new Error("The task or company facts changed while approval was starting");
+    }
+    const changes = await planRegisterChanges(txCtx, taskId);
+    const applied = changes.map(c => c.description);
+    if (JSON.stringify(applied) !== JSON.stringify(p.payload.preview)) {
+      expired = true;
+      throw new Error("The register changes differ from the preview. Preparation has restarted for a fresh approval.");
+    }
+    // Execute the checked plan itself; never independently recompute effects after approval.
+    for (const change of changes) await change.apply();
+    await markStepState(txCtx, taskId, "register", { applied: true, changes: applied });
+    await logEvent(txCtx, taskId, "register.updated", applied.length ? applied.join("; ") : "Registers confirmed", {}, ctx.userId);
+    await advance(txCtx, taskId);
+  }); } catch (e) {
+    if (expired) await expireApproval(ctx, taskId, p.id);
+    throw e;
   }
-  // Execute the checked plan itself; never independently recompute effects after approval.
-  for (const change of changes) await change.apply();
-  await markStepState(ctx, taskId, "register", { applied: true, changes: applied });
-  await logEvent(ctx, taskId, "register.updated", applied.length ? applied.join("; ") : "Registers confirmed", {}, ctx.userId);
-  await advance(ctx, taskId);
 });
 
 onEnterStep("task", async (ctx, task, step) => {

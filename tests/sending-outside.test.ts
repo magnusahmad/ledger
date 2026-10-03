@@ -10,6 +10,7 @@ import { completeManualStep } from "@/domain/step-hooks";
 import { renderInvoicePdf } from "@/documents/invoice-pdf";
 import { invoiceWithLines, setLineAmount } from "@/domain/invoices";
 import { document, invoice, job, message, request, task } from "@/db/schema";
+import { deliveryEvidence, showSentEmailCheck } from "@/domain/delivery-evidence";
 
 let ctx: TestCtx;
 beforeEach(async () => {
@@ -187,4 +188,15 @@ it("an upload URL with a different token suffix does not count as the request's 
   await pollMail(ctx);
   const [card] = await pendingProposals(ctx, { kind: "send_message" });
   expect(card.payload.deliveryEvidence).toMatchObject({ uploadLinkFound: false });
+});
+
+it("a fresh request draft shows no sent-email check; the card left after a mailbox reply does", async () => {
+  const { p, req, email } = await clientAsks();
+  const fresh = await deliveryEvidence(ctx, req.id, [email]);
+  expect(showSentEmailCheck(p.payload, fresh)).toBe(false);
+  staffReply(email, "Noted, will send the details separately.");
+  await pollMail(ctx);
+  const [card] = await pendingProposals(ctx, { kind: "send_message" });
+  expect(card.payload.replaces).toBeTruthy();
+  expect(showSentEmailCheck(card.payload, await deliveryEvidence(ctx, req.id, [email]))).toBe(true);
 });

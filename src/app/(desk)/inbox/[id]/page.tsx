@@ -15,7 +15,7 @@ import type { Intake } from "@/agent/schemas";
 export default async function Thread({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const ctx = getCtx();
-  const conv = await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, id) });
+  const conv = await ctx.db.query.conversation.findFirst({ where: and(eq(conversation.id, id), eq(conversation.firmId, ctx.firmId)) });
   if (!conv) notFound();
   const cl = conv.clientId ? await ctx.db.query.client.findFirst({ where: eq(client.id, conv.clientId) }) : null;
   const { msgs, atts } = await threadMessages(ctx, id);

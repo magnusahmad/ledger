@@ -1,4 +1,5 @@
 import { beforeEach, expect, it } from "vitest";
+import { readFile } from "node:fs/promises";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
 import { action, intake, goodDraft, factsOf } from "./agent-fixtures";
 import { seedDemo } from "@/db/seed-demo";
@@ -58,7 +59,8 @@ it("a real name subsequently supplied in a message fills an unnamed person's rec
 it("an uploaded ID can supply the real name for an unnamed person without conflicting with the placeholder", async () => {
   const { req, person, task } = await unnamedTask();
   ctx.llm.on("extract", { fields: [{ key: "fullName", value: "LEE Siu Ling", quote: "LEE Siu Ling" }], documents: [], conflicts: [] });
-  await portalUpload(ctx, req.uploadToken, { taskId: task.id, key: "idCopy", filename: "fictional-id.jpg", mime: "image/jpeg", content: Buffer.from("fictional ID") });
+  await portalUpload(ctx, req.uploadToken, { taskId: task.id, key: "idCopy", filename: "fictional-id.jpg", mime: "image/jpeg", content: await readFile("tests/fixtures/upload-corpus/readable-scan.jpg") });
+  expect(ctx.llm.callsFor("extract")).toHaveLength(1);
   expect((await getPersonProtected(ctx, person.id)).nameEn).toBe("LEE Siu Ling");
   expect((await getTask(ctx, task.id)).checklist.find(e => e.key === "fullName")).toMatchObject({ status: "received", value: "LEE Siu Ling" });
   expect(await pendingProposals(ctx, { kind: "conflict" })).toHaveLength(0);

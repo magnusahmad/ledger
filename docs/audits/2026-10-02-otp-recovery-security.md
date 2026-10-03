@@ -1,0 +1,8 @@
+# OTP repair security and process-death controls
+
+Root audit controls, 3 October 2026; fictional signers, real isolated local PostgreSQL, FakeMail with a temporary durable outbox. No configured live adapters or `.env` load in the fault child.
+
+- `OTP delivery journals encrypt the code and public signing views expose no challenge secrets`: the accepted `fc30d42` signing source has no durable OTP journal, so this new repair invariant fails at the expected missing journal. This is verification of the new recovery mechanism, not another original plaintext-storage defect. The repaired `139f19a` source stores authenticated ciphertext, with a matching decrypted payload digest; public views contain neither codes, link tokens nor challenge/token hash fields.
+- `killing OTP delivery after provider acceptance releases its session locks and preserves one usable delivered challenge`: the parent kills an actual child with SIGKILL after the fake provider durably accepts one email but before its acknowledgement returns. The repaired challenge remains usable at 599 operational seconds, verification obtains the released session locks, consumption is once, and transport count remains one. No bytes/token/code are printed. The bounded child accepts only allowlisted isolated local test databases.
+
+Actual baseline run: **one expected red / one positive, 2.50 seconds**. Actual repair run at `139f19a`: **two passes, 2.43 seconds**. Type checking and focused lint exit zero. The source was temporarily changed only inside the root-owned validation worktree for the baseline replay and then restored to the immutable repair; no root product files changed. Final combined signing candidate must replay these controls.

@@ -198,7 +198,7 @@ Open questions: does the design partner do bookkeeping, for how many clients, in
 ## 4. Where Harbourline is currently *behind* CSA (time lost if not fixed)
 
 1. **Job coverage.** 12 playbooks vs CSA's much larger job library (share allotments and transfers, share certificates, SCR updates, deregistration, auditor changes, capital reduction...). Anything uncovered means running CSA alongside, which wipes out savings. **Biggest risk.**
-2. **E-filing output.** CSA produces Companies Registry e-forms. Harbourline v1 plans filing-ready data only, with staff typing into the CR portal. That's a loss of maybe 5 min per filing (~150 filings, ≈12 h). Add CR e-form output early.
+2. **E-filing output.** CSA submits ND2A, NR1, NNC1, NNC2 and NSC1 electronically, through the Companies Registry's Third Party Software Interface (TPSI). Harbourline now fills the official forms as PDFs, but staff still key them into e-Registry. That's a loss of maybe 5 min per filing (~150 filings, ≈12 h). Submitting through TPSI closes it: see `docs/CR_TPSI.md`.
 3. **Jurisdictions.** CSA covers BVI, Cayman, PRC, Macau, Taiwan and others. Harbourline is Hong Kong only.
 4. **Batch operations.** CSA's Mass Production and batch filing. The annual cycle for hundreds of clients needs a batch start (messages and invoices) in Harbourline.
 5. **AML screening.** P&L has sanctions/PEP/SFC search. Harbourline defers screening to a vendor in phase 3.

@@ -1,10 +1,10 @@
-// Read-only dated snapshots. Contact particulars currently come from the person
-// record; membership and transactions are reconstructed at the selected date.
+// Read-only dated company snapshots, including approved officer particulars.
 import { and, eq, lte } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { charge, person, significantController, type Lang } from "@/db/schema";
+import { charge, significantController, type Lang } from "@/db/schema";
 import { getClient, officersAsAt } from "@/domain/records";
 import { membersAsAt, movementHistory } from "@/domain/shares";
+import { registerPeopleAsAt } from "@/domain/register-person";
 import { buildPdf, type Block } from "./builder";
 
 export function validRegisterDate(date: string) {
@@ -21,7 +21,7 @@ export async function renderRegisters(ctx: Ctx, clientId: string, date: string, 
   const movements = (await movementHistory(ctx, clientId)).filter((m) => m.date <= date);
   const controllers = await ctx.db.select().from(significantController).where(and(eq(significantController.firmId, ctx.firmId), eq(significantController.clientId, clientId), lte(significantController.registrableFrom, date)));
   const charges = await ctx.db.select().from(charge).where(and(eq(charge.firmId, ctx.firmId), eq(charge.clientId, clientId), lte(charge.createdOn, date)));
-  const people = await ctx.db.select().from(person).where(eq(person.firmId, ctx.firmId));
+  const people = await registerPeopleAsAt(ctx, clientId, date);
   const name = (id: string | null) => {
     const p = people.find((p) => p.id === id);
     return p ? (lang === "en" ? p.nameEn : p.nameZh ? `${p.nameZh} (${p.nameEn})` : p.nameEn) : "—";
@@ -31,7 +31,7 @@ export async function renderRegisters(ctx: Ctx, clientId: string, date: string, 
   const section = (title: string, head: string[], rows: string[][]) => {
     if (blocks.length) blocks.push({ t: "pagebreak" });
     blocks.push({ t: "title", text: companyName }, { t: "subtitle", text: `${title} · ${label("As at", "截至", "截至")} ${date}` });
-    blocks.push({ t: "small", text: label("Membership and transactions are dated. Names and contact particulars reflect the current person record; verify historical particulars before statutory use.", "成員資格及交易按指定日期列示。姓名及聯絡資料來自現有記錄；作法定用途前請核對歷史資料。", "成员资格及交易按指定日期列示。姓名及联系资料来自现有记录；作法定用途前请核对历史资料。") });
+    blocks.push({ t: "small", text: label("Membership, transactions and approved particulars are dated. The initial baseline retains the facts known when history was established; verify any earlier unavailable history before statutory use.", "成員資格、交易及已批准資料按日期列示。初始記錄保留建立歷史時的已知資料；作法定用途前請核對較早而未有記錄的歷史。", "成员资格、交易及已批准资料按日期列示。初始记录保留建立历史时的已知资料；作法定用途前请核对较早而未有记录的历史。") });
     if (rows.length) blocks.push({ t: "table", head, rows });
     else blocks.push({ t: "p", text: label("No entries on this date.", "此日期無記錄。", "此日期无记录。") });
   };

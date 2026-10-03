@@ -1,0 +1,1 @@
+ALTER TABLE "mail_delivery" ADD COLUMN "execution_token" text;

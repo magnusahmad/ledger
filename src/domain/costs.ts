@@ -1,11 +1,11 @@
 // Costs that come up after a request was invoiced: late fees, fines, court fees or stamp duty
 // paid on the client's behalf. A draft invoice takes the line directly; an invoice the client
 // already has is never rewritten, so the cost goes on an additional invoice drafted for approval.
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { conversation, invoice, invoiceLine, message, request as requestT } from "@/db/schema";
 import { getTask, logEvent } from "./engine";
-import { billingContact, nextInvoiceNumber, recalcTotal } from "./invoices";
+import { assertInvoiceDraftEditable, billingContact, nextInvoiceNumber, recalcTotal } from "./invoices";
 import { createProposal } from "./proposals";
 import { composeReply, emptyFacts } from "./inbound";
 import { money } from "./labels";
@@ -14,15 +14,22 @@ import { audit } from "./audit";
 export class CostError extends Error {}
 
 export async function addCost(ctx: Ctx, taskId: string, c: { description: string; amountCents: number; kind: "disbursement" | "fee" }) {
+  return ctx.db.transaction(async db => addCostAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, taskId, c));
+}
+
+async function addCostAtomic(ctx: Ctx, taskId: string, c: Parameters<typeof addCost>[2]) {
   if (!c.description.trim()) throw new CostError("Describe the cost");
-  if (!Number.isFinite(c.amountCents) || c.amountCents <= 0) throw new CostError("Enter an amount above zero");
+  if (!Number.isSafeInteger(c.amountCents) || c.amountCents <= 0) throw new CostError("Enter an amount above zero");
   const t = await getTask(ctx, taskId);
   if (t.firmId !== ctx.firmId) throw new CostError("Task not found");
+  if (t.requestId) await ctx.db.execute(sql`select id from request where id = ${t.requestId} and firm_id = ${ctx.firmId} for update`);
   const req = t.requestId ? await ctx.db.query.request.findFirst({ where: eq(requestT.id, t.requestId) }) : null;
+  if (req?.invoiceId) await ctx.db.execute(sql`select id from invoice where id = ${req.invoiceId} and firm_id = ${ctx.firmId} for update`);
   const primary = req?.invoiceId ? await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, req.invoiceId) }) : null;
   const line = { taskId, description: c.description.trim(), amountCents: Math.round(c.amountCents), kind: c.kind };
 
   if (primary?.status === "draft") {
+    await assertInvoiceDraftEditable(ctx, primary.id);
     const n = (await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, primary.id))).length;
     await ctx.db.insert(invoiceLine).values({ id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: primary.id, ...line, sort: n });
     await recalcTotal(ctx, primary.id);

@@ -3,11 +3,12 @@
 // approveProposal (the approval gate); these actions only collect the human's input.
 import { refresh, revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getCtx } from "./ctx";
-import { approveProposal, rejectProposal, getProposal } from "@/domain/proposals";
-import { ingestMessage, processInbound } from "@/domain/inbound";
+import { approveProposal, rejectProposal, getProposal, resumeApprovedProposal, resolveInterruptedProposal } from "@/domain/proposals";
+import { ingestMessage, processInbound, invoiceReplyFacts, newRequestFacts } from "@/domain/inbound";
 import { completeManualStep, tickItem } from "@/domain/step-hooks";
+import { parseMoneyCents } from "@/domain/money-input";
 import { setInvoiceNumber, setLineAmount } from "@/domain/invoices";
 import { markPaidManually, pollBank } from "@/domain/payments";
 import { pollMail } from "@/channels/mail-poller";
@@ -39,7 +40,7 @@ export async function approveAction(proposalId: string, _prev: ActionResult | nu
     for (const [k, v] of form.entries()) {
       if (k.startsWith("$") || k === "shownAt") continue;
       if (k.startsWith("email:")) { edits.emails = { ...(edits.emails as object ?? {}), [k.slice(6)]: String(v) }; continue; }
-      edits[k] = k === "feeHkd" ? Number(v) : String(v);
+      edits[k] = k === "feeHkd" ? parseMoneyCents(String(v)) / 100 : String(v);
     }
     // The browser stamps real time; shift it onto the app clock (the demo clock may be ahead).
     const skew = ctx.clock.now().getTime() - Date.now();
@@ -50,6 +51,19 @@ export async function approveAction(proposalId: string, _prev: ActionResult | nu
   } catch (e) { return fail(e); }
 }
 
+export async function resumeApprovalAction(id: string): Promise<ActionResult> {
+  try { await resumeApprovedProposal(getCtx(), id); return done("Approved action completed"); } catch (e) { refresh(); return fail(e); }
+}
+export async function reviewInvoiceDatesAction(id: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try {
+    await resumeApprovedProposal(getCtx(), id, { checkedOriginalInvoice: form.get("checkedOriginalInvoice") === "on", issuedOn: String(form.get("issuedOn") ?? ""), dueOn: String(form.get("dueOn") ?? ""), note: String(form.get("note") ?? ""), journalId: String(form.get("journalId") ?? ""), payloadHash: String(form.get("payloadHash") ?? ""), pdfSha256: String(form.get("pdfSha256") ?? "") });
+    return done("Original invoice dates reviewed; approved action completed");
+  } catch (e) { refresh(); return fail(e); }
+}
+export async function closeInterruptedAction(id: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
+  try { await resolveInterruptedProposal(getCtx(), id, { checkedMailbox: form.get("checkedMailbox") === "on", note: String(form.get("note") ?? "") }); return done("A fresh review is on Today"); } catch (e) { return fail(e); }
+}
+
 export async function rejectAction(proposalId: string): Promise<ActionResult> {
   try { await rejectProposal(getCtx(), proposalId, "Dismissed by staff"); return done("Dismissed"); } catch (e) { return fail(e); }
 }
@@ -58,12 +72,16 @@ export async function redraftAction(proposalId: string, lang: Lang): Promise<Act
   const ctx = getCtx();
   try {
     const p = await getProposal(ctx, proposalId);
-    const m = await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) });
-    const facts = (m?.intake as { facts?: ReplyFacts } | null)?.facts;
-    if (!m || !facts) throw new Error("This draft can't be redrafted");
+    const m = await ctx.db.query.message.findFirst({ where: and(eq(message.id, p.payload.messageId as string), eq(message.firmId, ctx.firmId)) });
+    const intake = m?.intake as { facts?: ReplyFacts; attachInvoiceId?: string } | null;
+    const facts = intake?.facts;
+    if (!m || !facts || p.status !== "pending" || m.status !== "draft") throw new Error("This draft can't be redrafted");
+    const currentFacts = { ...facts, language: lang };
+    if (intake?.attachInvoiceId) currentFacts.invoice = await invoiceReplyFacts(ctx, intake.attachInvoiceId, lang);
+    if (facts.newRequests.length && Array.isArray(p.payload.taskIds)) currentFacts.newRequests = await newRequestFacts(ctx, p.payload.taskIds as string[], lang);
     const firm = await (await import("@/domain/firm")).getFirm(ctx);
-    const d = await draftEmail(ctx, { ...facts, language: lang, signOff: firm.signOff?.[lang] ?? facts.signOff }, { messageId: m.id });
-    await ctx.db.update(message).set({ text: d.body, language: lang, intake: { ...(m.intake as object), facts: { ...facts, language: lang } } }).where(eq(message.id, m.id));
+    const d = await draftEmail(ctx, { ...currentFacts, signOff: firm.signOff?.[lang] ?? facts.signOff }, { messageId: m.id });
+    await ctx.db.update(message).set({ text: d.body, language: lang, intake: { ...(m.intake as object), facts: currentFacts } }).where(eq(message.id, m.id));
     return done(`Redrafted in ${lang === "en" ? "English" : lang === "tc" ? "Traditional Chinese" : "Simplified Chinese"}`);
   } catch (e) { return fail(e); }
 }
@@ -107,8 +125,8 @@ export async function chaseRulesAction(_prev: ActionResult | null, form: FormDat
 // ---------- Costs added later ----------
 export async function addCostAction(taskId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   try {
-    const amount = Number(String(form.get("amount") ?? "").replace(/[^\d.]/g, ""));
-    const r = await addCost(getCtx(), taskId, { description: String(form.get("description") ?? ""), amountCents: Math.round(amount * 100), kind: form.get("onBehalf") === "on" ? "disbursement" : "fee" });
+    const amountCents = parseMoneyCents(form.get("amount"));
+    const r = await addCost(getCtx(), taskId, { description: String(form.get("description") ?? ""), amountCents, kind: form.get("onBehalf") === "on" ? "disbursement" : "fee" });
     revalidatePath("/", "layout");
     return r.additional ? { ok: true, redirectTo: `/review/${r.proposalId}` } : done("Added to the draft invoice");
   } catch (e) { return fail(e); }
@@ -173,7 +191,7 @@ export async function invoiceNumberAction(invoiceId: string, _prev: ActionResult
   try { await setInvoiceNumber(getCtx(), invoiceId, String(form.get("number") ?? "")); return done("Invoice number updated"); } catch (e) { return fail(e); }
 }
 export async function lineAmountAction(lineId: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
-  try { await setLineAmount(getCtx(), lineId, Math.round(Number(String(form.get("amount")).replace(/[^\d.]/g, "")) * 100)); return done(); } catch (e) { return fail(e); }
+  try { await setLineAmount(getCtx(), lineId, parseMoneyCents(form.get("amount"))); return done(); } catch (e) { return fail(e); }
 }
 export async function markPaidAction(invoiceId: string): Promise<ActionResult> {
   try { await markPaidManually(getCtx(), invoiceId, "Marked paid by staff"); return done("Marked paid"); } catch (e) { return fail(e); }
@@ -265,12 +283,14 @@ export async function workerTickAction(): Promise<ActionResult> {
 // ---------- Public: upload link ----------
 export async function portalSubmitAction(token: string, _prev: ActionResult | null, form: FormData): Promise<ActionResult> {
   try {
-    const fields: { taskId: string; key: string; value: string }[] = [];
-    const files: { taskId: string; key: string; filename: string; mime: string; content: Buffer }[] = [];
+    const fields: { taskId: string; key: string; expectedPersonId: string | null; value: string }[] = [];
+    const files: { taskId: string; key: string; expectedPersonId: string | null; filename: string; mime: string; content: Buffer }[] = [];
     for (const [name, v] of form.entries()) {
       const [kind, taskId, key] = name.split(":");
-      if (kind === "v" && typeof v === "string") fields.push({ taskId, key, value: v });
-      if (kind === "f" && typeof v !== "string" && v.size) files.push({ taskId, key, filename: v.name, mime: v.type || "application/octet-stream", content: Buffer.from(await v.arrayBuffer()) });
+      const person = form.get(`p:${taskId}:${key}`);
+      const expectedPersonId = typeof person === "string" && person ? person : null;
+      if (kind === "v" && typeof v === "string") fields.push({ taskId, key, expectedPersonId, value: v });
+      if (kind === "f" && typeof v !== "string" && v.size) files.push({ taskId, key, expectedPersonId, filename: v.name, mime: v.type || "application/octet-stream", content: Buffer.from(await v.arrayBuffer()) });
     }
     await portalSubmit(getCtx(), token, { fields, files });
     return done();

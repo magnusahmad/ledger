@@ -30,6 +30,8 @@ export class XeroMcpAccounting implements AccountingProvider {
     bankAccountCode: string;
     taxType?: string;
     callTool?: ToolCaller;               // injected in tests
+    paymentFetch?: typeof fetch;
+    paymentAuth?: () => Promise<{ token: string; tenant: string }>;
     authorise?: (invoiceId: string) => Promise<void>; // injected in tests
   }) {}
 
@@ -73,12 +75,34 @@ export class XeroMcpAccounting implements AccountingProvider {
     return null;
   }
 
-  async createPayment(p: { invoiceId: string; amountCents: number; date: string; reference: string }): Promise<string> {
+  async createPayment(p: { idempotencyKey?: string; invoiceId: string; amountCents: number; date: string; reference: string }): Promise<string> {
     if (!this.bankAccountId) {
       const text = await this.call("list-accounts", {});
       const block = parseBlocks(text, "Account").find((b) => parseField(b, "Code") === this.o.bankAccountCode);
       this.bankAccountId = block ? parseField(block, "ID") : null;
       if (!this.bankAccountId) throw new Error(`No Xero account with code ${this.o.bankAccountCode}; set XERO_BANK_ACCOUNT_CODE`);
+    }
+    if (p.idempotencyKey) {
+      const { token, tenant } = this.o.paymentAuth ? await this.o.paymentAuth() : await (async () => { const token = await xeroToken(this.o.env); return { token, tenant: await xeroTenant(token) }; })();
+      const request = this.o.paymentFetch ?? fetch;
+      const headers = { Authorization: `Bearer ${token}`, "Xero-tenant-id": tenant, "Content-Type": "application/json", Accept: "application/json" };
+      // Xero's key cache lasts six minutes. A permanent payment reference reconciles a later retry too.
+      const reference = `${p.reference} [${p.idempotencyKey}]`;
+      const where = `Invoice.InvoiceID==Guid("${p.invoiceId}")`;
+      const existing = await request(`https://api.xero.com/api.xro/2.0/Payments?where=${encodeURIComponent(where)}`, { headers });
+      if (!existing.ok) throw new Error(`Xero payment reconciliation failed: ${existing.status}`);
+      const rows = ((await existing.json()) as { Payments?: { PaymentID: string; Reference?: string; Amount?: number; Status?: string }[] }).Payments ?? [];
+      const same = rows.find(x => x.Reference === reference && x.Status !== "DELETED");
+      if (same) return same.PaymentID;
+      const response = await request("https://api.xero.com/api.xro/2.0/Payments", {
+        method: "POST", headers: { ...headers, "Idempotency-Key": p.idempotencyKey },
+        body: JSON.stringify({ Payments: [{ Invoice: { InvoiceID: p.invoiceId }, Account: { AccountID: this.bankAccountId }, Amount: p.amountCents / 100, Date: p.date, Reference: reference }] }),
+      });
+      if (!response.ok) throw new Error(`Xero payment failed: ${response.status}`);
+      const result = (await response.json()) as { Payments?: { PaymentID?: string }[] };
+      const id = result.Payments?.[0]?.PaymentID;
+      if (!id) throw new Error("Xero payment returned no id");
+      return id;
     }
     const text = await this.call("create-payment", { invoiceId: p.invoiceId, accountId: this.bankAccountId, amount: p.amountCents / 100, date: p.date, reference: p.reference });
     const id = parseField(text, "ID");

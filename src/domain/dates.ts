@@ -14,7 +14,9 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((new Date(b + "T00:00:00Z").getTime() - new Date(a + "T00:00:00Z").getTime()) / 86400_000);
 }
 export function isIsoDate(s: unknown): s is string {
-  return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + "T00:00:00Z").getTime());
+  if (typeof s !== "string" || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s) || s.startsWith("0000")) return false;
+  const t = new Date(s + "T00:00:00Z");
+  return !isNaN(t.getTime()) && t.toISOString().slice(0, 10) === s;
 }
 export function fmtDate(d: string | null | undefined, lang: "en" | "tc" | "sc" = "en"): string {
   if (!d) return "";

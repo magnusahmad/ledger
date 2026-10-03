@@ -46,7 +46,12 @@ export async function screenPerson(ctx: Ctx, personId: string, taskId: string | 
     const r = await callAgent(ctx, { agent: "screen", system: SCREEN_SYSTEM, taskId, schema: AdjudicationZ,
       user: `Person screened: ${JSON.stringify(query)}\nCandidate hits: ${JSON.stringify(hits)}` });
     adjudication = r.hits;
-    status = r.overall === "clear" && hits.every((h) => h.score < 0.9) ? "clear" : r.overall === "clear" ? "potential" : r.overall;
+    const assessed = new Map(r.hits.map(h => [h.id, h.verdict]));
+    const complete = r.hits.length === hits.length && assessed.size === r.hits.length && hits.every(h => assessed.has(h.id));
+    const aggregate = hits.some(h => assessed.get(h.id) === "likely_match") ? "match" : hits.some(h => assessed.get(h.id) === "possible") ? "potential" : "clear";
+    // Only complete, consistent low-score false-positive evidence can clear.
+    // Missing/invented/duplicate assessments cannot erase a provider candidate.
+    status = aggregate === "match" ? "match" : !complete || r.overall !== aggregate || hits.some(h => h.score >= 0.9) ? "potential" : aggregate;
   }
   const [row] = await ctx.db.insert(screeningResult).values({ id: ctx.ids.next("scn"), firmId: ctx.firmId, personId, taskId, provider: ctx.screening.name, datasetVersion: await ctx.screening.datasetVersion(), query, hits, adjudication, status, createdAt: ctx.clock.now() }).returning();
   return row;

@@ -15,9 +15,13 @@ const deadline = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("fixed_annual"), month: z.number().int().min(1).max(12), day: z.number().int().min(1).max(31), rule: text }),
 ]);
 const simpleEffects = ["update_person_particulars", "change_registered_office", "change_name", "allot_shares", "transfer_shares", "buyback_shares", "update_controllers", "change_fye", "change_auditor", "record_annual_return", "record_agm", "renew_br", "record_cdd_review", "activate_client", "deregister", "change_capital"] as const;
+const guard = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("sole_member_is_sole_director") }),
+  z.strictObject({ kind: z.literal("minimum_remaining_individuals"), minimum: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }),
+]);
 const effect = z.union([
   z.strictObject({ kind: z.enum(simpleEffects) }),
-  z.strictObject({ kind: z.enum(["appoint_officer", "cease_officer"]), role: text, personParam: text.optional() }),
+  z.strictObject({ kind: z.enum(["appoint_officer", "cease_officer"]), role: text, personParam: text.optional(), guard: guard.optional() }),
   z.strictObject({ kind: z.literal("replace_officer"), role: text }),
   z.strictObject({ kind: z.literal("set_operating_status"), status: z.enum(["dormant", "operating"]) }),
   z.strictObject({ kind: z.literal("set_jurisdiction_field"), field: text, param: text }),
@@ -27,7 +31,7 @@ const schema = z.strictObject({
   category: text, name: tri, phrase: tri, description: text, whenToUse: text,
   startedBy: z.enum(["client request", "firm calendar", "either"]),
   personSelection: z.enum(["new", "existing_officer", "existing_member", "any", "none"]).optional(),
-  forms: z.string().optional(), deadline,
+  forms: z.string().optional(), deadline, effectiveDateKey: text.optional(),
   requirements: z.array(z.strictObject({ key: text, scope: z.enum(["person", "client"]).optional(), condition: z.enum(["always", "personLacksCurrentCdd", "clientIsNew", "personIsNew"]).optional(), appliesWhenNote: z.string().optional(), optional: z.boolean().optional() })),
   steps: z.array(z.strictObject({ kind: z.enum(["send", "pay", "collect", "kyc", "screen", "generate", "sign", "file", "register", "confirm", "task", "wait_until"]), label: text, human: z.boolean().optional(), instructions: z.string().optional(), authority: z.string().optional() })).min(1),
   documents: z.array(z.strictObject({ template: text, name: text, signers: z.enum(["directors", "person", "members", "transferor_transferee", "chair", "none"]).optional(), wetInk: z.boolean().optional() })),
@@ -49,7 +53,9 @@ export function validatePlaybook(json: string, requirements: Record<string, Requ
     if (!requirements[r.key]) throw new Error(`requirements: unknown item ${r.key}. Choose a key from the requirement library.`);
     if (seen.has(r.key)) throw new Error(`requirements: duplicate item ${r.key}.`);
     seen.add(r.key);
+    if (r.condition === "personIsNew") throw new Error("requirements: personIsNew is unsupported without reliable new-person provenance. Use reviewed applicable requirements instead.");
   }
+  if (pb.effectiveDateKey && (!seen.has(pb.effectiveDateKey) || requirements[pb.effectiveDateKey]?.kind !== "data")) throw new Error("effectiveDateKey must name a data requirement collected by this playbook.");
   for (const d of pb.documents) {
     if (!(d.template.startsWith("cr:") ? CR_FORMS.has(d.template.slice(3)) : Object.hasOwn(TEMPLATES, d.template))) throw new Error(`documents: unknown template ${d.template}.`);
     if (["tpl:board-meeting-minutes", "tpl:members-meeting-minutes"].includes(d.template)) {
@@ -59,6 +65,13 @@ export function validatePlaybook(json: string, requirements: Record<string, Requ
     }
   }
   const at = (kind: string) => pb.steps.findIndex(s => s.kind === kind);
+  for (const kind of ["generate", "confirm"]) {
+    if (pb.steps.filter(s => s.kind === kind).length > 1) throw new Error(`steps: repeated ${kind} gates are unsupported. Use separate reviewed tasks for each pack or completion message.`);
+  }
+  if (at("wait_until") >= 0) {
+    const dateKey = pb.effectiveDateKey ?? (seen.has("effDate") ? "effDate" : pb.registerEffects.some(e => e.kind === "cease_officer") && seen.has("lastDay") ? "lastDay" : null);
+    if (!dateKey || !pb.requirements.some(r => r.key === dateKey && !r.optional && (!r.condition || r.condition === "always"))) throw new Error("steps: wait_until needs a required collected event date.");
+  }
   if (pb.requirements.length && at("collect") < 0) throw new Error("steps: requirements need a collect step.");
   if (pb.documents.length && at("generate") < 0) throw new Error("steps: documents need a generate step.");
   if (pb.registerEffects.length && at("register") < 0) throw new Error("steps: register effects need a register step.");
@@ -68,6 +81,7 @@ export function validatePlaybook(json: string, requirements: Record<string, Requ
     if (["generate", "sign", "file", "register"].includes(step.kind) && pb.requirements.length && at("collect") > i) throw new Error(`steps: collect must precede ${step.kind}.`);
     if (step.kind === "sign" && (at("generate") < 0 || at("generate") > i)) throw new Error("steps: generate must precede sign.");
     if (step.kind === "file" && pb.documents.length && at("generate") > i) throw new Error("steps: generate must precede file.");
+    if (step.kind === "file" && at("sign") > i) throw new Error("steps: document signatures must precede filing.");
     if (step.kind === "register" && at("file") > i) throw new Error("steps: file must precede register.");
   }
   return pb;

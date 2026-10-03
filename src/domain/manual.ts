@@ -3,7 +3,7 @@
 // confirmation as for an email, and nothing reaches the client without an approval.
 import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { client as clientT, conversation, message } from "@/db/schema";
+import { client as clientT, conversation, message, request as requestT } from "@/db/schema";
 import { advance, createRequest, logEvent, markStepState, startTask, type Extracted } from "./engine";
 import { getPlaybook } from "./playbooks";
 import { resolvePerson } from "./people";
@@ -25,7 +25,11 @@ export type ManualItem = {
   dueDate?: string | null;
 };
 
-export async function startManualRequest(ctx: Ctx, r: { clientId: string; items: ManualItem[]; notes?: string | null; confirm: boolean; context?: "meeting" | "letter"; extraNotes?: string[]; attachDocumentIds?: string[]; origin?: string }) {
+export async function startManualRequest(ctx: Ctx, r: { clientId: string; items: ManualItem[]; notes?: string | null; confirm: boolean; context?: "meeting" | "letter" | "change"; extraNotes?: string[]; attachDocumentIds?: string[]; origin?: string }) {
+  return ctx.db.transaction(async (db) => startManualRequestAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, r));
+}
+
+async function startManualRequestAtomic(ctx: Ctx, r: Parameters<typeof startManualRequest>[1]) {
   const cl = await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, r.clientId), eq(clientT.firmId, ctx.firmId)) });
   if (!cl) throw new ManualRequestError("Choose a client");
   if (!r.items.length) throw new ManualRequestError("Choose at least one thing to do");
@@ -49,13 +53,13 @@ export async function startManualRequest(ctx: Ctx, r: { clientId: string; items:
     const keys = new Set(pb.requirements.map((q) => q.key));
     const extracted: Extracted = {};
     for (const [k, v] of Object.entries(it.fields ?? {})) {
-      if (keys.has(k) && v?.trim() && itemKind(k) !== "file") extracted[k] = { value: v.trim(), source: "Agreed in person" };
+      if (keys.has(k) && v?.trim() && itemKind(k) !== "file") extracted[k] = { value: v.trim(), source: r.context === "change" ? "Approved follow-up instruction" : "Agreed in person" };
     }
     // Particulars for an existing person that differ from the file become conflicts, never overwrites.
     const conflicts = personId ? await writePersonParticulars(ctx, personId, extracted, cl.id) : [];
     for (const c of conflicts) delete extracted[c];
     const t = await startTask(ctx, { requestId: req.id, clientId: cl.id, playbookId: pb.id, personId, extracted, dueDate: it.dueDate ?? null });
-    await logEvent(ctx, t.id, "request.manual", r.context === "letter" ? `Started from a letter${notes ? `: ${notes}` : ""}` : `Started manually after a meeting or call${notes ? `: ${notes}` : ""}`, {}, ctx.userId);
+    await logEvent(ctx, t.id, "request.manual", r.context === "change" ? `Started as staff-approved follow-up work${notes ? `: ${notes}` : ""}` : r.context === "letter" ? `Started from a letter${notes ? `: ${notes}` : ""}` : `Started manually after a meeting or call${notes ? `: ${notes}` : ""}`, {}, ctx.userId);
     taskIds.push(t.id);
   }
   const inv = await createInvoiceForRequest(ctx, req.id);
@@ -78,8 +82,9 @@ export async function startManualRequest(ctx: Ctx, r: { clientId: string; items:
     id: ctx.ids.next("cnv"), firmId: ctx.firmId, clientId: cl.id, channel: "email", subject: pbs.map((p) => p.name.en).join(", "),
     counterpartyEmail: to?.email?.toLowerCase() ?? null, lastMessageAt: ctx.clock.now(), createdAt: ctx.clock.now(),
   }).returning();
+  await ctx.db.update(requestT).set({ conversationId: conv.id }).where(and(eq(requestT.id, req.id), eq(requestT.firmId, ctx.firmId)));
   const facts = { ...emptyFacts(lang), context: r.context ?? "meeting", extraNotes: r.extraNotes ?? [], newRequests: await newRequestFacts(ctx, taskIds, lang) };
-  const draft = await composeReply(ctx, { clientId: cl.id, conversationId: conv.id, inReplyTo: null, facts, requestId: req.id, to: to?.email ? [to.email] : undefined, purpose: "Confirm instructions given in person" });
+  const draft = await composeReply(ctx, { clientId: cl.id, conversationId: conv.id, inReplyTo: null, facts, requestId: req.id, to: to?.email ? [to.email] : undefined, purpose: r.context === "change" ? "Confirm the approved additional or replacement service and its separate quote; do not imply a meeting, a refund or an offset against earlier fees" : "Confirm instructions given in person" });
   const p = await createProposal(ctx, {
     kind: "send_message", title: r.context === "letter" ? `Explain the letter to ${to?.name ?? cl.nameEn}, with the invoice` : `Approve confirmation and invoice to ${to?.name ?? cl.nameEn}`, summary: notes ?? "Taken in person",
     clientId: cl.id, requestId: req.id, payload: { messageId: draft.id, requestId: req.id, taskIds, draftSource: draft.source, purpose: "request", origin: r.origin ?? "manual", attachDocumentIds: r.attachDocumentIds ?? [] },

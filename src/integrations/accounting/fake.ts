@@ -29,7 +29,9 @@ export class FakeAccounting implements AccountingProvider {
     for (const inv of this.invoices.values()) if (inv.number === number) return inv.id;
     return null;
   }
-  async createPayment(p: { invoiceId: string; amountCents: number; date: string; reference: string }) {
+  async createPayment(p: { idempotencyKey?: string; invoiceId: string; amountCents: number; date: string; reference: string }) {
+    const existing = p.idempotencyKey ? this.payments.find(x => (x as typeof x & { idempotencyKey?: string }).idempotencyKey === p.idempotencyKey) : null;
+    if (existing) return existing.id;
     this.maybeFail("createPayment");
     const id = `xp-${++this.n}`;
     this.payments.push({ id, ...p });

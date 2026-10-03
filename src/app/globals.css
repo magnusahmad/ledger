@@ -104,7 +104,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .step.skip .dot { background: var(--sel); }
 .step.done .lbl, .step.skip .lbl { color: var(--muted); }
 .step.cur .lbl { font-weight: 600; }
-.timeline { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+.timeline { list-style: none; margin: 0; padding: 0; font-size: 13.5px; overflow-wrap: anywhere; }
 .timeline li { padding: 8px 0 8px 14px; border-left: 2px solid var(--line); margin-left: 4px; }
 .timeline li.agent { border-left-color: var(--blue); }
 .timeline .when { color: var(--faint); font-size: 12px; }
@@ -118,7 +118,7 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .stat b { display: block; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .stat span { color: var(--muted); font-size: 13px; }
-.chk { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.chk { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 7px 0; border-top: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
 .chk:first-child { border-top: 0; }
 .chk .ic { font-size: 14px; line-height: 1.5; }
 details.more summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }

@@ -1,15 +1,18 @@
+import { ListControls } from "@/components/ListControls";
 import Link from "next/link";
 import { getCtx } from "@/server/ctx";
-import { conversations } from "@/server/queries";
+import { conversationPage, pageQuery } from "@/server/queries";
 import { LiveRefresh } from "@/components/LiveRefresh";
 import { Pill, ago } from "@/components/ui";
 
-export default async function Inbox() {
+export default async function Inbox({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; pageSize?: string }> }) {
   const ctx = getCtx();
-  const rows = await conversations(ctx);
+  const where = await searchParams, q = pageQuery(where.q);
+  const data = await conversationPage(ctx, where), rows = data.rows;
   return (
     <>
       <div className="top"><div><h1>Inbox</h1>{ctx.mail.address && <p className="sub">{ctx.mail.address}</p>}</div><LiveRefresh /></div>
+      <ListControls path="/inbox" q={q} {...data} />
       <div className="card tight"><ul className="list">
         {rows.map((c) => (
           <li key={c.id} className="item">

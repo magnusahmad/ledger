@@ -5,6 +5,7 @@
 import {
   pgTable, text, integer, boolean, date, timestamp, jsonb, bigint, uniqueIndex, index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const firmId = () => text("firm_id").notNull();
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -104,6 +105,24 @@ export const person = pgTable("person", {
   createdAt: createdAt(),
 });
 
+// A global working/contact profile is separate from each company's approved
+// dated statutory particulars. Patches retain protected values as ciphertext.
+export type RegisterPersonPatch = Partial<Omit<typeof person.$inferSelect, "id" | "firmId" | "createdAt">>;
+export const registerPersonChange = pgTable("register_person_change", {
+  id: text("id").primaryKey(),
+  sequence: bigint("sequence", { mode: "number" }).generatedAlwaysAsIdentity(),
+  firmId: firmId(),
+  clientId: text("client_id").notNull(),
+  personId: text("person_id").notNull(),
+  fromDate: date("from_date").notNull(),
+  patch: jsonb("patch").$type<RegisterPersonPatch>().notNull(),
+  sourceTaskId: text("source_task_id"), // null is the known baseline, not an inferred historical change
+}, t => [
+  uniqueIndex("register_person_baseline_uq").on(t.firmId, t.clientId, t.personId).where(sql`${t.sourceTaskId} is null`),
+  uniqueIndex("register_person_task_uq").on(t.firmId, t.personId, t.sourceTaskId),
+  index("register_person_date_idx").on(t.firmId, t.clientId, t.personId, t.fromDate),
+]);
+
 export const cddRecord = pgTable("cdd_record", {
   id: text("id").primaryKey(),
   firmId: firmId(),
@@ -149,6 +168,7 @@ export const shareClass = pgTable("share_class", {
 
 export const shareMovement = pgTable("share_movement", {
   id: text("id").primaryKey(),
+  sequence: bigint("sequence", { mode: "number" }).generatedAlwaysAsIdentity(),
   firmId: firmId(),
   clientId: text("client_id").notNull(),
   shareClassId: text("share_class_id").notNull(),
@@ -398,7 +418,7 @@ export const proposal = pgTable("proposal", {
   id: text("id").primaryKey(),
   firmId: firmId(),
   kind: text("kind").$type<ProposalKind>().notNull(),
-  status: text("status").$type<"pending" | "approved" | "rejected" | "superseded">().notNull().default("pending"),
+  status: text("status").$type<"pending" | "processing" | "recovery" | "approved" | "rejected" | "superseded">().notNull().default("pending"),
   clientId: text("client_id"),
   taskId: text("task_id"),
   requestId: text("request_id"),
@@ -408,6 +428,11 @@ export const proposal = pgTable("proposal", {
   createdAt: createdAt(),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
   decidedBy: text("decided_by"),
+  executionToken: text("execution_token"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  approvedInput: text("approved_input"), // encrypted immutable human-approved inputs
+  factsHash: text("facts_hash"),
+  recoveryError: text("recovery_error"),
 });
 
 // ---------- Messaging ----------
@@ -448,7 +473,7 @@ export const message = pgTable("message", {
   error: text("error"),
   /** Sent by staff straight from the shared mailbox (e.g. Gmail), not through Harbourline. */
   viaMailbox: boolean("via_mailbox").notNull().default(false),
-}, (t) => [uniqueIndex("message_provider_uq").on(t.provider, t.providerMessageId)]);
+}, (t) => [uniqueIndex("message_provider_uq").on(t.firmId, t.provider, t.providerMessageId)]);
 
 export const attachment = pgTable("attachment", {
   id: text("id").primaryKey(),
@@ -510,7 +535,7 @@ export const bankTransaction = pgTable("bank_transaction", {
   status: text("status").$type<"unmatched" | "matched" | "proposed" | "ignored">().notNull().default("unmatched"),
   matchNote: text("match_note"),
   raw: jsonb("raw").$type<Record<string, unknown>>(),
-}, (t) => [uniqueIndex("bank_tx_uq").on(t.provider, t.providerTxId)]);
+}, (t) => [uniqueIndex("bank_tx_uq").on(t.firmId, t.provider, t.providerTxId)]);
 
 export const payment = pgTable("payment", {
   id: text("id").primaryKey(),
@@ -635,6 +660,8 @@ export const job = pgTable("job", {
   dedupeKey: text("dedupe_key"),
   status: text("status").$type<"queued" | "running" | "done" | "failed">().notNull().default("queued"),
   attempts: integer("attempts").notNull().default(0),
+  executionToken: text("execution_token"),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
   runAfter: timestamp("run_after", { withTimezone: true }).notNull().defaultNow(),
   lastError: text("last_error"),
   createdAt: createdAt(),
@@ -645,3 +672,14 @@ export const kv = pgTable("kv", {
   key: text("key").notNull(),
   value: jsonb("value").$type<unknown>(),
 }, (t) => [uniqueIndex("kv_pk").on(t.firmId, t.key)]);
+
+// Durable delivery journal. Only encrypted exact approved bytes are retained here.
+export const mailDelivery = pgTable("mail_delivery", {
+  id: text("id").primaryKey(), firmId: firmId(), sourceKey: text("source_key").notNull(),
+  provider: text("provider").notNull(), sender: text("sender").notNull(), correlationId: text("correlation_id").notNull(),
+  payload: text("payload").notNull(), payloadHash: text("payload_hash").notNull(),
+  status: text("status").$type<"prepared" | "sending" | "sent" | "uncertain">().notNull().default("prepared"),
+  executionToken: text("execution_token"),
+  result: jsonb("result").$type<{ providerMessageId: string; providerThreadId?: string | null; rfcMessageId?: string | null }>(),
+  error: text("error"), createdAt: createdAt(),
+}, t => [uniqueIndex("mail_delivery_source_uq").on(t.firmId, t.sourceKey)]);

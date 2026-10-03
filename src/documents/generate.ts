@@ -110,7 +110,7 @@ export async function generateForTask(ctx: Ctx, taskId: string): Promise<Generat
     if (!template) throw new Error(`Unsupported document template: ${ref.template}`);
     return { ref, values: undefined, blocks: template(c) };
   });
-  const out: GeneratedDoc[] = [];
+  const rendered: { ref: typeof c.pb.documents[number]; pdf: Buffer; text: string; signatureFields: GeneratedDoc["signatureFields"] }[] = [];
   for (const { ref, values, blocks } of prepared) {
     let pdf: Buffer, text = "", signatureFields: GeneratedDoc["signatureFields"] = [];
     if (ref.template.startsWith("cr:")) {
@@ -121,6 +121,12 @@ export async function generateForTask(ctx: Ctx, taskId: string): Promise<Generat
       const built = await buildPdf(blocks!, { lang: c.lang, header: `${c.client.nameEn} · ${ref.name}`, footer: `Prepared by ${c.firm.legalName} · ${c.task.id}` });
       pdf = built.pdf; text = built.text; signatureFields = built.signatureFields;
     }
+    rendered.push({ ref, pdf, text, signatureFields });
+  }
+  // A later fixed-box form refusal must not leave an earlier resolution stored.
+  // Render the complete pack before the first external object or database write.
+  const out: GeneratedDoc[] = [];
+  for (const { ref, pdf, text, signatureFields } of rendered) {
     const id = ctx.ids.next("doc");
     const key = `documents/${c.client.id}/${id}.pdf`;
     await ctx.storage.put(key, pdf);

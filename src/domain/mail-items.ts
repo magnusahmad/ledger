@@ -22,7 +22,7 @@ export async function logMailItem(ctx: Ctx, o: { filename: string; mime: string;
   const r = await callAgent(ctx, { agent: "mail", system: MAIL_SYSTEM, user: parts, schema: MailItemZ });
   const clientId = r.clientId && clients.some((c) => c.id === r.clientId) ? r.clientId : null;
   const docId = ctx.ids.next("doc");
-  const key = `mail/${docId}-${o.filename.replace(/[^\w.\-]/g, "_")}`;
+  const key = `mail/${docId}`;
   await ctx.storage.put(key, o.content);
   await ctx.db.insert(document).values({ id: docId, firmId: ctx.firmId, clientId, kind: "mail_item", title: `Letter from ${r.sender}`, storageKey: key, mime: o.mime, sha256: Crypto.sha256(o.content), source: "scan", extractedText: r.summaryEn, createdAt: ctx.clock.now() });
   const [row] = await ctx.db.insert(mailItem).values({ id: ctx.ids.next("mai"), firmId: ctx.firmId, clientId, documentId: docId, receivedOn: o.receivedOn, sender: r.sender, summary: r.summaryEn, urgency: r.urgency, createdAt: ctx.clock.now() }).returning();

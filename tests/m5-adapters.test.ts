@@ -39,21 +39,25 @@ describe("Airwallex adapter (recorded API shapes)", () => {
   it("logs in once, reuses the token, and maps settled deposits to cents", async () => {
     const { f, calls } = fakeFetch({
       "/authentication/login": () => ({ token: "tok-1", expires_at: new Date(Date.now() + 1800_000).toISOString() }),
-      "/deposits": () => ({ items: [
-        { id: "dep_1", amount: 1800.5, currency: "HKD", reference: "CRCS-2026-0001", payer_name: "SILVERSTRAND", status: "SETTLED", create_time: "2026-09-29T02:00:00Z" },
-        { id: "dep_2", amount: 99, currency: "HKD", reference: "x", payer_name: "y", status: "PENDING", create_time: "2026-09-29T02:00:00Z" },
+      // Retrieval uses created_at/settled_at; create_time belongs to the
+      // distinct sandbox simulation response documented below.
+      "/deposits": () => ({ has_more: false, items: [
+        { id: "dep_1", amount: 1800.5, currency: "HKD", reference: "CRCS-2026-0001", payer: { name: "SILVERSTRAND" }, status: "SETTLED", created_at: "2026-09-29T02:00:00Z", settled_at: "2026-09-29T02:05:00Z" },
+        { id: "dep_2", amount: 99, currency: "HKD", reference: "x", payer: { name: "y" }, status: "PENDING", created_at: "2026-09-29T02:00:00Z" },
       ] }),
     });
     const bank = new AirwallexBank({ clientId: "cid", apiKey: "key", baseUrl: "https://api-demo.airwallex.com", fetch: f });
     const d1 = await bank.listDeposits(null);
     await bank.listDeposits(new Date("2026-09-29T00:00:00Z"));
-    expect(d1).toEqual([expect.objectContaining({ providerTxId: "dep_1", amountCents: 180050, reference: "CRCS-2026-0001" })]);
+    expect(d1).toEqual([expect.objectContaining({ providerTxId: "dep_1", amountCents: 180050, reference: "CRCS-2026-0001", payerName: "SILVERSTRAND" })]);
     expect(calls.filter((c) => c.url.includes("login"))).toHaveLength(1);
     expect(calls[0].init?.headers).toMatchObject({ "x-client-id": "cid", "x-api-key": "key" });
     expect(calls[2].url).toContain("from_created_at=2026-09-29T00%3A00%3A00.000Z");
   });
 
   it("a simulated sandbox deposit sends the invoice number as the reference to the configured Global Account", async () => {
+    // Official POST simulation/deposit/create response has create_time and
+    // status, not settled_at; keep this supported variant distinct from GET.
     const { f, calls } = fakeFetch({ "/authentication/login": () => ({ token: "t" }), "/simulation/deposit/create": (init) => ({ id: "dep_9", ...JSON.parse(String(init!.body)), create_time: "2026-09-29T03:00:00Z" }) });
     const bank = new AirwallexBank({ clientId: "c", apiKey: "k", baseUrl: "https://x", globalAccountId: "7f687fe6-dcf4-4462-92fa-80335301d9d2", fetch: f });
     const d = await bank.simulateDeposit({ amountCents: 150000, currency: "HKD", reference: "CRCS-2026-0007", payerName: "Investor" });
@@ -63,7 +67,7 @@ describe("Airwallex adapter (recorded API shapes)", () => {
   });
 
   it("mapDeposit tolerates the alternative payer shape", () => {
-    expect(mapDeposit({ id: "a", amount: "10", currency: "HKD", payer: { name: "P" }, created_at: "2026-01-01T00:00:00Z" })).toMatchObject({ amountCents: 1000, payerName: "P" });
+    expect(mapDeposit({ id: "a", amount: 10, currency: "HKD", payer: { name: "P" }, status: "SETTLED", created_at: "2026-01-01T00:00:00Z", settled_at: "2026-01-01T00:01:00Z" })).toMatchObject({ amountCents: 1000, payerName: "P" });
   });
 });
 

@@ -71,3 +71,12 @@ export async function savePlaybookVersion(ctx: Ctx, id: string, expectedVersion:
     return next;
   });
 }
+
+/** Resolve the event date from reviewed playbook data. Older pinned cessation
+ * definitions used lastDay without an explicit mapping; preserve that meaning. */
+export function effectiveDateRequirement(pb: PlaybookDef): string | null {
+  if (pb.effectiveDateKey) return pb.effectiveDateKey;
+  if (pb.requirements.some(r => r.key === "effDate")) return "effDate";
+  if (pb.registerEffects.some(effect => effect.kind === "cease_officer") && pb.requirements.some(r => r.key === "lastDay")) return "lastDay";
+  return null;
+}

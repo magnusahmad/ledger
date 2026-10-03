@@ -3,13 +3,14 @@ import { eq } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
 import { seedDemo } from "@/db/seed-demo";
-import { createRequest, startTask, advance, markStepState, getTask } from "@/domain/engine";
+import { createRequest, startTask, markStepState, getTask } from "@/domain/engine";
 import { createPerson } from "@/domain/records";
 import { approveProposal, pendingProposals } from "@/domain/proposals";
 import { openSigning, requestOtp, verifyOtp, signDocuments, SigningError } from "@/domain/signing";
 import { document, signEnvelope, signer as signerT } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
 import "@/domain/inbound";
+import { pdfTextRuns } from "./pdf-text-runs";
 
 let ctx: TestCtx;
 beforeEach(async () => {
@@ -39,6 +40,41 @@ function otpFromMail(to: string) {
 }
 
 describe("E-signature", () => {
+  it("a signature certificate keeps the full hash and device evidence readable within page margins, continuing long Chinese and English records onto new pages", async () => {
+    const { t } = await atSignStep();
+    const [card] = await pendingProposals(ctx, { taskId: t.id, kind: "send_signing" });
+    const title = "Approved 董事文件確認资料 ".repeat(35);
+    const originals = await ctx.db.select().from(document).where(eq(document.taskId, t.id));
+    for (const row of originals) await ctx.db.update(document).set({ title }).where(eq(document.id, row.id));
+    await approveProposal(ctx, card.id);
+    const device = "Mozilla/5.0 Chrome/fictional-browser 閱讀確認资料 ".repeat(55) + "UnbrokenDeviceIdentifier-" + "x".repeat(180) + "FULL-DEVICE-END";
+    for (const email of ["kaman@example.com", "director@kbtrading.example"]) {
+      const token = tokenFromMail(email);
+      await requestOtp(ctx, token); await verifyOtp(ctx, token, otpFromMail(email));
+      await signDocuments(ctx, token, { kind: "typed", data: "Fictional signer", ip: "203.0.113.5", userAgent: device });
+    }
+    const [signed] = await ctx.db.select().from(document).where(eq(document.source, "signed"));
+    const original = originals.find(row => signed.title.startsWith(title) && row.kind === signed.kind)!;
+    const originalPages = (await PDFDocument.load(await ctx.storage.get(original.storageKey!))).getPageCount();
+    const { pdf, runs } = await pdfTextRuns(await ctx.storage.get(signed.storageKey!), originalPages);
+    expect(runs.length).toBeGreaterThan(10);
+    for (const run of runs) {
+      expect.soft(run.x + run.width, `Certificate text crosses the right margin: ${run.text.slice(0, 45)}`).toBeLessThanOrEqual(539.01);
+      expect.soft(run.x).toBeGreaterThanOrEqual(56);
+      expect.soft(run.y, "Certificate text must continue on a new page before the bottom margin").toBeGreaterThanOrEqual(56);
+    }
+    const readable = runs.map(run => run.text).join("").replace(/\s/g, "");
+    expect.soft(readable).toContain(original.sha256!);
+    expect.soft(readable).toContain(title.replace(/\s/g, ""));
+    expect.soft(readable).toContain(device.replace(/\s/g, ""));
+    expect.soft(readable).toContain("kaman@example.com");
+    expect.soft(signed.extractedText).toContain(device);
+    const [envelope] = await ctx.db.select().from(signEnvelope).where(eq(signEnvelope.taskId, t.id));
+    const signers = await ctx.db.select().from(signerT).where(eq(signerT.envelopeId, envelope.id));
+    expect(signers).toHaveLength(2);
+    expect.soft(signers.every(signer => signer.userAgent === device)).toBe(true);
+    expect.soft(pdf.getPageCount()).toBeGreaterThan(originalPages + 1);
+  });
   it("signing links go out only after staff approve the signing pack, one per signer", async () => {
     const { t } = await atSignStep();
     expect(ctx.mail.sent()).toHaveLength(0);

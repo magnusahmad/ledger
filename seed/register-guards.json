@@ -1,0 +1,11 @@
+{
+  "verifyNote": "Existing playbook compliance conditions; the firm's company secretary must verify them before live use. These current guards also protect tasks pinned to older playbook versions.",
+  "byPlaybook": {
+    "hk.reserveDirector": {
+      "appoint_officer:reserve_director": { "kind": "sole_member_is_sole_director" }
+    },
+    "hk.resignDirector": {
+      "cease_officer:director": { "kind": "minimum_remaining_individuals", "minimum": 1 }
+    }
+  }
+}

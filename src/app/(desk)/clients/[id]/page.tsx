@@ -4,6 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getCtx } from "@/server/ctx";
 import { appUser, bankAccount, businessRegistration, charge, client, conversation, document, filing, invoice, significantController, cddRecord, person } from "@/db/schema";
 import { appointmentHistory, contactsFor, officersAsAt } from "@/domain/records";
+import { registerPeopleAsAt } from "@/domain/register-person";
 import { issuedAsAt, membersAsAt, movementHistory } from "@/domain/shares";
 import { upcomingDeadlines } from "@/domain/deadlines";
 import { taskRows } from "@/server/queries";
@@ -43,12 +44,14 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   if (tab === "overview") {
     const tasks = await taskRows(ctx, { clientId: c.id, status: "all" });
     const dl = await upcomingDeadlines(ctx, { clientId: c.id, withinDays: 365 });
-    const invs = await ctx.db.select().from(invoice).where(eq(invoice.clientId, c.id)).orderBy(desc(invoice.createdAt));
+    const invs = await ctx.db.select().from(invoice).where(and(eq(invoice.clientId, c.id), eq(invoice.firmId, ctx.firmId))).orderBy(desc(invoice.createdAt));
+    const open = tasks.filter(t => t.status === "open").sort((a, b) => (a.dueDate ?? "9999").localeCompare(b.dueDate ?? "9999") || a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id));
+    const done = tasks.filter(t => t.status === "done");
     const owes = tasks.filter((t) => t.status === "open" && t.outstanding.length);
     return (<>{header}<div className="cols"><div className="stack">
-      <div className="card"><h2>Open tasks</h2><ul className="list">{tasks.filter((t) => t.status === "open").map((t) => <li key={t.id} className="item"><div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.stepLabel}</div></div><DeadlineStamp dueDate={t.dueDate} today={today} /></li>)}{!tasks.some((t) => t.status === "open") && <li className="empty">No open tasks.</li>}</ul></div>
-      {owes.length > 0 && <div className="card"><h2>Outstanding from the client</h2>{owes.map((t) => <div key={t.id} className="small" style={{ marginBottom: 8 }}><b>{t.title}:</b> {t.outstanding.join(", ")}</div>)}</div>}
-      <div className="card"><h2>Completed</h2><ul className="list">{!tasks.some((t) => t.status === "done") && <li className="empty">None yet.</li>}{tasks.filter((t) => t.status === "done").map((t) => <li key={t.id} className="item"><div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.completedAt ? fmt(t.completedAt) : ""}</div></div><Pill tone="ok">Done</Pill></li>)}</ul></div>
+      <div className="card"><h2>Open tasks</h2><p className="small"><Link href={`/tasks?client=${c.id}&s=open`}>All open tasks · {open.length}</Link></p><ul className="list">{open.slice(0, 20).map((t) => <li key={t.id} className="item"><div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.stepLabel}</div></div><DeadlineStamp dueDate={t.dueDate} today={today} /></li>)}{!open.length && <li className="empty">No open tasks.</li>}</ul></div>
+      {owes.length > 0 && <div className="card"><h2>Outstanding from the client</h2><p className="small muted">{owes.length} tasks with outstanding items · Showing up to 20 below; use All open tasks to find any task.</p>{owes.slice(0, 20).map((t) => <div key={t.id} className="small" style={{ marginBottom: 8 }}><b>{t.title}:</b> {t.outstanding.join(", ")}</div>)}</div>}
+      <div className="card"><h2>Completed</h2><p className="small"><Link href={`/tasks?client=${c.id}&s=done`}>All completed tasks · {done.length}</Link></p><ul className="list">{!done.length && <li className="empty">None yet.</li>}{done.slice(0, 20).map((t) => <li key={t.id} className="item"><div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.completedAt ? fmt(t.completedAt) : ""}</div></div><Pill tone="ok">Done</Pill></li>)}</ul></div>
     </div><div className="stack">
       <div className="card"><h2>Deadlines</h2><ul className="list">{dl.map((d) => <li key={d.periodKey ?? d.key} className="item"><div className="main"><div className="t">{d.label}</div><div className="m">Due {fmt(d.dueDate)}</div></div><DeadlineStamp dueDate={d.dueDate} today={today} nearOnly /></li>)}{dl.length === 0 && <li className="empty">Nothing due in the next year.</li>}</ul>
         {c.operatingStatus === "dormant" && <p className="small muted">Dormant: no AGM or audit deadlines. Annual returns still apply.</p>}</div>
@@ -85,7 +88,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     const members = await membersAsAt(ctx, c.id, date);
     const cap = await issuedAsAt(ctx, c.id, date);
     const moves = await movementHistory(ctx, c.id);
-    const people = await ctx.db.select().from(person).where(eq(person.firmId, ctx.firmId));
+    const people = await registerPeopleAsAt(ctx, c.id, date);
     const pn = (id: string | null) => people.find((p) => p.id === id)?.nameEn ?? "—";
     return (<>{header}{asAtForm}<div className="stack">
       <div className="card scroll-x"><h2>Share capital</h2><table className="tbl register-table"><thead><tr><th>Class</th><th>Currency</th><th>Issued</th><th>Paid up</th></tr></thead><tbody>{cap.map((x) => <tr key={x.shareClassId}><td>{x.name}</td><td>{x.currency}</td><td>{x.issued.toLocaleString("en-US")}</td><td>{money(x.paidUpCents, x.currency)}</td></tr>)}</tbody></table></div>
@@ -96,8 +99,10 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
 
   if (tab === "officers") {
     const current = await officersAsAt(ctx, c.id, date);
-    const history = await appointmentHistory(ctx, c.id);
-    const scs = await ctx.db.select({ s: significantController, p: person }).from(significantController).innerJoin(person, eq(person.id, significantController.personId)).where(eq(significantController.clientId, c.id));
+    const history = await appointmentHistory(ctx, c.id, date);
+    const people = await registerPeopleAsAt(ctx, c.id, date);
+    const scs = (await ctx.db.select({ s: significantController, p: person }).from(significantController).innerJoin(person, and(eq(person.id, significantController.personId), eq(person.firmId, ctx.firmId))).where(and(eq(significantController.clientId, c.id), eq(significantController.firmId, ctx.firmId))))
+      .map(({ s, p }) => ({ s, p: people.find(d => d.id === p.id) ?? p }));
     const cdd = await ctx.db.select().from(cddRecord);
     const kyc = (pid: string) => cdd.filter((r) => r.personId === pid).sort((a, b) => b.reviewDueOn.localeCompare(a.reviewDueOn))[0];
     return (<>{header}{asAtForm}<div className="stack">

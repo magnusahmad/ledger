@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { auditEnvironment } from "./audit-fixtures";
+
+let storageRoot: string;
+test.beforeAll(({}, info) => { storageRoot = auditEnvironment(info).STORAGE_DIR!; });
 
 test("staff edit a bilingual playbook safely at all four widths", async ({ page }) => {
   const errors: string[] = [];
@@ -25,17 +29,17 @@ test("staff edit a bilingual playbook safely at all four widths", async ({ page 
     await editor.scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(editor.locator("label").filter({ hasText: "更改註冊地址" })).toBeVisible();
-    await page.screenshot({ path: `storage/e2e/shots/playbook-editor-${width}.png` });
+    await page.screenshot({ path: `${storageRoot}/shots/playbook-editor-${width}.png` });
   }
   expect(errors).toEqual([]);
   await page.setViewportSize({ width: 1440, height: 900 });
 });
 
-test("an incomplete official-form check stays visibly unverified at every width", async ({ page }) => {
+test("an incomplete official-form check stays visibly unverified at every width", async ({ page }, info) => {
   const { Pool } = await import("pg");
   const { readFileSync } = await import("node:fs");
   const manifest = JSON.parse(readFileSync("forms/hk-cr/manifest.json", "utf8"));
-  const pool = new Pool({ connectionString: "postgres://localhost/harbourline_e2e" });
+  const pool = new Pool({ connectionString: auditEnvironment(info).DATABASE_URL });
   const previous = await pool.query("SELECT value FROM kv WHERE firm_id=$1 AND key=$2", ["firm_crcs", "forms.check"]);
   try {
     const failed = { at: "2026-09-29T15:00:00Z", changed: [], errors: Object.keys(manifest).map(code => `${code}: fetch failed`) };
@@ -47,7 +51,7 @@ test("an incomplete official-form check stays visibly unverified at every width"
     for (const width of [375, 768, 1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({ path: `storage/e2e/shots/playbook-check-failed-${width}.png` });
+      await page.screenshot({ path: `${storageRoot}/shots/playbook-check-failed-${width}.png` });
     }
     await page.setViewportSize({ width: 1440, height: 900 });
   } finally {

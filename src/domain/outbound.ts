@@ -1,27 +1,31 @@
 // Sending an approved message through the connected mailbox. Only called from an
 // approval handler, so nothing reaches a client without a human click.
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { conversation, invoice, message, request as requestT } from "@/db/schema";
 import type { MailAttachment } from "@/integrations/types";
 import { audit } from "./audit";
+import { prepareDelivery, deliverPrepared, deliveryPayload, type InvoiceDeliveryDates } from "./mail-delivery";
 
 export class OutboundError extends Error {}
 
-export async function sendMessage(ctx: Ctx, messageId: string, o: { edits?: { subject?: string; text?: string; to?: string[] }; attachments?: MailAttachment[]; approvedBy: string }) {
-  const m = await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) });
+export async function sendMessage(ctx: Ctx, messageId: string, o: { edits?: { subject?: string; text?: string; to?: string[] }; attachments?: MailAttachment[]; invoiceDates?: InvoiceDeliveryDates; approvedBy: string }) {
+  const m = await ctx.db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) });
   if (!m) throw new OutboundError("Message not found");
+  if (m.status === "sent") return m;
   if (m.direction !== "out" || (m.status !== "draft" && m.status !== "approved" && m.status !== "failed")) throw new OutboundError(`Message is ${m.status}`);
   const conv = (await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, m.conversationId) }))!;
   const subject = o.edits?.subject ?? m.subject ?? "";
   const text = o.edits?.text ?? m.text ?? "";
   const to = o.edits?.to ?? m.toAddrs;
   if (!to.length) throw new OutboundError("No recipient");
-  await ctx.db.update(message).set({ status: "approved", subject, text, toAddrs: to }).where(eq(message.id, messageId));
   const refs = m.inReplyTo ? [m.inReplyTo] : [];
+  const delivery = await prepareDelivery(ctx, `message:${messageId}`, { to, cc: m.ccAddrs, subject, text, html: textToHtml(text), attachments: o.attachments, inReplyTo: m.inReplyTo, references: refs, providerThreadId: conv.providerThreadId }, o.invoiceDates);
+  const approved = deliveryPayload(ctx, delivery);
+  await ctx.db.update(message).set({ status: "approved", subject: approved.subject, text: approved.text, toAddrs: approved.to, rfcMessageId: delivery.correlationId }).where(eq(message.id, messageId));
   try {
-    const sent = await ctx.mail.send({ to, cc: m.ccAddrs, subject, text, html: textToHtml(text), attachments: o.attachments, inReplyTo: m.inReplyTo, references: refs, providerThreadId: conv.providerThreadId });
-    await ctx.db.update(message).set({ status: "sent", provider: ctx.mail.name, providerMessageId: sent.providerMessageId, rfcMessageId: sent.rfcMessageId ?? null, at: ctx.clock.now(), error: null }).where(eq(message.id, messageId));
+    const sent = await deliverPrepared(ctx, delivery.id);
+    await ctx.db.update(message).set({ status: "sent", provider: delivery.provider, providerMessageId: sent.providerMessageId, rfcMessageId: sent.rfcMessageId ?? null, at: ctx.clock.now(), error: null }).where(eq(message.id, messageId));
     if (sent.providerThreadId && !conv.providerThreadId) await ctx.db.update(conversation).set({ providerThreadId: sent.providerThreadId }).where(eq(conversation.id, conv.id));
     await ctx.db.update(conversation).set({ lastMessageAt: ctx.clock.now() }).where(eq(conversation.id, conv.id));
     await audit(ctx, "message.sent", "message", messageId, { to, subject, approvedBy: o.approvedBy, attachments: (o.attachments ?? []).map((a) => a.filename) });
@@ -29,7 +33,7 @@ export async function sendMessage(ctx: Ctx, messageId: string, o: { edits?: { su
     await ctx.db.update(message).set({ status: "failed", error: (e as Error).message }).where(eq(message.id, messageId));
     throw e;
   }
-  return (await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) }))!;
+  return (await ctx.db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) }))!;
 }
 
 export function textToHtml(text: string): string {

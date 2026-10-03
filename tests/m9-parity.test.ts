@@ -122,7 +122,7 @@ describe("Batch operations (Mass Production)", () => {
     expect(props).toHaveLength(3);
     const invs = await ctx.db.select().from(invoice).where(eq(invoice.status, "draft"));
     expect(invs).toHaveLength(3);
-    expect(invs.every((i) => i.totalCents === 130500)).toBe(true); // HK$1,200 fee + HK$105 NAR1 fee
+    expect(invs.every((i) => i.totalCents === 70500)).toBe(true); // HK$600 fee + HK$105 NAR1 fee
     const again = await batchStart(ctx, { playbookId: "hk.annualReturn", clientIds: ["cli_c1"], periodYear: 2026 });
     expect(again).toMatchObject({ created: 0, skipped: [expect.objectContaining({ clientId: "cli_c1" })] });
   });

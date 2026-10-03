@@ -18,18 +18,33 @@ const KIND_LABEL: Record<string, string> = {
 };
 const KIND_TONE: Record<string, "amber" | "red" | "blue" | "ok" | undefined> = { start_enforcement: "red", screening_review: "red", conflict: "amber", triage: "amber", match_payment: "amber", send_message: "blue" };
 
+function deadlineItem(x: Awaited<ReturnType<typeof todayData>>["deadlines"][number], today: string) {
+  return (
+    <li key={`${x.clientId}-${x.periodKey}`} className="item">
+      <div className="main"><div className="t">{x.label}</div><div className="m"><Link href={`/clients/${x.clientId}`}>{x.clientName}</Link> · Due {fmt(x.dueDate)}</div></div>
+      <div className="row">
+        <DeadlineStamp dueDate={x.dueDate} today={today} />
+        <ActionForm action={batchAction} submit="Start" tone="secondary">
+          <input type="hidden" name="playbookId" value={x.playbookId} /><input type="hidden" name="clientId" value={x.clientId} /><input type="hidden" name="periodYear" value={x.periodYear} />
+        </ActionForm>
+      </div>
+    </li>
+  );
+}
+
 export default async function Today() {
   const ctx = getCtx();
   const d = await todayData(ctx);
   const today = ctx.clock.today();
   const outside = await outsideWork(ctx);
+  const needs = d.proposals.length + d.dueNow.length;
   const reading = await ctx.db.select().from(message).where(and(eq(message.firmId, ctx.firmId), eq(message.direction, "in"), isNull(message.processedAt)));
   return (
     <>
       <div className="top">
         <div>
           <h1>Today</h1>
-          <p className="sub">{ctx.clock.now().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} {d.proposals.length ? ` · ${d.proposals.length} thing${d.proposals.length > 1 ? "s" : ""} need${d.proposals.length > 1 ? "" : "s"} you` : ""}</p>
+          <p className="sub">{ctx.clock.now().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })} {needs ? ` · ${needs} thing${needs > 1 ? "s" : ""} need${needs > 1 ? "" : "s"} you` : ""}</p>
         </div>
         <div className="row"><LiveRefresh /><Link href="/new" className="btn">New request</Link></div>
       </div>
@@ -43,8 +58,9 @@ export default async function Today() {
               <Pill tone="blue">Reading</Pill>
             </div>
           ))}
-          {d.proposals.length === 0 && reading.length === 0 && <p className="empty">You’re all caught up.</p>}
+          {needs === 0 && reading.length === 0 && <p className="empty">You’re all caught up.</p>}
           <ul className="list">
+            {d.dueNow.map((x) => deadlineItem(x, today))}
             {d.proposals.map((p) => (
               <li key={p.id} className="item">
                 <div className="main">
@@ -62,26 +78,16 @@ export default async function Today() {
         <section className="sec" aria-labelledby="dl">
           <div className="sec-h"><h2 id="dl">Upcoming deadlines</h2><span className="small muted">Next 30 days, not yet started</span></div>
           <div className="card tight"><ul className="list">
-            {d.deadlines.map((x) => (
-              <li key={`${x.clientId}-${x.periodKey}`} className="item">
-                <div className="main"><div className="t">{x.label}</div><div className="m"><Link href={`/clients/${x.clientId}`}>{x.clientName}</Link> · Due {fmt(x.dueDate)}</div></div>
-                <div className="row">
-                  <DeadlineStamp dueDate={x.dueDate} today={today} />
-                  <ActionForm action={batchAction} submit="Start" tone="secondary">
-                    <input type="hidden" name="playbookId" value={x.playbookId} /><input type="hidden" name="clientId" value={x.clientId} /><input type="hidden" name="periodYear" value={x.periodYear} />
-                  </ActionForm>
-                </div>
-              </li>
-            ))}
+            {d.deadlines.map((x) => deadlineItem(x, today))}
           </ul></div>
         </section>
       )}
 
       {outside.length > 0 && (
         <section className="sec" aria-labelledby="out">
-          <div className="sec-h"><h2 id="out">Outside the platform</h2><span className="small muted">Off-platform steps and tasks on hold</span></div>
+          <div className="sec-h"><h2 id="out">Outside the platform</h2><span className="small muted">{outside.length} off-platform steps and holds · <Link href="/tasks?s=open">All tasks</Link> · <Link href="/tasks?s=open&held=1">All held tasks</Link></span></div>
           <div className="card tight"><ul className="list">
-            {outside.map((r) => (
+            {outside.slice(0, 20).map((r) => (
               <li key={`${r.kind}-${r.id}`} className="item">
                 <div className="main"><Link href={`/tasks/${r.taskId}`} className="t">{r.kind === "hold" ? `On hold: ${r.title}` : r.title}</Link>
                   <div className="m">{r.clientName} · {r.taskTitle} · Waiting on {r.partyName ?? waitingLabel(r.waitingOn).toLowerCase()}</div></div>
@@ -96,7 +102,7 @@ export default async function Today() {
         <section className="sec" aria-labelledby="ov">
           <div className="sec-h"><h2 id="ov">Overdue invoices</h2><Link href="/invoices" className="small">All invoices</Link></div>
           <div className="card tight"><ul className="list">
-            {d.overdue.map((i) => (
+            {d.overdue.slice(0, 20).map((i) => (
               <li key={i.id} className="item">
                 <div className="main"><Link href={`/invoices/${i.id}`} className="t">{i.number}</Link><div className="m">{i.clientName} · {money(i.totalCents - i.paidCents)} outstanding</div></div>
                 <DeadlineStamp dueDate={i.dueOn} today={today} />
@@ -108,10 +114,10 @@ export default async function Today() {
 
       <div className="grid2">
         <section className="sec" aria-labelledby="wc">
-          <div className="sec-h"><h2 id="wc">Waiting on clients</h2></div>
+          <div className="sec-h"><h2 id="wc">Waiting on clients</h2><Link href="/tasks?s=open" className="small">All tasks · {d.waitingClient.length} waiting</Link></div>
           <div className="card tight"><ul className="list">
             {d.waitingClient.length === 0 && <li className="empty">Nothing waiting.</li>}
-            {d.waitingClient.map((t) => (
+            {d.waitingClient.slice(0, 20).map((t) => (
               <li key={t.id} className="item">
                 <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.stepKind === "sign" ? "Signatures" : plural(t.outstanding.length, "item") + " outstanding"}</div></div>
               </li>
@@ -119,10 +125,10 @@ export default async function Today() {
           </ul></div>
         </section>
         <section className="sec" aria-labelledby="ap">
-          <div className="sec-h"><h2 id="ap">Awaiting payment</h2></div>
+          <div className="sec-h"><h2 id="ap">Awaiting payment</h2><Link href="/tasks?s=open" className="small">All tasks · {d.awaitingPayment.length} waiting</Link></div>
           <div className="card tight"><ul className="list">
             {d.awaitingPayment.length === 0 && <li className="empty">Nothing waiting.</li>}
-            {d.awaitingPayment.map((t) => (
+            {d.awaitingPayment.slice(0, 20).map((t) => (
               <li key={t.id} className="item">
                 <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName}{t.invoice ? ` · ${t.invoice.number}` : ""}</div></div>
                 {t.invoice && <span className="small" style={{ fontVariantNumeric: "tabular-nums" }}>{t.invoice.total}</span>}
@@ -134,9 +140,9 @@ export default async function Today() {
 
       {d.working.length > 0 && (
         <section className="sec" aria-labelledby="wk">
-          <div className="sec-h"><h2 id="wk">In progress</h2><Link href="/tasks" className="small">All tasks</Link></div>
+          <div className="sec-h"><h2 id="wk">In progress</h2><Link href="/tasks?s=open" className="small">All tasks · {d.working.length} in progress</Link></div>
           <div className="card tight"><ul className="list">
-            {d.working.map((t) => (
+            {d.working.slice(0, 20).map((t) => (
               <li key={t.id} className="item">
                 <div className="main"><Link href={`/tasks/${t.id}`} className="t">{t.title}</Link><div className="m">{t.clientName} · {t.stepLabel}</div></div>
                 <div className="row"><DeadlineStamp dueDate={t.dueDate} today={today} nearOnly />{t.waitingOn === "you" && <Pill tone="blue">With you</Pill>}</div>

@@ -1,13 +1,33 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "harbourline", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    {
+      "name": "harbourline",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
     {
       "name": "harbourline-offline",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "export DATABASE_URL=postgres://localhost/harbourline_ui LLM_MODE=e2e MAIL_PROVIDER=fake SCREENING_PROVIDER=fake STORAGE_DIR=storage/ui APP_URL=http://localhost:3101 NEXT_DIST_DIR=.next-ui AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN=; npx tsx --env-file-if-exists=.env scripts/seed.ts && npx next dev -p 3101"],
+      "runtimeArgs": [
+        "-c",
+        "export DATABASE_URL=postgres://localhost/harbourline_ui LLM_MODE=e2e MAIL_PROVIDER=fake SCREENING_PROVIDER=fake STORAGE_DIR=storage/ui APP_URL=http://localhost:3101 NEXT_DIST_DIR=.next-ui AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN=; npx tsx --env-file-if-exists=.env scripts/seed.ts && npx next dev -p 3101"
+      ],
       "port": 3101,
       "autoPort": false
+    },
+    {
+      "name": "returns-model",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-magnus-Documents-Projects-ledger/22708182-012c-48a9-b42a-0904172b2bc5/scratchpad && exec python3 -m http.server 8765"
+      ],
+      "port": 8765
     }
   ]
 }

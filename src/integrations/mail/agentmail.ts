@@ -39,11 +39,15 @@ export class AgentMailMail implements MailProvider {
     return { messages, cursor: new Date(latest.getTime() + 1).toISOString() };
   }
 
+  async reconcileDelivery() { return { status: "unknown" as const }; }
+
   async send(m: OutboundMail): Promise<SentMail> {
     const attachments = (m.attachments ?? []).map((a) => ({ filename: a.filename, contentType: a.mime, content: a.content.toString("base64") }));
+    const headers = m.correlationId ? { "Message-ID": m.correlationId } : undefined;
     const r = m.inReplyTo
-      ? await this.client.inboxes.messages.reply(this.address, m.inReplyTo, { text: m.text, html: m.html, attachments, to: m.to, cc: m.cc })
-      : await this.client.inboxes.messages.send(this.address, { to: m.to, cc: m.cc, subject: m.subject, text: m.text, html: m.html, attachments });
+      ? await this.client.inboxes.messages.reply(this.address, m.inReplyTo, { text: m.text, html: m.html, attachments, to: m.to, cc: m.cc, headers })
+      : await this.client.inboxes.messages.send(this.address, { to: m.to, cc: m.cc, subject: m.subject, text: m.text, html: m.html, attachments, headers });
+    if (!r.messageId) throw new Error("AgentMail did not return a send acknowledgement");
     return { providerMessageId: r.messageId, providerThreadId: r.threadId, rfcMessageId: r.messageId };
   }
 }

@@ -5,9 +5,9 @@ import type { Lang } from "@/db/schema";
 import { PortalForm } from "./form";
 
 const T = {
-  en: { title: "Details and documents", intro: "Fill in what you have and send. Files can be PDFs or photos, up to 15 MB each. You can come back to this link for anything else later.", send: "Send", sending: "Sending…", sent: "Received. Thank you.", empty: "Fill in at least one item before sending.", failed: "That didn’t go through. Please try again.", received: "Received", none: "We have everything we need for now. Thank you.", optional: "Optional", lang: "Language" },
-  tc: { title: "所需資料及文件", intro: "請填寫現有資料後提交。文件可為 PDF 或相片，每個不超過 15 MB。其餘資料可稍後經此連結補交。", send: "提交", sending: "正在提交…", sent: "已收到，謝謝。", empty: "請至少填寫一項後再提交。", failed: "提交未成功，請再試一次。", received: "已收到", none: "暫時毋須提供其他資料，謝謝。", optional: "選填", lang: "語言" },
-  sc: { title: "所需资料及文件", intro: "请填写现有资料后提交。文件可为 PDF 或照片，每个不超过 15 MB。其余资料可稍后通过此链接补交。", send: "提交", sending: "正在提交…", sent: "已收到，谢谢。", empty: "请至少填写一项后再提交。", failed: "提交未成功，请再试一次。", received: "已收到", none: "暂时无须提供其他资料，谢谢。", optional: "选填", lang: "语言" },
+  en: { title: "Details and documents", intro: "Fill in what you have and send. Files can be PDFs or photos, up to 15 MB each. You can come back to this link for anything else later.", send: "Send", sending: "Sending…", sent: "Received. Thank you.", empty: "Fill in at least one item before sending.", failed: "That didn’t go through. Please try again.", changed: "The details changed. Reload this link before sending.", reload: "Reload", received: "Received", none: "We have everything we need for now. Thank you.", optional: "Optional", lang: "Language" },
+  tc: { title: "所需資料及文件", intro: "請填寫現有資料後提交。文件可為 PDF 或相片，每個不超過 15 MB。其餘資料可稍後經此連結補交。", send: "提交", sending: "正在提交…", sent: "已收到，謝謝。", empty: "請至少填寫一項後再提交。", failed: "提交未成功，請再試一次。", changed: "資料已更改，請重新載入此連結後提交。", reload: "重新載入", received: "已收到", none: "暫時毋須提供其他資料，謝謝。", optional: "選填", lang: "語言" },
+  sc: { title: "所需资料及文件", intro: "请填写现有资料后提交。文件可为 PDF 或照片，每个不超过 15 MB。其余资料可稍后通过此链接补交。", send: "提交", sending: "正在提交…", sent: "已收到，谢谢。", empty: "请至少填写一项后再提交。", failed: "提交未成功，请再试一次。", changed: "资料已更改，请重新加载此链接后提交。", reload: "重新加载", received: "已收到", none: "暂时无须提供其他资料，谢谢。", optional: "选填", lang: "语言" },
 };
 
 export default async function Portal({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ lang?: string }> }) {
@@ -38,6 +38,7 @@ export default async function Portal({ params, searchParams }: { params: Promise
                   );
                   return (
                     <div key={id} className="pf">
+                      <input type="hidden" name={`p:${task.taskId}:${it.key}`} value={it.personId ?? ""} />
                       <label htmlFor={id}>{it.label}{it.optional && <span className="muted small"> · {t.optional}</span>}</label>
                       {it.kind === "file"
                         ? <input id={id} type="file" name={`f:${task.taskId}:${it.key}`} accept="image/*,application/pdf" capture={it.key === "selfie" ? "user" : undefined} />

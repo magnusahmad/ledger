@@ -46,10 +46,11 @@ Rules:
 - If context is "chase", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.
 - If context is "costs", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.
 - If context is "meeting", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.
+- If context is "change", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.
 - Never promise anything not in the facts. Never include internal notes, confidence scores or ids.
 Return JSON with subject and body.`;
 
-export const PLAN_SYSTEM = `You plan a one-off task for a Hong Kong company secretarial firm when no playbook covers a client's request. Propose: a short title; the information and documents to collect from the client (checklist items with short camelCase keys and labels in English, Traditional Chinese and Simplified Chinese; kind "data" or "file"); the internal steps; a reasonable fee in HKD for a small Hong Kong firm; and caveats (e.g. third parties decide, licensing limits). Staff will review and edit.`;
+export const PLAN_SYSTEM = `You plan a one-off task for a Hong Kong company secretarial firm when no playbook covers a client's request. Propose: a short title; the information and documents to collect from the client (checklist items with short camelCase keys and labels in English, Traditional Chinese and Simplified Chinese; kind "data" or "file"); the internal steps; a fee in HKD in line with traditional local Hong Kong secretarial firms (most one-off jobs are HK$500-2,000, excluding government fees); and caveats (e.g. third parties decide, licensing limits). Staff will review and edit.`;
 
 export const EXTRACT_SYSTEM = `You extract details from documents and messages for a Hong Kong company secretarial firm. For each requested checklist key, return the value found (normalised; dates YYYY-MM-DD) and quote where it came from. Identify what each attached document is and which checklist key it satisfies. Report conflicts with the on-file values given. Never guess: omit anything not clearly present.`;
 

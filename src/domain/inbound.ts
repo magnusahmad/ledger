@@ -1,12 +1,13 @@
 // Inbound pipeline: store the message, let the intake agent read it against the client's
 // open tasks, apply what it found (internal changes automatically, anything client-facing
 // as a proposal), and draft one reply for approval.
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { knownPersonName, sameValue } from "./names";
 import type { InboundMail } from "@/integrations/types";
 import { attachment, client as clientT, conversation, document, message, request as requestT, task as taskT, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
+import type { Snapshot } from "@/agent/context";
 import { runIntake } from "@/agent/intake";
 import { runReview, applyReview } from "@/agent/review";
 import { planCustomTask } from "@/agent/planner";
@@ -15,12 +16,12 @@ import { AgentError } from "@/agent/call";
 import type { Intake, IntakeAction } from "@/agent/schemas";
 import { findClientsBySenderEmail } from "./lookup";
 import { handleThirdPartyMail } from "./third-parties";
-import { addContact, createClient, getPersonProtected, updatePerson } from "./records";
+import { addContact, compatibleContactInfo, contactInfoPatch, createClient, getPersonProtected, updatePerson } from "./records";
 import { resolvePerson } from "./people";
 import { advance, createRequest, getTask, logEvent, outstanding, setChecklist, startTask, tasksForRequest, type Extracted, type Task } from "./engine";
-import { getPlaybook } from "./playbooks";
+import { getPlaybook, effectiveDateRequirement } from "./playbooks";
 import { createInvoiceForRequest, invoiceWithLines } from "./invoices";
-import { createProposal } from "./proposals";
+import { createProposal, pendingProposals } from "./proposals";
 import { getFirm } from "./firm";
 import { itemLabel, money, PROTECTED_KEYS } from "./labels";
 import { fmtDate, isIsoDate } from "./dates";
@@ -36,12 +37,30 @@ const ONBOARDING = new Set(["hk.transferIn", "hk.incorporation"]);
 
 // ---------- Ingest ----------
 export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" | "html" | "rfcMessageId" | "inReplyTo" | "providerThreadId"> & Partial<InboundMail> & { channel: "email" | "paste" | "portal"; clientId?: string | null; direction?: "in" | "out" }) {
+  return ctx.db.transaction(async db => ingestMessageAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, m));
+}
+
+async function ingestMessageAtomic(ctx: Ctx, m: Parameters<typeof ingestMessage>[1]) {
+  // Metadata rolls back as one batch. Stored bytes may remain after interruption;
+  // a retry uses fresh keys and reconstructs every attachment rather than trusting a half-message.
   const out = m.direction === "out";
   if (m.providerMessageId) {
-    const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.provider, m.provider), eq(message.providerMessageId, m.providerMessageId)) });
+    const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.provider, m.provider), eq(message.providerMessageId, m.providerMessageId)) });
     if (dup) return { ...dup, duplicate: true as const };
   }
   // Mail Harbourline sent reappears in the mailbox's Sent folder; match it by Message-ID too.
+  if (out && m.rfcMessageId) {
+    const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.rfcMessageId, m.rfcMessageId)) });
+    if (dup) return { ...dup, duplicate: true as const };
+  }
+  // A second provider batch can race both successful "not found" reads above.
+  // Serialize the durable identity, then repeat those reads before writing a batch.
+  const identities = [m.providerMessageId ? JSON.stringify(["mail", ctx.firmId, m.provider, m.providerMessageId]) : null, out && m.rfcMessageId ? JSON.stringify(["mail-rfc", ctx.firmId, m.rfcMessageId]) : null].filter((key): key is string => !!key).sort();
+  for (const key of identities) await ctx.db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+  if (m.providerMessageId) {
+    const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.provider, m.provider), eq(message.providerMessageId, m.providerMessageId)) });
+    if (dup) return { ...dup, duplicate: true as const };
+  }
   if (out && m.rfcMessageId) {
     const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.rfcMessageId, m.rfcMessageId)) });
     if (dup) return { ...dup, duplicate: true as const };
@@ -50,8 +69,8 @@ export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" 
   // Thread: provider thread id, then In-Reply-To, else a new conversation.
   let conv = m.providerThreadId ? await ctx.db.query.conversation.findFirst({ where: and(eq(conversation.firmId, ctx.firmId), eq(conversation.providerThreadId, m.providerThreadId)) }) : undefined;
   if (!conv && m.inReplyTo) {
-    const parent = await ctx.db.query.message.findFirst({ where: eq(message.rfcMessageId, m.inReplyTo) });
-    if (parent) conv = await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, parent.conversationId) });
+    const parent = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.rfcMessageId, m.inReplyTo)) });
+    if (parent) conv = await ctx.db.query.conversation.findFirst({ where: and(eq(conversation.firmId, ctx.firmId), eq(conversation.id, parent.conversationId)) });
   }
   if (!conv) {
     [conv] = await ctx.db.insert(conversation).values({
@@ -60,7 +79,7 @@ export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" 
       lastMessageAt: m.receivedAt, createdAt: ctx.clock.now(),
     }).returning();
   } else {
-    await ctx.db.update(conversation).set({ lastMessageAt: m.receivedAt }).where(eq(conversation.id, conv.id));
+    await ctx.db.update(conversation).set({ lastMessageAt: sql`greatest(${conversation.lastMessageAt}, ${m.receivedAt.toISOString()}::timestamptz)` }).where(and(eq(conversation.id, conv.id), eq(conversation.firmId, ctx.firmId)));
   }
   const [row] = await ctx.db.insert(message).values({
     id: ctx.ids.next("msg"), firmId: ctx.firmId, conversationId: conv.id, direction: out ? "out" : "in", provider: m.provider,
@@ -71,7 +90,7 @@ export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" 
   }).returning();
   for (const a of m.attachments) {
     const docId = ctx.ids.next("doc");
-    const key = `attachments/${row.id}/${a.filename.replace(/[^\w.\-]/g, "_")}`;
+    const key = `attachments/${row.id}/${docId}`;
     await ctx.storage.put(key, a.content);
     await ctx.db.insert(document).values({ id: docId, firmId: ctx.firmId, clientId: conv.clientId, kind: "upload", title: a.filename, storageKey: key, mime: a.mime, sha256: Crypto.sha256(a.content), source: m.channel === "portal" ? "upload" : "email", createdAt: ctx.clock.now() });
     await ctx.db.insert(attachment).values({ id: ctx.ids.next("att"), firmId: ctx.firmId, messageId: row.id, documentId: docId, filename: a.filename, mime: a.mime, size: a.content.length });
@@ -83,10 +102,22 @@ export async function ingestMessage(ctx: Ctx, m: Omit<InboundMail, "references" 
 export type ProcessResult = { messageId: string; clientId: string | null; requestId: string | null; taskIds: string[]; proposalIds: string[] };
 
 export async function processInbound(ctx: Ctx, messageId: string): Promise<ProcessResult> {
-  const msg = await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) });
+  return ctx.db.transaction(async (db) => {
+    await db.execute(sql`select id from message where id = ${messageId} and firm_id = ${ctx.firmId} for update`);
+    const txCtx = { ...ctx, db: db as unknown as Ctx["db"] };
+    const result = await processInboundAtomic(txCtx, messageId);
+    const stored = await db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) });
+    if (stored) await db.update(message).set({ intake: { ...stored.intake, processingResult: result } }).where(and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)));
+    return result;
+  });
+}
+
+async function processInboundAtomic(ctx: Ctx, messageId: string): Promise<ProcessResult> {
+  const msg = await ctx.db.query.message.findFirst({ where: and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)) });
   if (!msg) throw new Error("Message not found");
   const conv = (await ctx.db.query.conversation.findFirst({ where: eq(conversation.id, msg.conversationId) }))!;
   const result: ProcessResult = { messageId, clientId: null, requestId: null, taskIds: [], proposalIds: [] };
+  if (msg.processedAt) return (msg.intake?.processingResult as ProcessResult | undefined) ?? result;
   // Mail from a known third party (bank, law firm, official...) is logged on their tasks, not read as an instruction.
   if (await handleThirdPartyMail(ctx, msg)) return result;
   const atts = await ctx.db.select().from(attachment).where(eq(attachment.messageId, messageId));
@@ -96,11 +127,12 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   const history = await ctx.db.select().from(message).where(and(eq(message.conversationId, conv.id))).orderBy(asc(message.at));
 
   let intake: Intake;
+  let snapshots: Snapshot[];
   try {
-    ({ intake } = await runIntake(ctx, {
-      messageId, from: { email: msg.fromAddr, name: msg.fromName }, subject: msg.subject, text: msg.text ?? "",
+    ({ intake, snapshots } = await runIntake(ctx, {
+      messageId, messageAt: msg.at, from: { email: msg.fromAddr, name: msg.fromName }, subject: msg.subject, text: msg.text ?? "",
       attachments: atts.map((a) => ({ filename: a.filename, mime: a.mime })), candidateClientIds: candidateIds,
-      threadHistory: history.filter((h) => h.id !== messageId && (h.status === "sent" || h.status === "received")).map((h) => ({ direction: h.direction, text: h.text ?? "" })),
+      threadHistory: history.filter((h) => h.id !== messageId && (h.status === "sent" || h.status === "received")).map((h) => ({ direction: h.direction, at: h.at.toISOString(), text: h.text ?? "" })),
     }));
   } catch (e) {
     if (!(e instanceof AgentError)) throw e;
@@ -112,8 +144,7 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
   // ----- Client -----
   let clientId: string | null = null;
   if (intake.client.kind === "existing" && intake.client.clientId && candidateIds.includes(intake.client.clientId)) clientId = intake.client.clientId;
-  else if (intake.client.kind === "unclear" && candidateIds.length === 1) clientId = candidateIds[0];
-  else if (intake.client.kind === "new_prospect" || (candidateIds.length === 0 && intake.actions.some((a) => a.type !== "general_correspondence"))) {
+  else if (intake.client.kind === "new_prospect") {
     clientId = await createProspect(ctx, intake, msg);
   }
   if (!clientId) {
@@ -134,17 +165,28 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
     const p = await createProposal(ctx, { kind: "triage", title: `Not sure what ${msg.fromName ?? "the client"} wants`, summary: `${a.type}: ${a.description ?? a.playbookId ?? ""} (confidence ${Math.round(a.confidence * 100)}%)`, clientId, payload: { messageId, action: a } });
     result.proposalIds.push(p.id);
   }
-  const actions = intake.actions.filter(confident);
+  const snapshot = snapshots.find(s => s.clientId === clientId);
+  const trustedPersonIds = new Set(snapshot ? [...snapshot.officers.map(o => o.personId), ...snapshot.members.map(m => m.personId), ...snapshot.significantControllers.map(c => c.personId), ...snapshot.openTasks.flatMap(t => [t.personId, ...t.checklist.map(e => e.personId)])].filter((id): id is string => !!id) : []);
+  const actions: IntakeAction[] = [];
+  for (const a of intake.actions.filter(confident)) {
+    if (a.person?.mode === "existing" && (!a.person.personId || !trustedPersonIds.has(a.person.personId))) {
+      const p = await createProposal(ctx, { kind: "triage", title: "Check which person this instruction concerns", clientId, summary: "The named person was not in this client's supplied context. Staff must identify them before applying the instruction.", payload: { messageId, action: a } });
+      result.proposalIds.push(p.id);
+    } else actions.push(a);
+  }
 
   const starts = actions.filter((a) => a.type === "start_request" && a.playbookId);
   const unsupported = actions.filter((a) => a.type === "unsupported_request");
   const validStarts: { a: IntakeAction; pbId: string }[] = [];
   for (const a of starts) {
     const pb = await getPlaybook(ctx, a.playbookId!).catch(() => null);
-    if (pb) validStarts.push({ a, pbId: pb.id });
+    if (pb && pb.jurisdiction !== cl.jurisdiction) {
+      const p = await createProposal(ctx, { kind: "triage", title: "Check request jurisdiction", clientId, payload: { messageId, action: a }, summary: `${pb.name.en} does not cover ${cl.jurisdiction}` });
+      result.proposalIds.push(p.id);
+    } else if (pb) validStarts.push({ a, pbId: pb.id });
     else unsupported.push({ ...a, type: "unsupported_request", description: a.description ?? `Request for ${a.playbookId}` });
   }
-  if (cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s) => ONBOARDING.has(s.pbId))) {
+  if (cl.jurisdiction === "HK" && cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s) => ONBOARDING.has(s.pbId))) {
     const sender = await ctx.db.query.contact.findFirst({ where: (x, { and, eq }) => and(eq(x.clientId, clientId!), eq(x.isInstructing, true)) });
     validStarts.unshift({ a: { type: "start_request", taskId: null, playbookId: "hk.transferIn", person: sender?.personId ? { mode: "existing", personId: sender.personId, nameEn: sender.name, nameZh: null, email: sender.email } : null, fields: [], attachments: [], effectiveDate: null, description: "Onboarding as a new client", confidence: 1, evidence: null }, pbId: "hk.transferIn" });
   }
@@ -199,8 +241,8 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
     }
     const sub = { proposalIds: [] as string[] } as ProcessResult;
     const questions = a.type === "provide_information"
-      ? await applyInformation(ctx, t, a, atts, messageId, sub)
-      : await applyChange(ctx, t, a, messageId, sub);
+      ? await applyInformation(ctx, t, a, atts, messageId, sub, [...trustedPersonIds])
+      : await applyChange(ctx, t, a, messageId, sub, [...trustedPersonIds]);
     local.proposals.push(...sub.proposalIds);
     local.questions.push(...questions);
     if (!local.touched.some((x) => x.id === t.id)) local.touched.push(await getTask(ctx, t.id));
@@ -233,7 +275,7 @@ export async function processInbound(ctx: Ctx, messageId: string): Promise<Proce
     await ctx.db.update(message).set({ proposalId: p.id }).where(eq(message.id, draft.id));
     result.proposalIds.push(p.id);
   }
-  await markProcessed(ctx, messageId, { intake });
+  await markProcessed(ctx, messageId, { intake: { ...intake, processingResult: result } });
   return result;
 }
 
@@ -300,7 +342,7 @@ async function createProspect(ctx: Ctx, intake: Intake, msg: typeof message.$inf
 
 function toExtracted(fields: { key: string; value: string; quote: string | null }[], allowed: Set<string>): Extracted {
   const out: Extracted = {};
-  for (const f of fields) if (allowed.has(f.key) && f.value?.trim()) out[f.key] = { value: f.value.trim(), source: f.quote };
+  for (const f of fields) if (allowed.has(f.key) && f.value?.trim() && !["idCopy", "addrProof"].includes(f.key)) out[f.key] = { value: f.value.trim(), source: f.quote };
   return out;
 }
 
@@ -312,7 +354,8 @@ async function startFromAction(ctx: Ctx, clientId: string, requestId: string, pb
     personId = p.id;
   }
   const extracted = toExtracted(a.fields, new Set(pb.requirements.map((r) => r.key)));
-  if (a.effectiveDate && !extracted.effDate && pb.requirements.some((r) => r.key === "effDate")) extracted.effDate = { value: a.effectiveDate, source: a.evidence };
+  const dateKey = effectiveDateRequirement(pb);
+  if (a.effectiveDate && dateKey && !extracted[dateKey] && pb.requirements.some(r => r.key === dateKey)) extracted[dateKey] = { value: a.effectiveDate, source: a.evidence };
   // Person particulars given in the first message go on the new person's record; for an
   // existing person, differing values are conflicts (never silent overwrites).
   const conflicts = personId ? await writePersonParticulars(ctx, personId, extracted, clientId) : [];
@@ -342,13 +385,12 @@ export async function writePersonParticulars(ctx: Ctx, personId: string, ex: Ext
       await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(key)} for ${p.nameEn}`, summary: `On file: ${PROTECTED_KEYS.has(key) ? "(protected)" : onFile}. Client now says: ${v}.`, clientId, taskId: taskId ?? null, payload: { taskId: taskId ?? null, key, onFile: PROTECTED_KEYS.has(key) ? "(protected value on file)" : onFile, incoming: v, personId, question: `Could you please confirm your ${itemLabel(key).toLowerCase()}? It differs from our records.` } });
     }
   }
-  const ci = ex.contactInfo?.value;
-  if (ci) {
-    const email = ci.match(/[\w.+-]+@[\w.-]+/)?.[0];
-    const phone = ci.match(/\+?\d[\d\s-]{6,}/)?.[0]?.trim();
-    if (email && !p.email) (patch as Record<string, string>).email = email;
-    if (phone && !p.phone) (patch as Record<string, string>).phone = phone;
-  }
+  const incomingContact = ex.contactInfo?.value;
+  const recordedContact = [p.email, p.phone].filter(Boolean).join(" / ");
+  if (incomingContact && recordedContact && !compatibleContactInfo(recordedContact, incomingContact)) {
+    conflicts.push("contactInfo");
+    await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel("contactInfo")} for ${p.nameEn}`, summary: `On file: ${recordedContact}. Client now supplies a different value.`, clientId, taskId: taskId ?? null, payload: { taskId: taskId ?? null, key: "contactInfo", onFile: recordedContact, incoming: incomingContact, personId, question: "Please confirm your email and mobile number; they differ from the details on file." } });
+  } else Object.assign(patch, contactInfoPatch(incomingContact, p));
   if (Object.keys(patch).length) await updatePerson(ctx, personId, patch, "From client's message");
   return conflicts;
 }
@@ -361,23 +403,43 @@ async function startCustom(ctx: Ctx, clientId: string, requestId: string, a: Int
   return getTask(ctx, t.id);
 }
 
-async function applyInformation(ctx: Ctx, t: Task, a: IntakeAction, atts: (typeof attachment.$inferSelect)[], messageId: string, result: ProcessResult): Promise<string[]> {
+async function applyInformation(ctx: Ctx, t: Task, a: IntakeAction, atts: (typeof attachment.$inferSelect)[], messageId: string, result: ProcessResult, trustedPersonIds: string[]): Promise<string[]> {
   const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
   const allowed = new Set(t.checklist.map((e) => e.key));
   const ex = toExtracted(a.fields, allowed);
+  const review = await runReview(ctx, t.id, { kind: "information", description: a.description ?? "Client provided information", newFields: a.fields.map((f) => ({ key: f.key, value: f.value })), messageId });
+  if (review.switchPerson?.personId && !trustedPersonIds.includes(review.switchPerson.personId)) {
+    const out = await applyReview(ctx, t.id, review, { clientId: t.clientId, kind: "information", trustedPersonIds });
+    result.proposalIds.push(...out.proposals);
+    return out.questions;
+  }
   const conflicts = t.personId ? await writePersonParticulars(ctx, t.personId, ex, t.clientId, t.id) : [];
+  if (t.personId && ex.contactInfo && !conflicts.includes("contactInfo")) {
+    const person = await getPersonProtected(ctx, t.personId);
+    const merged = [person.email, person.phone].filter(Boolean).join(" / ");
+    if (merged) ex.contactInfo = { ...ex.contactInfo, value: merged };
+  }
   const next = t.checklist.map((e) => ({ ...e }));
   const personKeys = new Set(pb.requirements.filter((r) => r.scope === "person").map((r) => r.key));
   const received: string[] = [];
   for (const [key, v] of Object.entries(ex)) {
-    if (conflicts.includes(key)) continue;
+    if (conflicts.includes(key)) { delete ex[key]; continue; }
     const i = next.findIndex((e) => e.key === key && (!personKeys.has(key) || e.personId === t.personId));
+    if (i >= 0 && next[i].value && ["received", "on_file"].includes(next[i].status) && !(key === "contactInfo" ? compatibleContactInfo(next[i].value!, v.value) : sameValue(next[i].value!, v.value))) {
+      const old = next[i].value!;
+      const p = await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(key)}`, clientId: t.clientId, taskId: t.id, summary: `On file: ${PROTECTED_KEYS.has(key) ? "(protected)" : old}. Client now supplies a different value.`, payload: { taskId: t.id, key, onFile: PROTECTED_KEYS.has(key) ? "(protected value on file)" : old, incoming: v.value, personId: personKeys.has(key) ? t.personId : null, question: `Please confirm your ${itemLabel(key).toLowerCase()}; it differs from the value already received.`, messageId } });
+      result.proposalIds.push(p.id);
+      delete ex[key];
+      continue;
+    }
+    if (i >= 0 && key === "contactInfo" && next[i].status === "on_file") next[i] = { ...next[i], value: v.value };
     if (i >= 0 && next[i].status !== "on_file") { next[i] = { ...next[i], status: "received", value: v.value, source: v.source ?? null }; received.push(key); }
   }
   for (const m of a.attachments) {
     const att = atts.find((x) => x.filename === m.filename);
     if (!att?.documentId || !m.key || !allowed.has(m.key)) continue;
-    const pid = personKeys.has(m.key) ? (m.personId ?? t.personId) : null;
+    if (personKeys.has(m.key) && m.personId && m.personId !== t.personId) continue;
+    const pid = personKeys.has(m.key) ? t.personId : null;
     const i = next.findIndex((e) => e.key === m.key && (!personKeys.has(m.key) || e.personId === pid));
     if (i < 0) continue;
     next[i] = { ...next[i], status: "received", documentId: att.documentId, source: m.filename };
@@ -388,20 +450,24 @@ async function applyInformation(ctx: Ctx, t: Task, a: IntakeAction, atts: (typeo
   await ctx.db.update(taskT).set({ extracted }).where(eq(taskT.id, t.id));
   await setChecklist(ctx, t.id, next, "Information received from the client", "agent");
   await logEvent(ctx, t.id, "agent.information", `Harbourline filed ${received.length} item(s) from the client's message`, { keys: received, messageId }, "agent");
-  const review = await runReview(ctx, t.id, { kind: "information", description: a.description ?? "Client provided information", newFields: a.fields.map((f) => ({ key: f.key, value: f.value })), messageId });
-  const out = await applyReview(ctx, t.id, review, { clientId: t.clientId });
+  const out = await applyReview(ctx, t.id, review, { clientId: t.clientId, kind: "information", trustedPersonIds });
   result.proposalIds.push(...out.proposals);
   return out.questions;
 }
 
-async function applyChange(ctx: Ctx, t: Task, a: IntakeAction, messageId: string, result: ProcessResult): Promise<string[]> {
+async function applyChange(ctx: Ctx, t: Task, a: IntakeAction, messageId: string, result: ProcessResult, trustedPersonIds: string[]): Promise<string[]> {
   await logEvent(ctx, t.id, "agent.change", `Client changed the instructions: ${a.description ?? ""}`, { messageId }, "agent");
   const review = await runReview(ctx, t.id, { kind: "change", description: a.description ?? "", newFields: a.fields.map((f) => ({ key: f.key, value: f.value })), messageId });
-  const out = await applyReview(ctx, t.id, review, { clientId: t.clientId, newPersonHint: a.person && a.person.mode !== "none" ? { nameEn: a.person.nameEn, nameZh: a.person.nameZh, email: a.person.email, personId: a.person.mode === "existing" ? a.person.personId : null } : null });
+  const out = await applyReview(ctx, t.id, review, { clientId: t.clientId, kind: "change", trustedPersonIds, newPersonHint: a.person && a.person.mode !== "none" ? { nameEn: a.person.nameEn, nameZh: a.person.nameZh, email: a.person.email, personId: a.person.mode === "existing" ? a.person.personId : null } : null });
+  if (out.routingBlocked) {
+    result.proposalIds.push(...out.proposals);
+    return out.questions;
+  }
   // Values given alongside the change (e.g. the new date) land on the checklist too.
   if (a.fields.length) {
     const cur = await getTask(ctx, t.id);
-    const ex = toExtracted(a.fields, new Set(cur.checklist.map((e) => e.key)));
+    const blocked = new Set((await pendingProposals(ctx, { taskId: t.id, kind: "conflict" })).map(p => p.payload.key as string));
+    const ex = toExtracted(a.fields, new Set(cur.checklist.map((e) => e.key).filter(key => !blocked.has(key))));
     const next = cur.checklist.map((e) => ex[e.key] && e.status !== "on_file" && (!e.personId || e.personId === cur.personId) ? { ...e, status: "received" as const, value: ex[e.key].value } : e);
     await setChecklist(ctx, t.id, next, "Updated from the client's change", "agent");
   }
@@ -434,6 +500,19 @@ async function answerFacts(ctx: Ctx, clientId: string): Promise<string> {
   return lines.join("\n") || "No open work for this client.";
 }
 
+/** Refresh invoice facts from the staff-editable draft, immediately before drafting. */
+export async function invoiceReplyFacts(ctx: Ctx, invoiceId: string, lang: Lang): Promise<ReplyFacts["invoice"]> {
+  const inv = await invoiceWithLines(ctx, invoiceId);
+  if (inv.status !== "draft") return null;
+  const details = await ctx.bank.accountDetails();
+  return {
+    number: inv.number, totalFormatted: money(inv.totalCents, inv.currency),
+    lines: inv.lines.map(l => ({ description: l.description, amount: money(l.amountCents, inv.currency) })),
+    terms: inv.totalCents === 0 ? (lang === "en" ? "no payment is due; work starts once you approve the request" : lang === "tc" ? "毋須付款；確認要求後開始處理" : "无需付款；确认要求后开始处理") : inv.termsDays ? (lang === "en" ? `payable within ${inv.termsDays} days; we have started work` : `${inv.termsDays}天內付款；我們已開始處理`) : (lang === "en" ? "payable on receipt; we start work once payment arrives" : "收到發票後付款；收到款項後即開始處理"),
+    paymentInstructions: inv.totalCents === 0 ? null : Object.entries(details).map(([k, v]) => `${k}: ${v}`).join("\n"),
+  };
+}
+
 /** Builds recipient, invoice and link facts and drafts the outbound message. */
 export async function composeReply(ctx: Ctx, o: { clientId: string; conversationId: string; inReplyTo: typeof message.$inferSelect | null; facts: ReplyFacts; requestId: string | null; messageId?: string | null; to?: string[]; purpose?: string; invoiceId?: string | null; subject?: string }) {
   const f = o.facts;
@@ -450,16 +529,7 @@ export async function composeReply(ctx: Ctx, o: { clientId: string; conversation
     if (f.context !== "costs") f.uploadUrl = `${ctx.config.APP_URL}/u/${req.uploadToken}`;
     const invId = o.invoiceId ?? req.invoiceId;
     if (invId && o.purpose !== "update") {
-      const inv = await invoiceWithLines(ctx, invId);
-      if (inv.status === "draft") {
-        const details = await ctx.bank.accountDetails();
-        f.invoice = {
-          number: inv.number, totalFormatted: money(inv.totalCents, inv.currency),
-          lines: inv.lines.map((l) => ({ description: l.description, amount: money(l.amountCents, inv.currency) })),
-          terms: inv.termsDays ? (f.language === "en" ? `payable within ${inv.termsDays} days; we have started work` : `${inv.termsDays}天內付款；我們已開始處理`) : (f.language === "en" ? "payable on receipt; we start work once payment arrives" : "收到發票後付款；收到款項後即開始處理"),
-          paymentInstructions: Object.entries(details).map(([k, v]) => `${k}: ${v}`).join("\n"),
-        };
-      }
+      f.invoice = await invoiceReplyFacts(ctx, invId, f.language);
     }
   }
   const d = await draftEmail(ctx, f, { messageId: o.messageId, purpose: o.purpose });

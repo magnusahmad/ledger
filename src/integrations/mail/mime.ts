@@ -37,6 +37,7 @@ export async function parseRaw(raw: Buffer, provider: string, providerMessageId:
 
 export async function buildRaw(from: string, m: OutboundMail): Promise<Buffer> {
   const composer = new MailComposer({
+    messageId: m.correlationId ? (m.correlationId.startsWith("<") ? m.correlationId : `<${m.correlationId}@harbourline.local>`) : undefined,
     from, to: m.to, cc: m.cc, subject: m.subject, text: m.text, html: m.html,
     inReplyTo: m.inReplyTo ?? undefined, references: m.references?.length ? m.references : undefined,
     attachments: (m.attachments ?? []).map((a) => ({ filename: a.filename, content: a.content, contentType: a.mime })),

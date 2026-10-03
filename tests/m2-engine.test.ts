@@ -4,7 +4,7 @@ import { makeCtx, resetDb, type TestCtx } from "./helpers";
 import { ensureFirm } from "@/domain/firm";
 import { createClient, createPerson } from "@/domain/records";
 import { loadPlaybookLibrary, getPlaybook, allPlaybookFiles, requirementLibrary } from "@/domain/playbooks";
-import { createRequest, startTask, advance, markStepState, getTask, taskEvents, currentStep } from "@/domain/engine";
+import { createRequest, startTask, advance, markStepState, getTask, taskEvents, currentStep, onEnterStep } from "@/domain/engine";
 import { cddRecord, invoice, request as requestT } from "@/db/schema";
 
 let ctx: TestCtx;
@@ -27,6 +27,25 @@ async function withInvoice(requestId: string, clientId: string, status: "sent" |
 }
 
 describe("Playbook library (data integrity)", () => {
+  it("Hong Kong service fees are in line with what traditional local firms publish (government fees charged separately)", () => {
+    // Published per-job prices, Sept 2026, excluding government fees: 會計妹 (accgirl.com), 信諾會計
+    // (taxation-hk.com), 智明會計 (smartaccounting.hk), Kams Business Services. Director, secretary and
+    // address changes HK$300-680; name change HK$680-1,900; share transfer HK$1,180-1,380; allotment
+    // HK$300-1,380; annual return HK$300-780; amend articles HK$2,000; deregistration from HK$3,000.
+    // The ceiling allows for Harbourline's fuller service (CDD, prepared documents, e-signing).
+    const ceilingHkd: Record<string, number> = {
+      "hk.appointDirector": 1000, "hk.resignDirector": 800, "hk.changeParticulars": 800, "hk.changeSecretary": 1000,
+      "hk.resignSecretary": 800, "hk.changeOffice": 800, "hk.changeName": 2000, "hk.transferShares": 1500,
+      "hk.allotShares": 1500, "hk.annualReturn": 800, "hk.amendArticles": 2000, "hk.deregistration": 3500,
+      "hk.brRenewal": 500, "hk.updateControllers": 800, "hk.changeAuditor": 800, "hk.agm": 1000,
+    };
+    const fees = Object.fromEntries(allPlaybookFiles().map((pb) => [pb.id, pb.feeCents / 100]));
+    for (const [id, max] of Object.entries(ceilingHkd)) expect(fees[id], id).toBeLessThanOrEqual(max);
+    // Nothing else in Hong Kong is priced above a share buy-back, the most involved routine job.
+    for (const [id, hkd] of Object.entries(fees)) if (id.startsWith("hk.")) expect(hkd, id).toBeLessThanOrEqual(fees["hk.buyback"]);
+    expect(fees["hk.buyback"]).toBeLessThanOrEqual(3500);
+  });
+
   it("every requirement referenced by a playbook exists in the requirement library, in all three languages", async () => {
     const items = requirementLibrary();
     for (const pb of allPlaybookFiles()) {
@@ -158,5 +177,18 @@ describe("Task engine", () => {
   it("getPlaybook returns the latest active version", async () => {
     const pb = await getPlaybook(ctx, "hk.appointDirector");
     expect(pb.version).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("Step hooks", () => {
+  it("registering a step's work again, as a dev reload of the module does, replaces it: the documents are prepared once, not once per reload", async () => {
+    let runs = 0;
+    const hook = async () => { runs++; };
+    onEnterStep("send", hook);
+    onEnterStep("send", hook);
+    const { c, req } = await setup();
+    await startTask(ctx, { requestId: req.id, clientId: c.id, playbookId: "hk.changeOffice" });
+    onEnterStep("send", async () => {});
+    expect(runs).toBe(1);
   });
 });

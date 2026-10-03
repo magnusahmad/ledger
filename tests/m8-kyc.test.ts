@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { readFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
@@ -40,6 +41,12 @@ describe("Upload portal", () => {
     await expect(portalView(ctx, "not-a-token")).rejects.toThrow();
   });
 
+  it("contact details typed on the upload link go on the person's record, so their signing link and code can be emailed to them", async () => {
+    const { req, t, p } = await appointment("cli_c1", "WONG Mei Wah");
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: "meiwah.wong@example.com, +852 9123 0007" });
+    expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com", phone: "+852 9123 0007" });
+  });
+
   it("an uploaded ID copy ticks the item for that task's person only", async () => {
     ctx.llm.on("extract", noExtraction);
     const a = await appointment("cli_c1", "WONG Ka Man");
@@ -60,7 +67,7 @@ describe("Upload portal", () => {
   it("extracted values fill empty fields on the person's record, while a value that differs from the file becomes a conflict", async () => {
     const { req, t, p } = await appointment("cli_c1", "WONG Ka Man", { idNumber: "K987654(3)" });
     ctx.llm.on("extract", { fields: [{ key: "idNo", value: "K111111(1)", quote: "K111111(1)" }, { key: "resAddr", value: "Flat 12B, 88 Robinson Road, Mid-Levels", quote: "88 Robinson Road" }], documents: [], conflicts: [] });
-    await portalUpload(ctx, req.uploadToken, { taskId: t.id, key: "idCopy", filename: "hkid.jpg", mime: "image/jpeg", content: Buffer.from("jpg") });
+    await portalUpload(ctx, req.uploadToken, { taskId: t.id, key: "idCopy", filename: "hkid.jpg", mime: "image/jpeg", content: await readFile("tests/fixtures/upload-corpus/readable-scan.jpg") });
     const prot = await getPersonProtected(ctx, p.id);
     expect(prot.residentialAddress).toBe("Flat 12B, 88 Robinson Road, Mid-Levels");
     expect(prot.idNumber).toBe("K987654(3)");

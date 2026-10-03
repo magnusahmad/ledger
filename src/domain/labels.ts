@@ -24,6 +24,15 @@ export function itemKind(key: string, params?: Record<string, unknown> | null): 
 }
 
 export function money(cents: number, currency = "HKD"): string {
+  if (Number.isSafeInteger(cents)) {
+    const amount = BigInt(Math.abs(cents));
+    const hundred = BigInt(100);
+    const whole = (amount / hundred).toLocaleString("en-US");
+    const remainder = Number(amount % hundred);
+    const sign = cents < 0 || Object.is(cents, -0) ? "-" : "";
+    const v = `${sign}${whole}${remainder ? `.${String(remainder).padStart(2, "0")}` : ""}`;
+    return `${currency === "HKD" ? "HK$" : currency + " "}${v}`;
+  }
   const v = (cents / 100).toLocaleString("en-US", { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 });
   return `${currency === "HKD" ? "HK$" : currency + " "}${v}`;
 }

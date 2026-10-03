@@ -4,7 +4,7 @@
 // field exists, so a Registry revision breaks the build instead of producing a wrong form.
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { PDFDocument, PDFCheckBox, PDFTextField, PDFDropdown } from "pdf-lib";
+import { PDFDocument, PDFCheckBox, PDFTextField, PDFDropdown, defaultTextFieldAppearanceProvider, layoutMultilineText, layoutSinglelineText } from "pdf-lib";
 import { embedFonts } from "./fonts";
 
 export const FORMS_DIR = path.join(process.cwd(), "forms/hk-cr");
@@ -400,7 +400,35 @@ async function writeFields(doc: PDFDocument, form: string, values: FieldValues) 
     else if (field instanceof PDFTextField) {
       const text = String(val);
       field.setText(text);
-      field.updateAppearances(fonts.pick(text || "A"));
+      field.updateAppearances(fonts.pick(text || "A"), form === "NR1" ? (f, widget, font) => {
+        const appearance = defaultTextFieldAppearanceProvider(f, widget, font);
+        if (!text.trim()) return appearance;
+        // Check the same layout and inset used by pdf-lib's appearance provider.
+        // AcroForm values can retain text which the fixed widget clips on paper.
+        const rectangle = widget.getRectangle();
+        const rotation = ((widget.getAppearanceCharacteristics()?.getRotation() ?? 0) % 360 + 360) % 360;
+        const inset = (widget.getBorderStyle()?.getWidth() ?? 0) + 1;
+        const bounds = { x: inset, y: inset,
+          width: (rotation === 90 || rotation === 270 ? rectangle.height : rectangle.width) - inset * 2,
+          height: (rotation === 90 || rotation === 270 ? rectangle.width : rectangle.height) - inset * 2 };
+        const da = widget.getDefaultAppearance() ?? f.acroField.getDefaultAppearance() ?? "";
+        const sizes = [...da.matchAll(/([\d.]+)\s+Tf\b/g)];
+        const originalSize = Number(sizes.at(-1)?.[1]);
+        // Official widget defaults can be too large even for an ordinary phone
+        // number. Fit the full value within its existing box without going below
+        // the same legibility floor used for signature marks.
+        if (Number.isFinite(originalSize)) for (let fontSize = originalSize; fontSize >= 8; fontSize -= 0.25) {
+          const options = { alignment: f.getAlignment(), fontSize, font, bounds };
+          const lines = f.isMultiline() ? layoutMultilineText(text, options).lines : [layoutSinglelineText(text, options).line];
+          if (lines.every(line => line.x >= bounds.x - 0.01 && line.x + line.width <= bounds.x + bounds.width + 0.01 &&
+            line.y >= bounds.y - 0.01 && line.y + line.height <= bounds.y + bounds.height + 0.01)) {
+            if (fontSize === originalSize) return appearance;
+            widget.setDefaultAppearance(da.replace(/([\d.]+)(\s+Tf\b)/g, `${fontSize}$2`));
+            return defaultTextFieldAppearanceProvider(f, widget, font);
+          }
+        }
+        throw new Error(`NR1: field ${name} text does not fit legibly in the official box; prepare the complete form manually before continuing.`);
+      } : undefined);
     }
   }
   if (unknown.length) throw new Error(`${form}: unknown fields ${unknown.join(", ")}`);

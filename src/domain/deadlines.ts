@@ -23,9 +23,9 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
   const out: Deadline[] = [];
   for (const c of clients) {
     if (c.lifecycle === "prospect" || c.lifecycle === "ceased" || c.operatingStatus === "not_incorporated" || c.operatingStatus === "deregistering" || c.operatingStatus === "struck_off") continue;
-    const filings = await ctx.db.select().from(filing).where(eq(filing.clientId, c.id));
+    const filings = await ctx.db.select().from(filing).where(and(eq(filing.clientId, c.id), eq(filing.firmId, ctx.firmId)));
     const doneKeys = new Set(filings.map((f) => f.periodKey).filter(Boolean) as string[]);
-    const openTasks = await ctx.db.select().from(taskT).where(and(eq(taskT.clientId, c.id), eq(taskT.status, "open")));
+    const openTasks = await ctx.db.select().from(taskT).where(and(eq(taskT.clientId, c.id), eq(taskT.firmId, ctx.firmId), eq(taskT.status, "open")));
     const covered = new Set(openTasks.map((t) => t.periodKey).filter(Boolean) as string[]);
     const Y = Number(today.slice(0, 4));
     const push = (d: Omit<Deadline, "clientId" | "clientName" | "daysLeft" | "overdue">) => {
@@ -37,7 +37,11 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
 
     if (c.jurisdiction === "HK" && c.incorporatedOn) {
       // Annual return: private company, within 42 days after each anniversary of incorporation.
-      for (const y of [Y - 1, Y, Y + 1]) {
+      // Preserve the successor of explicit last-done evidence across downtime.
+      // With no known period, retain the existing bounded import assumption.
+      const knownReturns = [...doneKeys].flatMap(key => /^NAR1:(\d{4})$/.exec(key)?.[1] ? [Number(key.slice(5))] : []);
+      const firstReturn = knownReturns.length ? Math.min(Y - 1, Math.max(...knownReturns) + 1) : Y - 1;
+      for (let y = firstReturn; y <= Y + 1; y++) {
         const anniv = `${y}${c.incorporatedOn.slice(4)}`;
         if (anniv <= c.incorporatedOn) continue;
         const periodKey = `NAR1:${y}`;
@@ -50,7 +54,8 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
         const lastAgm = (c.jurisdictionData as { lastAgm?: string | null }).lastAgm ?? null;
         const firstChanged = c.jurisdictionData.firstChangedPeriodEnd as string | undefined;
         const finalYear = Math.max(Y + 1, firstChanged ? Number(firstChanged.slice(0, 4)) : Y);
-        for (let y = Y - 1; y <= finalYear; y++) {
+        const firstYear = lastAgm && /^\d{4}-\d{2}-\d{2}$/.test(lastAgm) ? Math.min(Y - 1, Number(lastAgm.slice(0, 4))) : Y - 1;
+        for (let y = firstYear; y <= finalYear; y++) {
           for (const fye of financialYearEnds(c, y)) {
             if (fye < c.incorporatedOn) continue;
             const periodKey = financialPeriodKey(c, fye);
@@ -68,13 +73,13 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
 
     // Periodic CDD review (firm policy): earliest review date among current officers and controllers.
     const people = new Set<string>();
-    for (const a of await ctx.db.select().from(appointment).where(eq(appointment.clientId, c.id))) if (!a.toDate || a.toDate > today) people.add(a.personId);
-    for (const s of await ctx.db.select().from(significantController).where(eq(significantController.clientId, c.id))) if (!s.ceasedOn) people.add(s.personId);
+    for (const a of await ctx.db.select().from(appointment).where(and(eq(appointment.clientId, c.id), eq(appointment.firmId, ctx.firmId)))) if (a.fromDate <= today && (!a.toDate || a.toDate > today)) people.add(a.personId);
+    for (const s of await ctx.db.select().from(significantController).where(and(eq(significantController.clientId, c.id), eq(significantController.firmId, ctx.firmId)))) if (s.registrableFrom <= today && (!s.ceasedOn || s.ceasedOn > today)) people.add(s.personId);
     people.delete("per_firm");
     if (people.size) {
-      const cdds = await ctx.db.select().from(cddRecord).where(inArray(cddRecord.personId, [...people]));
+      const cdds = await ctx.db.select().from(cddRecord).where(and(eq(cddRecord.firmId, ctx.firmId), inArray(cddRecord.personId, [...people])));
       const latest = new Map<string, string>();
-      for (const r of cdds) if (!latest.has(r.personId) || r.reviewDueOn > latest.get(r.personId)!) latest.set(r.personId, r.reviewDueOn);
+      for (const r of cdds) if (r.verifiedOn <= today && (!latest.has(r.personId) || r.reviewDueOn > latest.get(r.personId)!)) latest.set(r.personId, r.reviewDueOn);
       const due = [...latest.values()].sort()[0];
       if (due) push({ key: "KYC", label: "Periodic KYC review", dueDate: due, playbookId: "hk.kycReview", periodKey: `KYC:${due}`, periodYear: Number(due.slice(0, 4)) });
     }
@@ -85,4 +90,9 @@ export async function upcomingDeadlines(ctx: Ctx, opts: { clientId?: string; wit
     }
   }
   return out.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+/** Overdue or due today and not started: that needs staff now, so Today lists it under Needs you. */
+export function splitDeadlines<D extends { dueDate: string }>(ds: D[], today: string) {
+  return { needsYou: ds.filter((d) => d.dueDate <= today), upcoming: ds.filter((d) => d.dueDate > today) };
 }

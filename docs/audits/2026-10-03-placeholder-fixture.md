@@ -1,0 +1,11 @@
+# Placeholder-name upload fixture correction
+
+The final core replay reached 820 passing tests and one failure: `an uploaded ID can supply the real name for an unnamed person without conflicting with the placeholder`. This test labelled the plain-text bytes `fictional ID` as `image/jpeg`. The Area 8 stated-format preflight correctly refuses extraction from those bytes; ingestion itself retains the original upload for staff.
+
+The fixer independently reproduced the original name assertion failure in 1.63 seconds. A temporary diagnostic passed in 1.37 seconds and verified the actionable extraction error (`This file could not be read as its stated format. Upload a readable image or PDF, or ask staff to enter the details.`), zero extraction-model calls, retained exact original upload bytes/document, an `extract.failed` task event (`Couldn't read fictional-id.jpg; staff can enter the details`), unchanged placeholder name/outstanding full-name item, and no outbound mail. The temporary diagnostic was removed after recording this classification; it is not a new product defect or an ingestion rejection.
+
+The test now uploads the existing genuine fictional JPEG `tests/fixtures/upload-corpus/readable-scan.jpg` (707 × 1000, SHA-256 `dd9becef98231b54e6fe30231efb7ab94bdfd181270b9e2b83ec2078693161df`). Its recorded extraction response still supplies LEE Siu Ling. All original name, received-checklist and no-conflict assertions remain, with an additional assertion that extraction actually ran once. No production source or upload validator changed.
+
+The guarded focused replay passed 42/42 tests across `placeholder-name.test.ts`, `m8-kyc.test.ts` and `audit-upload-inputs.test.ts` in 16.79 seconds. The existing pg concurrent-query deprecation warning appeared; it was not a test failure. Scoped ESLint and diff checks passed. All source files remain identical to `6c1b9fa`; private harness changes were excluded. Logs are in the private audit directory as `placeholder-fixture-red.log`, `placeholder-fixture-diagnostic.log` and `placeholder-fixture-green.log`.
+
+This is a test-only valid-input fixture correction. It provides no new live OCR evidence, browser coverage or complete-core success claim; the root agent owns the independent recheck and final full core gate.

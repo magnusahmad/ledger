@@ -20,13 +20,12 @@ export function SignFlow({ token, signed, verified, locked, email, name }: { tok
       <p className="small">We’ll email a 6-digit code to {email}.</p>
       <button className="btn sec2" disabled={pending} onClick={() => start(async () => setSent(await requestOtpAction(token)))}>{pending ? "Sending…" : sent?.ok ? "Send again" : "Email me a code"}</button>
       {sent?.error && <span className="small" style={{ color: "var(--red)", marginLeft: 8 }}>{sent.error}</span>}
-      {sent?.ok && (
-        <form action={verify} className="row" style={{ marginTop: 12 }}>
+      <p className="small muted" style={{ marginTop: 12 }}>Already received a code? Enter it below.</p>
+      <form action={verify} className="row" style={{ marginTop: 12 }}>
           <input type="text" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} placeholder="123456" aria-label="Code" style={{ width: 140 }} required />
           <button className="btn" disabled={vPending}>{vPending ? "Checking…" : "Verify"}</button>
           {vState?.error && <span className="small" style={{ color: "var(--red)" }}>{vState.error}</span>}
-        </form>
-      )}
+      </form>
     </div>
   );
   const pos = (e: React.PointerEvent<HTMLCanvasElement>) => { const r = e.currentTarget.getBoundingClientRect(); return [(e.clientX - r.left) * (e.currentTarget.width / r.width), (e.clientY - r.top) * (e.currentTarget.height / r.height)] as const; };

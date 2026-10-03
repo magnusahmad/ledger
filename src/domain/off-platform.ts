@@ -19,8 +19,13 @@ async function openTask(ctx: Ctx, taskId: string) {
   return t;
 }
 
+async function assertOwnParty(ctx: Ctx, partyId?: string | null) {
+  if (partyId && !await ctx.db.query.thirdParty.findFirst({ where: and(eq(thirdParty.id, partyId), eq(thirdParty.firmId, ctx.firmId)) })) throw new OffPlatformError("Third party not found in this firm");
+}
+
 export async function addOffPlatformStep(ctx: Ctx, taskId: string, s: { title: string; waitingOn: WaitingOn; ownerId?: string | null; partyId?: string | null; dueDate?: string | null; followUpOn?: string | null; beforeStep?: number | null }) {
   const t = await openTask(ctx, taskId);
+  await assertOwnParty(ctx, s.partyId);
   if (!s.title.trim()) throw new OffPlatformError("Say what needs doing");
   if (s.beforeStep != null && (s.beforeStep < 0 || s.beforeStep >= t._steps.length)) throw new OffPlatformError("Choose a step of this task");
   const [row] = await ctx.db.insert(taskAction).values({
@@ -64,6 +69,7 @@ export async function cancelOffPlatformStep(ctx: Ctx, actionId: string, reason: 
 
 export async function putOnHold(ctx: Ctx, taskId: string, h: { reason: string; waitingOn: WaitingOn; partyId?: string | null; followUpOn: string }) {
   await openTask(ctx, taskId);
+  await assertOwnParty(ctx, h.partyId);
   if (!h.reason.trim()) throw new OffPlatformError("Give a reason for the hold");
   if (!isDate(h.followUpOn)) throw new OffPlatformError("Set a follow-up date");
   await ctx.db.update(taskT).set({ holdReason: h.reason.trim(), holdWaitingOn: h.waitingOn, holdPartyId: h.partyId ?? null, holdSince: ctx.clock.today(), holdFollowUpOn: h.followUpOn }).where(eq(taskT.id, taskId));

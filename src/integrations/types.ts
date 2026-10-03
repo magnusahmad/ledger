@@ -44,6 +44,8 @@ export type InboundMail = {
 };
 
 export type OutboundMail = {
+  /** Stable operation correlation used in the actual RFC Message-ID. */
+  correlationId?: string;
   to: string[];
   cc?: string[];
   subject: string;
@@ -60,9 +62,12 @@ export type SentMail = { providerMessageId: string; providerThreadId?: string | 
 export interface MailProvider {
   readonly name: string;
   readonly address: string;
+  /** Scope of authoritative reconciliation evidence, when tied to a local store. */
+  readonly reconciliationScope?: string;
   /** Returns messages newer than the stored cursor, and the new cursor. */
   fetchNew(cursor: string | null): Promise<{ messages: InboundMail[]; cursor: string | null }>;
   send(mail: OutboundMail): Promise<SentMail>;
+  reconcileDelivery?(correlationId: string): Promise<{ status: "accepted"; sent: SentMail } | { status: "not_sent" | "unknown" }>;
 }
 
 // ---------- Bank ----------
@@ -73,11 +78,15 @@ export type BankDeposit = {
   reference: string | null;
   payerName: string | null;
   receivedAt: Date;
+  /** Provider creation watermark, distinct from the actual settlement date. */
+  createdAt?: Date;
   raw?: Record<string, unknown>;
 };
 
 export interface BankProvider {
   readonly name: string;
+  /** Re-read recent creation history for deposits whose settlement arrived later. */
+  readonly reconciliationWindowMs?: number;
   listDeposits(since: Date | null): Promise<BankDeposit[]>;
   /** Sandbox/demo only. */
   simulateDeposit?(d: { amountCents: number; currency: string; reference: string; payerName: string }): Promise<BankDeposit | null>;
@@ -100,7 +109,7 @@ export interface AccountingProvider {
   upsertContact(name: string, email?: string | null): Promise<string>;
   createInvoice(inv: AccountingInvoice, contactId: string): Promise<string>;
   findInvoiceByNumber(number: string): Promise<string | null>;
-  createPayment(p: { invoiceId: string; amountCents: number; date: string; reference: string }): Promise<string>;
+  createPayment(p: { idempotencyKey?: string; invoiceId: string; amountCents: number; date: string; reference: string }): Promise<string>;
   close?(): Promise<void>;
 }
 

@@ -2,17 +2,20 @@
 // offline demo mode. Tests use the in-memory variant.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
-export interface ListStore<T> { all(): T[]; push(item: T): void; }
+export interface ListStore<T> { readonly identity?: string; all(): T[]; push(item: T): void; }
 
 export class MemoryList<T> implements ListStore<T> {
+  readonly identity = `memory:${randomUUID()}`;
   items: T[] = [];
   all() { return [...this.items]; }
   push(item: T) { this.items.push(item); }
 }
 
 export class FileList<T> implements ListStore<T> {
-  constructor(private file: string) {}
+  readonly identity: string;
+  constructor(private file: string) { this.identity = `file:${path.resolve(file)}`; }
   all(): T[] {
     if (!existsSync(this.file)) return [];
     return JSON.parse(readFileSync(this.file, "utf8")) as T[];

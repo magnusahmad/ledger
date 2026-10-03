@@ -4,7 +4,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import type { InboundMail } from "@/integrations/types";
-import { client as clientT, message, proposal, request as requestT, task as taskT } from "@/db/schema";
+import { client as clientT, mailDelivery, message, proposal, request as requestT, task as taskT } from "@/db/schema";
 import { ingestMessage } from "./inbound";
 import { getTask, logEvent } from "./engine";
 import { getPlaybook } from "./playbooks";
@@ -15,9 +15,29 @@ import { callAgent, AgentError } from "@/agent/call";
 import { MailboxReviewZ, type MailboxReview } from "@/agent/schemas";
 import { MAILBOX_REVIEW_SYSTEM } from "@/agent/prompts";
 import { playbookCatalogue } from "@/agent/context";
+import { deliveryPayload } from "./mail-delivery";
 import { deliveryEvidence } from "./delivery-evidence";
 
 export async function recordMailboxReply(ctx: Ctx, m: InboundMail) {
+  return ctx.db.transaction(async db => recordMailboxReplyAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, m));
+}
+
+async function recordMailboxReplyAtomic(ctx: Ctx, m: InboundMail) {
+  // Our stable correlation may reappear in Sent before a send response arrives.
+  // This is acceptance evidence for the approved operation, not a staff reply.
+  if (m.rfcMessageId) {
+    const ours = await ctx.db.query.mailDelivery.findFirst({ where: and(eq(mailDelivery.firmId, ctx.firmId), eq(mailDelivery.correlationId, m.rfcMessageId), eq(mailDelivery.provider, m.provider), eq(mailDelivery.sender, m.from.email)) });
+    if (ours) {
+      const accepted = { providerMessageId: m.providerMessageId, providerThreadId: m.providerThreadId, rfcMessageId: m.rfcMessageId };
+      await ctx.db.update(mailDelivery).set({ status: "sent", result: accepted, error: null }).where(eq(mailDelivery.id, ours.id));
+      const messageId = ours.sourceKey.startsWith("message:") ? ours.sourceKey.slice(8) : null;
+      if (messageId) {
+        const exact = deliveryPayload(ctx, ours);
+        await ctx.db.update(message).set({ status: "sent", providerMessageId: m.providerMessageId, rfcMessageId: m.rfcMessageId, text: exact.text, subject: exact.subject, toAddrs: exact.to, error: null }).where(and(eq(message.id, messageId), eq(message.firmId, ctx.firmId)));
+      }
+      return { messageId: messageId ?? ours.id, recorded: false, withdrawn: [] as string[] };
+    }
+  }
   const row = await ingestMessage(ctx, { ...m, channel: "email", direction: "out" });
   if (row.duplicate) return { messageId: row.id, recorded: false, withdrawn: [] as string[] };
 
@@ -29,7 +49,8 @@ export async function recordMailboxReply(ctx: Ctx, m: InboundMail) {
     const p = await ctx.db.query.proposal.findFirst({ where: and(eq(proposal.firmId, ctx.firmId), eq(proposal.id, d.proposalId), eq(proposal.status, "pending")) });
     if (!p) continue;
     if (p.payload.purpose === "request" && p.payload.replaces) continue;
-    await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now(), payload: { ...p.payload, supersededBy: "mailbox_reply", replyMessageId: row.id } }).where(eq(proposal.id, p.id));
+    const claimed = await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now(), payload: { ...p.payload, supersededBy: "mailbox_reply", replyMessageId: row.id } }).where(and(eq(proposal.id, p.id), eq(proposal.firmId, ctx.firmId), eq(proposal.status, "pending"))).returning();
+    if (!claimed.length) continue;
     await ctx.db.update(message).set({ status: "failed", error: "Replied from the mailbox instead" }).where(eq(message.id, d.id));
     withdrawn.push(p.id);
     // The withdrawn draft may have been the one sending the invoice and upload link. Keep that
@@ -51,15 +72,16 @@ export async function recordMailboxReply(ctx: Ctx, m: InboundMail) {
     if (p.payload.purpose !== "request" || !p.requestId) continue;
     const draft = await ctx.db.query.message.findFirst({ where: and(eq(message.id, p.payload.messageId as string), eq(message.firmId, ctx.firmId)) });
     if (!draft) continue;
+    if (!draft.toAddrs.some(to => row.toAddrs.some(recipient => recipient.toLowerCase() === to.toLowerCase()))) continue;
     const evidence = await deliveryEvidence(ctx, p.requestId, draft.toAddrs);
-    await ctx.db.update(proposal).set({ payload: { ...p.payload, deliveryEvidence: evidence }, ...(evidence.invoiceFound && evidence.uploadLinkFound ? { title: "Check sending: invoice and upload link", summary: "Review the sent email evidence and mark done to confirm delivery." } : {}) }).where(eq(proposal.id, p.id));
+    await ctx.db.update(proposal).set({ payload: { ...p.payload, deliveryEvidence: evidence }, ...(evidence.invoiceFound && evidence.uploadLinkFound ? { title: "Check sending: invoice and upload link", summary: "Review the sent email evidence and mark done to confirm delivery." } : {}) }).where(and(eq(proposal.id, p.id), eq(proposal.firmId, ctx.firmId), eq(proposal.status, "pending")));
   }
 
   // Note it on the thread's open tasks.
-  const reqs = await ctx.db.select({ id: requestT.id }).from(requestT).where(eq(requestT.conversationId, row.conversationId));
-  const tasks = reqs.length ? await ctx.db.select().from(taskT).where(and(inArray(taskT.requestId, reqs.map((r) => r.id)), eq(taskT.status, "open"))) : [];
+  const reqs = await ctx.db.select({ id: requestT.id }).from(requestT).where(and(eq(requestT.firmId, ctx.firmId), eq(requestT.conversationId, row.conversationId)));
+  const tasks = reqs.length ? await ctx.db.select().from(taskT).where(and(eq(taskT.firmId, ctx.firmId), inArray(taskT.requestId, reqs.map((r) => r.id)), eq(taskT.status, "open"))) : [];
   for (const t of tasks) {
-    await logEvent(ctx, t.id, "message.mailbox_reply", `Reply sent from the mailbox: ${m.subject}${withdrawn.length ? " (Harbourline’s draft withdrawn)" : ""}`, { messageId: row.id }, "mailbox");
+    await logEvent(ctx, t.id, "message.mailbox_reply", `Reply sent from the mailbox: ${m.subject}${withdrawn.length ? " (Harbourline’s draft withdrawn)" : ""}`, { messageId: row.id }, "mailbox", m.receivedAt);
   }
   const suggestion = await suggestTaskUpdates(ctx, row.id).catch((e) => { if (e instanceof AgentError) return null; throw e; });
   return { messageId: row.id, recorded: true, withdrawn, proposalId: suggestion };
@@ -69,18 +91,18 @@ export type MailboxChange = MailboxReview["changes"][number];
 
 /** Reads the reply against the client's open tasks and suggests matching updates as one card. Applies nothing itself. */
 async function suggestTaskUpdates(ctx: Ctx, messageId: string): Promise<string | null> {
-  const reply = (await ctx.db.query.message.findFirst({ where: eq(message.id, messageId) }))!;
-  const conv = (await ctx.db.query.conversation.findFirst({ where: (c, { eq }) => eq(c.id, reply.conversationId) }))!;
+  const reply = (await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.id, messageId)) }))!;
+  const conv = (await ctx.db.query.conversation.findFirst({ where: (c, { and, eq }) => and(eq(c.firmId, ctx.firmId), eq(c.id, reply.conversationId)) }))!;
   let clientId = conv.clientId;
   if (!clientId && reply.toAddrs[0]) {
     const matches = await findClientsBySenderEmail(ctx, reply.toAddrs[0]);
     if (matches.length === 1) clientId = matches[0].client.id;
   }
   if (!clientId) return null;
-  const cl = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, clientId) }))!;
-  const open = await ctx.db.select().from(taskT).where(and(eq(taskT.clientId, clientId), eq(taskT.status, "open")));
+  const cl = (await ctx.db.query.client.findFirst({ where: and(eq(clientT.firmId, ctx.firmId), eq(clientT.id, clientId)) }))!;
+  const open = await ctx.db.select().from(taskT).where(and(eq(taskT.firmId, ctx.firmId), eq(taskT.clientId, clientId), eq(taskT.status, "open")));
   const tasks = await Promise.all(open.map((t) => getTask(ctx, t.id)));
-  const history = (await ctx.db.select().from(message).where(eq(message.conversationId, conv.id))).filter((m) => m.id !== messageId && (m.status === "received" || m.status === "sent")).sort((a, b) => a.at.getTime() - b.at.getTime()).slice(-4);
+  const history = (await ctx.db.select().from(message).where(and(eq(message.firmId, ctx.firmId), eq(message.conversationId, conv.id)))).filter((m) => m.id !== messageId && (m.status === "received" || m.status === "sent")).sort((a, b) => a.at.getTime() - b.at.getTime()).slice(-4);
   const catalogue = (await playbookCatalogue(ctx, [cl.jurisdiction])).map((p) => ({ playbookId: p.playbookId, name: p.name, whenToUse: p.whenToUse }));
   const user = [
     `Client: ${cl.nameEn}`,

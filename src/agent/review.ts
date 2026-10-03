@@ -2,15 +2,15 @@
 // applies. Its output is applied with deterministic guardrails: person-scoped KYC is
 // rebuilt by the engine, on-file facts are never overwritten, and anything
 // client-facing or invoice-affecting becomes a proposal.
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { invoice, request as requestT, task as taskT } from "@/db/schema";
 import { callAgent } from "./call";
 import { ReviewZ, type Review } from "./schemas";
 import { REVIEW_SYSTEM } from "./prompts";
 import { playbookCatalogue } from "./context";
-import { buildChecklist, computeDueDate, invalidatePreparation, getTask, logEvent, setChecklist, type Task } from "@/domain/engine";
-import { getPlaybook } from "@/domain/playbooks";
+import { assertTaskAmendable, buildChecklist, computeDueDate, invalidatePreparation, getTask, logEvent, setChecklist, type Task } from "@/domain/engine";
+import { getPlaybook, effectiveDateRequirement } from "@/domain/playbooks";
 import { itemLabel, PROTECTED_KEYS } from "@/domain/labels";
 import { createProposal, pendingProposals } from "@/domain/proposals";
 import { resolvePerson } from "@/domain/people";
@@ -33,16 +33,38 @@ export async function runReview(ctx: Ctx, taskId: string, change: { kind: "infor
   return callAgent(ctx, { agent: "review", system: REVIEW_SYSTEM, user, schema: ReviewZ, taskId, messageId: change.messageId });
 }
 
-export type ReviewOutcome = { questions: string[]; proposals: string[]; personChanged: boolean };
+export type ReviewOutcome = { questions: string[]; proposals: string[]; personChanged: boolean; routingBlocked?: boolean };
 
-export async function applyReview(ctx: Ctx, taskId: string, r: Review, opts: { clientId: string; actor?: string; newPersonHint?: { nameEn: string | null; nameZh: string | null; email: string | null; personId: string | null } | null }): Promise<ReviewOutcome> {
-  let t: Task = await getTask(ctx, taskId);
+export async function applyReview(ctx: Ctx, taskId: string, r: Review, opts: { clientId: string; actor?: string; kind?: "information" | "change"; trustedPersonIds?: string[]; newPersonHint?: { nameEn: string | null; nameZh: string | null; email: string | null; personId: string | null } | null }): Promise<ReviewOutcome> {
+  return ctx.db.transaction(async db => {
+    await db.execute(sql`select id from task where id = ${taskId} and firm_id = ${ctx.firmId} for update`);
+    return applyReviewAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, taskId, r, opts);
+  });
+}
+
+async function applyReviewAtomic(ctx: Ctx, taskId: string, r: Review, opts: Parameters<typeof applyReview>[3]): Promise<ReviewOutcome> {
+  if (r.effectiveDate && !isIsoDate(r.effectiveDate)) throw new Error("Choose a valid effective date");
+  let t: Task = await assertTaskAmendable(ctx, taskId);
+  if (t.clientId !== opts.clientId) throw new Error("This review belongs to another client");
   const pb = await getPlaybook(ctx, t.playbookId, t.playbookVersion);
   const out: ReviewOutcome = { questions: [...r.questionsForClient], proposals: [], personChanged: false };
   const personRefKeys = new Set(pb.requirements.filter((x) => x.scope === "person").map((x) => x.key));
+  const conflicts = [...r.conflicts];
+  const conflictingKeys = new Set(conflicts.map(c => c.key));
+  const noteConflict = (key: string, onFile: string, incoming: string) => {
+    if (conflictingKeys.has(key)) return;
+    conflicts.push({ key, onFile, incoming, question: `Please confirm your ${itemLabel(key).toLowerCase()}; it differs from the value already received.` });
+    conflictingKeys.add(key);
+  };
 
   // 1. Switch person: the engine rebuilds every person-scoped item for the new person.
   const sp = r.switchPerson ?? (opts.newPersonHint?.nameEn ? { nameEn: opts.newPersonHint.nameEn, nameZh: opts.newPersonHint.nameZh, personId: opts.newPersonHint.personId } : null);
+  if (sp?.personId && opts.trustedPersonIds && !opts.trustedPersonIds.includes(sp.personId)) {
+    const p = await createProposal(ctx, { kind: "triage", title: "Check the person proposed by this review", clientId: opts.clientId, taskId, summary: "The proposed person was not in the client's supplied context. Staff must identify them first.", payload: { taskId, personId: sp.personId } });
+    out.proposals.push(p.id);
+    out.routingBlocked = true;
+    return out;
+  }
   if (sp && sp.nameEn) {
     const newPerson = await resolvePerson(ctx, opts.clientId, { personId: sp.personId, nameEn: sp.nameEn, nameZh: sp.nameZh, email: opts.newPersonHint?.email ?? null });
     if (newPerson.id !== t.personId) {
@@ -63,12 +85,18 @@ export async function applyReview(ctx: Ctx, taskId: string, r: Review, opts: { c
   for (const it of r.items) {
     if (!allowed.has(it.key)) continue;
     const isPerson = personRefKeys.has(it.key);
+    if (isPerson && it.personId && it.personId !== t.personId) continue;
     const idx = next.findIndex((e) => e.key === it.key && (!isPerson || (e.personId ?? null) === (t.personId ?? null)));
     if (idx < 0) {
       if (it.status === "needed" && !isPerson) { next.push({ key: it.key, personId: null, status: "needed", reason: it.reason }); changed = true; }
       continue;
     }
     const cur = next[idx];
+    if (conflictingKeys.has(it.key)) continue;
+    if (opts.kind === "information" && it.value && cur.value && ["on_file", "received"].includes(cur.status) && it.value.trim() !== cur.value.trim()) {
+      noteConflict(it.key, cur.value, it.value);
+      continue;
+    }
     if (it.status === "on_file" && cur.status !== "on_file") continue; // only the engine decides what is on file
     if (it.status === "received" && !it.value && !cur.documentId && !cur.value) continue;
     if (cur.status === "on_file" && isPerson && it.status === "received") continue; // conflicts go through proposals
@@ -79,17 +107,24 @@ export async function applyReview(ctx: Ctx, taskId: string, r: Review, opts: { c
   }
   if (changed) await setChecklist(ctx, taskId, next, r.summary, opts.actor ?? "agent");
 
-  // 3. Effective date.
-  if (r.effectiveDate && isIsoDate(r.effectiveDate) && r.effectiveDate !== t.effectiveDate) {
-    await ctx.db.update(taskT).set({ effectiveDate: r.effectiveDate, dueDate: await computeDueDate(ctx, pb, opts.clientId, r.effectiveDate) }).where(eq(taskT.id, taskId));
-    await invalidatePreparation(ctx, taskId, "Effective date changed");
+  // 3. Effective date, bound to the task's pinned playbook requirement.
+  const dateKey = effectiveDateRequirement(pb);
+  if (opts.kind === "information" && r.effectiveDate && t.effectiveDate && r.effectiveDate !== t.effectiveDate) noteConflict(dateKey ?? "effDate", t.effectiveDate, r.effectiveDate);
+  if (r.effectiveDate && isIsoDate(r.effectiveDate) && r.effectiveDate !== t.effectiveDate && !conflictingKeys.has(dateKey ?? "effDate")) {
+    const current = await getTask(ctx, taskId);
+    if (dateKey && current.checklist.some(e => e.key === dateKey)) {
+      await setChecklist(ctx, taskId, current.checklist.map(e => e.key === dateKey ? { ...e, status: "received" as const, value: r.effectiveDate } : e), "Effective date changed", opts.actor ?? "agent");
+    } else {
+      await ctx.db.update(taskT).set({ effectiveDate: r.effectiveDate, dueDate: await computeDueDate(ctx, pb, opts.clientId, r.effectiveDate) }).where(eq(taskT.id, taskId));
+      await invalidatePreparation(ctx, taskId, "Effective date changed");
+    }
     await logEvent(ctx, taskId, "task.effective_date", `Effective date now ${r.effectiveDate}`, {}, opts.actor ?? "agent");
   }
 
   // 4. Conflicts, playbook fit and invoice changes need a human.
   const existingConflicts = new Set((await pendingProposals(ctx, { taskId, kind: "conflict" })).map((p) => p.payload.key as string));
-  for (const c of r.conflicts.filter((x) => !existingConflicts.has(x.key))) {
-    const p = await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(c.key)}`, summary: `On file: ${c.onFile}. Client now says: ${c.incoming}.`, clientId: opts.clientId, taskId, payload: { taskId, key: c.key, onFile: c.onFile, incoming: c.incoming, question: c.question, personId: t.personId } });
+  for (const c of conflicts.filter((x) => !existingConflicts.has(x.key))) {
+    const p = await createProposal(ctx, { kind: "conflict", title: `Conflicting ${itemLabel(c.key)}`, summary: `On file: ${c.onFile}. Client now says: ${c.incoming}.`, clientId: opts.clientId, taskId, payload: { taskId, key: c.key, onFile: c.onFile, incoming: c.incoming, question: c.question, personId: personRefKeys.has(c.key) ? t.personId : null } });
     out.proposals.push(p.id);
     out.questions.push(c.question);
   }

@@ -1,8 +1,8 @@
 // Batch operations (CSA's "Mass Production"): start the same playbook for many clients in
 // one action, each with its own request, invoice and drafted message queued for approval.
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { client as clientT, conversation, task as taskT, person, request as requestT } from "@/db/schema";
+import { client as clientT, conversation, message, task as taskT, person, request as requestT } from "@/db/schema";
 import { createRequest, startTask, getTask, outstanding, assertTaskReady, advance, markStepState, logEvent } from "./engine";
 import { getPlaybook } from "./playbooks";
 import { createInvoiceForRequest } from "./invoices";
@@ -16,6 +16,13 @@ import { officersAsAt } from "./records";
 import { generateForTask } from "@/documents/generate";
 
 export async function batchStart(ctx: Ctx, o: { playbookId: string; clientIds: string[]; periodYear?: number; personId?: string; effectiveDate?: string }) {
+  return ctx.db.transaction(async db => {
+    await db.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`batch:${ctx.firmId}`}, 0))`);
+    return batchStartAtomic({ ...ctx, db: db as unknown as Ctx["db"] }, o);
+  });
+}
+
+async function batchStartAtomic(ctx: Ctx, o: Parameters<typeof batchStart>[1]) {
   const pb = await getPlaybook(ctx, o.playbookId);
   const officerChange = pb.id === "hk.resignDirector";
   if (officerChange) {
@@ -61,7 +68,7 @@ export async function batchStart(ctx: Ctx, o: { playbookId: string; clientIds: s
     };
     const draft = await composeReply(ctx, { clientId, conversationId: conv.id, inReplyTo: null, facts, requestId: req.id, purpose: officerChange ? "Prepare the named director resignation; ask for missing information and include the invoice." : "Firm-initiated request: the statutory deadline is coming up; ask for what we need and send the invoice." });
     const p = await createProposal(ctx, { kind: "send_message", title: `Send ${pb.name.en} request to ${cl.nameEn}`, clientId, requestId: req.id, payload: { messageId: draft.id, requestId: req.id, taskIds: [t.id], draftSource: draft.source, purpose: "request", batch: true } });
-    void p;
+    await ctx.db.update(message).set({ proposalId: p.id }).where(and(eq(message.id, draft.id), eq(message.firmId, ctx.firmId)));
     created++;
   }
   return { created, skipped };

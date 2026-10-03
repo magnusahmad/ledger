@@ -43,9 +43,13 @@ export type RequirementDef = {
   extractionHint?: string;
 };
 
+export type RegisterGuard =
+  | { kind: "sole_member_is_sole_director" }
+  | { kind: "minimum_remaining_individuals"; minimum: number };
+
 export type RegisterEffect =
-  | { kind: "appoint_officer"; role: string; personParam?: string }
-  | { kind: "cease_officer"; role: string; personParam?: string }
+  | { kind: "appoint_officer"; role: string; personParam?: string; guard?: RegisterGuard }
+  | { kind: "cease_officer"; role: string; personParam?: string; guard?: RegisterGuard }
   | { kind: "replace_officer"; role: string }
   | { kind: "update_person_particulars" }
   | { kind: "change_registered_office" }
@@ -95,6 +99,8 @@ export type PlaybookDef = {
   personSelection?: "new" | "existing_officer" | "existing_member" | "any" | "none";
   forms?: string;
   deadline: DeadlineRule;
+  /** Checklist date that defines the task event, e.g. lastDay for a resignation. */
+  effectiveDateKey?: string;
   requirements: RequirementRef[];
   steps: StepDef[];
   documents: DocumentRef[];

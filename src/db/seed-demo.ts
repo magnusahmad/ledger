@@ -7,7 +7,7 @@ import type { Ctx } from "@/lib/ctx";
 import { ensureFirm } from "@/domain/firm";
 import { addContact, appoint, createClient, createPerson, updateClient } from "@/domain/records";
 import { allot, createShareClass, transfer } from "@/domain/shares";
-import { loadPlaybookLibrary } from "@/domain/playbooks";
+import { getPlaybook, loadPlaybookLibrary } from "@/domain/playbooks";
 import {
   bankAccount, businessRegistration, cddRecord, charge, conversation, document, filing, invoice, invoiceLine,
   message, payment, significantController, task, taskEvent, type Lang,
@@ -224,7 +224,7 @@ async function seedShowcaseHistory(ctx: Ctx) {
   // Completed annual return task for 2025, with its invoice paid.
   const taskId = "tsk_seed_ar2025";
   await ctx.db.insert(task).values({
-    id: taskId, firmId: ctx.firmId, clientId: cid, playbookId: "hk.annualReturn", playbookVersion: 2, title: "Annual return 2025",
+    id: taskId, firmId: ctx.firmId, clientId: cid, playbookId: "hk.annualReturn", playbookVersion: (await getPlaybook(ctx, "hk.annualReturn")).version, title: "Annual return 2025",
     assigneeId: "user_ky", status: "done", stepIndex: 8, checklist: [{ key: "changesSince", status: "received", value: "No changes since the last return" }],
     periodKey: "NAR1:2025", dueDate: "2025-12-09", createdAt: new Date("2025-10-28T10:00:00+08:00"), completedAt: new Date("2025-12-05T16:00:00+08:00"),
   });
@@ -236,16 +236,16 @@ async function seedShowcaseHistory(ctx: Ctx) {
   await storeDoc(ctx, { clientId: cid, taskId, kind: "form", title: "Form NAR1 (2025), filed", lines: ["Annual return made up to 28 October 2025", "Filed 5 December 2025", "(Fictional demo document)"], createdAt: "2025-12-05", source: "generated" });
 
   const invId = "inv_seed_2025_0042";
-  await ctx.db.insert(invoice).values({ id: invId, firmId: ctx.firmId, clientId: cid, number: "CRCS-2025-0042", status: "paid", issuedOn: "2025-10-28", dueOn: "2025-11-27", termsDays: 30, totalCents: 130500, paidCents: 130500, xeroStatus: "not_synced", createdAt: new Date("2025-10-28T10:05:00+08:00") });
+  await ctx.db.insert(invoice).values({ id: invId, firmId: ctx.firmId, clientId: cid, number: "CRCS-2025-0042", status: "paid", issuedOn: "2025-10-28", dueOn: "2025-11-27", termsDays: 30, totalCents: 70500, paidCents: 70500, xeroStatus: "not_synced", createdAt: new Date("2025-10-28T10:05:00+08:00") });
   await ctx.db.insert(invoiceLine).values([
-    { id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: invId, taskId, description: "Annual return 2025", amountCents: 120000, kind: "fee", sort: 0 },
+    { id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: invId, taskId, description: "Annual return 2025", amountCents: 60000, kind: "fee", sort: 0 },
     { id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: invId, taskId, description: "Annual registration fee (Companies Registry)", amountCents: 10500, kind: "disbursement", sort: 1 },
   ]);
-  await ctx.db.insert(payment).values({ id: ctx.ids.next("pay"), firmId: ctx.firmId, invoiceId: invId, amountCents: 130500, receivedOn: "2025-11-18", method: "bank_auto" });
+  await ctx.db.insert(payment).values({ id: ctx.ids.next("pay"), firmId: ctx.firmId, invoiceId: invId, amountCents: 70500, receivedOn: "2025-11-18", method: "bank_auto" });
   const inv2 = "inv_seed_2025_0063";
-  await ctx.db.insert(invoice).values({ id: inv2, firmId: ctx.firmId, clientId: cid, number: "CRCS-2025-0063", status: "paid", issuedOn: "2025-11-20", dueOn: "2025-12-20", termsDays: 30, totalCents: 250000, paidCents: 250000, createdAt: new Date("2025-11-20T10:05:00+08:00") });
-  await ctx.db.insert(invoiceLine).values({ id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: inv2, description: "AGM and accounts approval 2025", amountCents: 250000, kind: "fee", sort: 0 });
-  await ctx.db.insert(payment).values({ id: ctx.ids.next("pay"), firmId: ctx.firmId, invoiceId: inv2, amountCents: 250000, receivedOn: "2025-12-10", method: "bank_auto" });
+  await ctx.db.insert(invoice).values({ id: inv2, firmId: ctx.firmId, clientId: cid, number: "CRCS-2025-0063", status: "paid", issuedOn: "2025-11-20", dueOn: "2025-12-20", termsDays: 30, totalCents: 80000, paidCents: 80000, createdAt: new Date("2025-11-20T10:05:00+08:00") });
+  await ctx.db.insert(invoiceLine).values({ id: ctx.ids.next("inl"), firmId: ctx.firmId, invoiceId: inv2, description: "AGM and accounts approval 2025", amountCents: 80000, kind: "fee", sort: 0 });
+  await ctx.db.insert(payment).values({ id: ctx.ids.next("pay"), firmId: ctx.firmId, invoiceId: inv2, amountCents: 80000, receivedOn: "2025-12-10", method: "bank_auto" });
 
   // Past correspondence.
   const conv = "cnv_seed_c1";

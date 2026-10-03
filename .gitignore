@@ -22,4 +22,8 @@ playwright-report/
 .next/
 .next-build/
 .next-ui/
+.next-rec/
 *.tsbuildinfo
+
+# Personal spaced repetition questions, answers and review history
+.study/

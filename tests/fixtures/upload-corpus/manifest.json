@@ -1,0 +1,66 @@
+{
+  "source": "Fictional Area7 original PDF/poor PNG/readable PNG; sharp conversion JPEG quality30/90 and WebP quality30/90; readable PNG rotated90; PDF page0 copied3times; uniform2048square safety control; uniform4096x256 positive metadata-boundary control",
+  "samples": [
+    {
+      "name": "bounded-dimensions.png",
+      "bytes": 16899,
+      "sha256": "8fa2d33c908d005750379c6f004fed00b93eab0432063a2403510ad00ed3084b",
+      "width": 2048,
+      "height": 2048,
+      "format": "png"
+    },
+    {
+      "name": "multipage-scan.pdf",
+      "bytes": 2148,
+      "sha256": "e2a5228a40de731d7365ea6a8630025717d820276ac00e5adedc0190c6f55689"
+    },
+    {
+      "name": "readable-scan.jpg",
+      "bytes": 25402,
+      "sha256": "dd9becef98231b54e6fe30231efb7ab94bdfd181270b9e2b83ec2078693161df",
+      "width": 707,
+      "height": 1000,
+      "format": "jpeg"
+    },
+    {
+      "name": "readable-scan.webp",
+      "bytes": 13886,
+      "sha256": "85d9d7fa5b7b0adfa40b2408fd41a04bdd75848b633a96451e2bddcd64c1fe83",
+      "width": 707,
+      "height": 1000,
+      "format": "webp"
+    },
+    {
+      "name": "rotated-scan.png",
+      "bytes": 30087,
+      "sha256": "b261194be5e829d7e0c0a7a21349f281fcadc9c9e68239934ca315276b1191dc",
+      "width": 1000,
+      "height": 707,
+      "format": "png"
+    },
+    {
+      "name": "small-scan.jpg",
+      "bytes": 667,
+      "sha256": "d555dd8bfc6f2f6c5e862c0ca5e8a2eeee86e95ddd4f2bcd4582aa917063d6ea",
+      "width": 128,
+      "height": 180,
+      "format": "jpeg"
+    },
+    {
+      "name": "small-scan.webp",
+      "bytes": 382,
+      "sha256": "70268d913ceeea5a5335aa6a71f88471c081c0b8a6057cea0a9ba09dd59c4bed",
+      "width": 128,
+      "height": 180,
+      "format": "webp"
+    },
+    {
+      "name": "bounded-wide4096.png",
+      "bytes": 3788,
+      "sha256": "1f9f41afcf520750c02d1848a6d926c09ad37c517f4a85132159dde66dcb6fe2",
+      "width": 4096,
+      "height": 256,
+      "format": "png"
+    }
+  ]
+}

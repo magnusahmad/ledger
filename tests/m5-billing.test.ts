@@ -8,6 +8,8 @@ import { approveProposal, pendingProposals } from "@/domain/proposals";
 import { getTask, tasksForRequest } from "@/domain/engine";
 import { nextInvoiceNumber, setInvoiceNumber, InvoiceError, invoiceWithLines } from "@/domain/invoices";
 import { pollBank } from "@/domain/payments";
+import { kvSet } from "@/domain/kv";
+import { resetDemoData } from "@/domain/demo";
 import { runReminders } from "@/domain/reminders";
 import { runJobs } from "@/domain/jobs";
 import { invoice, payment, bankTransaction, request as requestT } from "@/db/schema";
@@ -67,6 +69,39 @@ describe("Payment matching (Airwallex deposits)", () => {
   it("the invoice number is found in a messy reference (spaces, lower case, no dash)", async () => {
     const { inv } = await sentRequest();
     await ctx.bank.simulateDeposit!({ amountCents: inv.totalCents, currency: "HKD", reference: `fps ${inv.number.toLowerCase().replace(/-/g, " ")}`, payerName: "HO W Y" });
+    expect((await pollBank(ctx)).matched).toBe(1);
+  });
+
+  it("a first poll that finds no deposits leaves the bank asked from the start, not from 1970 (Airwallex returns nothing for a pre-1970 date)", async () => {
+    const asked: (Date | null)[] = [];
+    const list = ctx.bank.listDeposits.bind(ctx.bank);
+    ctx.bank.listDeposits = (since) => { asked.push(since); return list(since); };
+    expect((await pollBank(ctx)).fetched).toBe(0);
+    const { inv } = await sentRequest();
+    await ctx.bank.simulateDeposit!({ amountCents: inv.totalCents, currency: "HKD", reference: inv.number, payerName: "HO" });
+    expect((await pollBank(ctx)).matched).toBe(1);
+    expect(asked.every((d) => d === null || d.getTime() > 0)).toBe(true);
+  });
+
+  it("an epoch bank cursor stored by an earlier version is ignored, so deposits are still found", async () => {
+    const asked: (Date | null)[] = [];
+    const list = ctx.bank.listDeposits.bind(ctx.bank);
+    ctx.bank.listDeposits = (since) => { asked.push(since); return list(since); };
+    await kvSet(ctx, `bank.cursor.${ctx.bank.name}`, new Date(0).toISOString());
+    await pollBank(ctx);
+    expect(asked).toEqual([null]);
+  });
+
+  it("after a demo reset, a deposit made before the reset never pays a new invoice that reuses its number", async () => {
+    await resetDemoData(ctx);
+    const resetAt = ctx.clock.now();
+    const { inv } = await sentRequest();
+    const old = { providerTxId: "old-sandbox-deposit", amountCents: inv.totalCents, currency: "HKD", reference: inv.number, payerName: "Earlier rehearsal", receivedAt: new Date(resetAt.getTime() - 60_000) };
+    const list = ctx.bank.listDeposits.bind(ctx.bank);
+    ctx.bank.listDeposits = async (since) => [old, ...(await list(since))];
+    expect((await pollBank(ctx)).matched).toBe(0);
+    expect((await ctx.db.query.invoice.findFirst({ where: eq(invoice.id, inv.id) }))!.status).toBe("sent");
+    await ctx.bank.simulateDeposit!({ amountCents: inv.totalCents, currency: "HKD", reference: inv.number, payerName: "HO" });
     expect((await pollBank(ctx)).matched).toBe(1);
   });
 

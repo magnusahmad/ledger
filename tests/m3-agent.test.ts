@@ -58,8 +58,8 @@ describe("Intake: new requests", () => {
     expect(tasks).toHaveLength(2);
     const inv = await ctx.db.query.invoice.findFirst({ where: eq(invoice.requestId, r.requestId!) });
     const lines = await ctx.db.select().from(invoiceLine).where(eq(invoiceLine.invoiceId, inv!.id));
-    expect(lines.map((l) => [l.kind, l.amountCents])).toEqual([["fee", 150000], ["fee", 350000], ["disbursement", 29500]]);
-    expect(inv!.totalCents).toBe(529500);
+    expect(lines.map((l) => [l.kind, l.amountCents])).toEqual([["fee", 60000], ["fee", 150000], ["disbursement", 29500]]);
+    expect(inv!.totalCents).toBe(239500);
     expect(tasks[0].checklist.find((e) => e.key === "newAddr")).toMatchObject({ status: "received" });
   });
 

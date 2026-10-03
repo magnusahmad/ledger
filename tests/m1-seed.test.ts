@@ -4,7 +4,8 @@ import { seedDemo } from "@/db/seed-demo";
 import { officersAsAt } from "@/domain/records";
 import { membersAsAt } from "@/domain/shares";
 import { findClientsBySenderEmail } from "@/domain/lookup";
-import { hasCurrentCdd } from "@/domain/engine";
+import { hasCurrentCdd, getTask } from "@/domain/engine";
+import { task } from "@/db/schema";
 
 let ctx: TestCtx;
 beforeAll(async () => {
@@ -14,6 +15,10 @@ beforeAll(async () => {
 });
 
 describe("Demo seed", () => {
+  it("every seeded task opens: its pinned playbook version is in the library, even after a playbook is revised", async () => {
+    for (const t of await ctx.db.select().from(task)) await expect(getTask(ctx, t.id), `${t.playbookId} v${t.playbookVersion}`).resolves.toBeTruthy();
+  });
+
   it("the configured demo test address is recognised as the instructing director of the showcase client", async () => {
     const matches = await findClientsBySenderEmail(ctx, "Investor-Test@Example.com");
     expect(matches.map((m) => m.client.nameEn)).toEqual(["Kowloon Bay Trading Limited"]);

@@ -1,4 +1,5 @@
 // Fake mailbox: the Dev inbox page and tests "deliver" inbound mail here; sent mail is captured.
+import { randomUUID } from "node:crypto";
 import type { InboundMail, MailProvider, OutboundMail, SentMail } from "../types";
 import { MemoryList, type ListStore } from "../json-store";
 
@@ -11,11 +12,12 @@ export type StoredOutbound = OutboundMail & { providerMessageId: string; rfcMess
 export class FakeMail implements MailProvider {
   readonly name = "fake";
   private seq = 0;
+  readonly reconciliationScope: string;
   constructor(
     readonly address = "desk@caineroad.example",
     private inbox: ListStore<StoredInbound> = new MemoryList(),
     private outbox: ListStore<StoredOutbound> = new MemoryList(),
-  ) {}
+  ) { this.reconciliationScope = outbox.identity ?? `mail-instance:${randomUUID()}`; }
 
   /** Simulate an email arriving. */
   deliver(m: Partial<InboundMail> & { from: InboundMail["from"]; subject: string; text: string }): InboundMail {
@@ -57,10 +59,15 @@ export class FakeMail implements MailProvider {
 
   async send(mail: OutboundMail): Promise<SentMail> {
     const id = `fake-out-${this.outbox.all().length + 1}-${++this.seq}`;
-    const rfc = `<${id}@caineroad.example>`;
+    const rfc = mail.correlationId ?? `<${id}@caineroad.example>`;
     const { attachments, ...rest } = mail;
     this.outbox.push({ ...rest, providerMessageId: id, rfcMessageId: rfc, sentAt: new Date().toISOString(), attachmentNames: (attachments ?? []).map((a) => a.filename) } as StoredOutbound);
     return { providerMessageId: id, providerThreadId: mail.providerThreadId ?? `fake-thread-${id}`, rfcMessageId: rfc };
+  }
+
+  async reconcileDelivery(correlationId: string) {
+    const m = this.outbox.all().find(m => m.correlationId === correlationId);
+    return m ? { status: "accepted" as const, sent: { providerMessageId: m.providerMessageId, rfcMessageId: m.rfcMessageId } } : { status: "not_sent" as const };
   }
 
   sent(): StoredOutbound[] { return this.outbox.all(); }

@@ -64,6 +64,7 @@ Neutral light theme, low clutter, clear visual precedence. IBM Plex Sans with No
 - `docs/PLAYBOOKS.md`: human-readable playbook library for company secretary review.
 - `docs/WECHAT_INTEGRATION.md`: scope and spec for WeChat integration (draft, open decisions listed at the end).
 - `docs/TIME_SAVED_VS_CSA.md`: stack rank of capabilities by estimated time saved vs CSA Expert, and gaps where we are behind it.
+- `docs/CR_TPSI.md`: scope for filing with the Companies Registry through its Third Party Software Interface (not built yet).
 - `docs/WEIXIN_GATEWAY.md`: spec for a direct Weixin OpenClaw channel (iLink protocol) without OpenClaw, plus a review of the earlier gateway proposal.
 - Company-level knowledge (thesis, market research, service workflows, meetings) lives in the separate CRV knowledge base, not in this repo. See "CRV knowledge base" below.
 - `seed/playbooks.json`: 12 draft playbooks (steps, requirements, documents, deadlines, fees, notes, trigger keywords).
@@ -102,3 +103,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Personal spaced repetition
+
+For Magnus's research/financial quiz requests and replies, follow `docs/PERSONAL_STUDY.md`. Five free-text questions per Hong Kong day; persist questions, responses and SRS history only in gitignored `.study/review-history.json`. Never grade unanswered questions.

@@ -4,6 +4,7 @@ import "@/domain/inbound";
 import { makeRuntimeCtx } from "@/lib/runtime";
 import { pollMail } from "@/channels/mail-poller";
 import { pollBank } from "@/domain/payments";
+import { recoverApprovals } from "@/domain/proposals";
 import { runJobs } from "@/domain/jobs";
 import { runReminders } from "@/domain/reminders";
 import { runChasers } from "@/domain/chasing";
@@ -14,9 +15,11 @@ import { kvGet, kvSet } from "@/domain/kv";
 const ctx = makeRuntimeCtx();
 const every = ctx.config.POLL_INTERVAL_MS;
 let stopping = false;
+let formsCheck: Promise<void> | null = null;
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), "[worker]", ...a);
 
 async function tick() {
+  try { await recoverApprovals(ctx); } catch (e) { log("approval recovery error:", (e as Error).message); }
   try { await syncDemoClock(ctx); } catch { /* keep the last offset */ }
   try {
     const m = await pollMail(ctx);
@@ -29,11 +32,19 @@ async function tick() {
   try { const n = await runJobs(ctx); if (n) log(`jobs: ${n} run`); } catch (e) { log("jobs error:", (e as Error).message); }
   const now = Date.now();
   const lastRem = await kvGet<number>(ctx, "worker.lastReminders");
-  if (!lastRem || now - lastRem > 3600_000) { try { const n = await runReminders(ctx); if (n) log(`reminders: ${n} drafted`); } catch (e) { log("reminders error:", (e as Error).message); } await kvSet(ctx, "worker.lastReminders", now); }
+  if (!lastRem || now - lastRem > 3600_000) { try { const n = await runReminders(ctx); if (n) log(`reminders: ${n} drafted`); await kvSet(ctx, "worker.lastReminders", now); } catch (e) { log("reminders error:", (e as Error).message); } }
   const lastChase = await kvGet<number>(ctx, "worker.lastChasers");
-  if (!lastChase || now - lastChase > 3600_000) { try { const n = await runChasers(ctx); if (n) log(`chasers: ${n} drafted`); } catch (e) { log("chasers error:", (e as Error).message); } await kvSet(ctx, "worker.lastChasers", now); }
+  if (!lastChase || now - lastChase > 3600_000) { try { const n = await runChasers(ctx); if (n) log(`chasers: ${n} drafted`); await kvSet(ctx, "worker.lastChasers", now); } catch (e) { log("chasers error:", (e as Error).message); } }
   const lastForms = await kvGet<number>(ctx, "worker.lastFormsCheck");
-  if (!lastForms || now - lastForms > 7 * 86400_000) { await kvSet(ctx, "worker.lastFormsCheck", now); checkForms(ctx).then((r) => r.changed.length && log(`FORMS CHANGED on cr.gov.hk: ${r.changed.join(", ")}`)).catch(() => {}); }
+  if (!formsCheck && (!lastForms || now - lastForms > 7 * 86400_000)) {
+    // Registry verification stays in the background so an unavailable provider
+    // cannot stall mailbox/bank polling. Only complete success starts its cadence.
+    formsCheck = checkForms(ctx).then(async r => {
+      if (r.errors.length) { log("forms check incomplete:", r.errors.join("; ")); return; }
+      if (r.changed.length) log(`FORMS CHANGED on cr.gov.hk: ${r.changed.join(", ")}`);
+      await kvSet(ctx, "worker.lastFormsCheck", now);
+    }).catch(e => { log("forms check error:", (e as Error).message); }).finally(() => { formsCheck = null; });
+  }
 }
 
 async function loop() {

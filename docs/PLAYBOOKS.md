@@ -9,7 +9,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** ND2A
 - **Deadline:** File ND2A within 15 days after the appointment
 - **Started by:** client request
-- **Fee (demo):** HK$1800
+- **Fee (demo):** HK$800
 
 **What we ask the client for**
 
@@ -58,7 +58,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** ND2A
 - **Deadline:** File ND2A within 15 days after the resignation
 - **Started by:** client request
-- **Fee (demo):** HK$1500
+- **Fee (demo):** HK$600
 
 **What we ask the client for**
 
@@ -101,7 +101,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** ND2B
 - **Deadline:** File ND2B within 15 days after the change
 - **Started by:** client request
-- **Fee (demo):** HK$1200
+- **Fee (demo):** HK$500
 
 **What we ask the client for**
 
@@ -140,7 +140,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** ND2A
 - **Deadline:** File ND2A within 15 days after the change
 - **Started by:** client request
-- **Fee (demo):** HK$1800
+- **Fee (demo):** HK$800
 
 **What we ask the client for**
 
@@ -182,7 +182,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** NR1
 - **Deadline:** File NR1 within 15 days after the change
 - **Started by:** client request
-- **Fee (demo):** HK$1500
+- **Fee (demo):** HK$600
 
 **What we ask the client for**
 
@@ -223,7 +223,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** NNC2
 - **Deadline:** File NNC2 within 15 days after the special resolution
 - **Started by:** client request
-- **Fee (demo):** HK$3500
+- **Fee (demo):** HK$1,500
 
 **What we ask the client for**
 
@@ -266,7 +266,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** NNC1
 - **Deadline:** No statutory deadline
 - **Started by:** client request
-- **Fee (demo):** HK$8800
+- **Fee (demo):** HK$2,800
 
 **What we ask the client for**
 
@@ -319,7 +319,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** ND2A, NR1
 - **Deadline:** No statutory deadline
 - **Started by:** client request
-- **Fee (demo):** HK$3800
+- **Fee (demo):** HK$1,200
 
 **What we ask the client for**
 
@@ -367,7 +367,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** NAR1
 - **Deadline:** Private company: within 42 days after the anniversary of incorporation
 - **Started by:** firm (deadline calendar)
-- **Fee (demo):** HK$1200
+- **Fee (demo):** HK$600
 
 **What we ask the client for**
 
@@ -402,7 +402,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** None (internal records)
 - **Deadline:** Private company: within 9 months after the end of the accounting reference period
 - **Started by:** firm (deadline calendar)
-- **Fee (demo):** HK$2500
+- **Fee (demo):** HK$800
 
 **What we ask the client for**
 
@@ -439,7 +439,7 @@ Generated from `seed/playbooks.json`. Every deadline, form and requirement here 
 - **Forms:** IRD demand note
 - **Deadline:** Renew before the current certificate expires
 - **Started by:** firm (deadline calendar)
-- **Fee (demo):** HK$500
+- **Fee (demo):** HK$380
 
 **What we ask the client for**
 

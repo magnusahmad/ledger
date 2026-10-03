@@ -33,3 +33,8 @@ export async function deliveryEvidence(ctx: Ctx, requestId: string, recipients: 
   }
   return evidence;
 }
+
+/** The sent-email check only means something once mail went out another way: after a mailbox reply, or when a sent email already carries the invoice or link. */
+export function showSentEmailCheck(payload: { replaces?: unknown }, e: { invoiceFound: boolean; uploadLinkFound: boolean } | null) {
+  return !!e && (!!payload.replaces || e.invoiceFound || e.uploadLinkFound);
+}
