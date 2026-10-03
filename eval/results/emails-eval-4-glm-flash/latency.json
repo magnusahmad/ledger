@@ -1,0 +1,14 @@
+{
+  "ingestion": {
+    "n": 10,
+    "totalMs": 150932,
+    "medianMs": 15396.5,
+    "p95Ms": 35977
+  },
+  "checkerOverhead": {
+    "n": 10,
+    "totalMs": 0,
+    "medianMs": 0,
+    "p95Ms": 0
+  }
+}

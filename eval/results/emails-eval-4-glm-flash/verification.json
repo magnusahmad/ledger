@@ -1,0 +1,125 @@
+{
+  "productionChanges": false,
+  "promptChanges": false,
+  "uiChanges": false,
+  "sameCasesAndFrozenRubricAsGemini": true,
+  "testRun": {
+    "command": "npx vitest run tests/emails-eval-batches.test.ts tests/emails-eval-run.test.ts tests/emails-eval-ingestion.test.ts tests/emails-eval.test.ts tests/emails-eval-sonnet-schema.test.ts",
+    "outcome": "27 tests passed across 5 files",
+    "durationSeconds": 2.78
+  },
+  "tdd": "No implementation or feature change: existing harness was run unchanged, so no new red/green cycle was needed. Fourth-batch fixture TDD is recorded in the preserved Gemini verification.",
+  "liveEvaluation": {
+    "command": "npx tsx scripts/eval-emails.ts --batch 4 --no-jev --model '~z-ai/glm-flash-latest' --output-dir eval/results/emails-eval-4-glm-flash",
+    "status": "completed",
+    "exitCode": 0
+  },
+  "preservation": {
+    "frozenSourceFiles": 209,
+    "previousArtifactFiles": 69,
+    "changedSource": [],
+    "changedPrior": []
+  },
+  "credentials": {
+    "checkedConfiguredSecretValues": true,
+    "filesScanned": 8,
+    "leakedFiles": []
+  },
+  "comparison": {
+    "gemini": "eval/results/emails-eval-4-gemini",
+    "glm": "eval/results/emails-eval-4-glm-flash",
+    "sameSourceAndRubric": true,
+    "identicalInitialIntakeInputs": 9,
+    "modelBackedCases": 9,
+    "cases": [
+      {
+        "id": "D01",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": true
+      },
+      {
+        "id": "D02",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": true
+      },
+      {
+        "id": "D03",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": false
+      },
+      {
+        "id": "D04",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": false,
+        "glmFullRubricPassed": false
+      },
+      {
+        "id": "D05",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": false,
+        "glmFullRubricPassed": false
+      },
+      {
+        "id": "D06",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": false,
+        "glmFullRubricPassed": false
+      },
+      {
+        "id": "D07",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": false
+      },
+      {
+        "id": "D08",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": true
+      },
+      {
+        "id": "D09",
+        "modelBacked": false,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": true
+      },
+      {
+        "id": "D10",
+        "modelBacked": true,
+        "initialIntakeRequestIdentical": true,
+        "geminiFullRubricPassed": true,
+        "glmFullRubricPassed": true
+      }
+    ],
+    "summary": {
+      "gemini": {
+        "fullRubricPassed": 7,
+        "safeInitialBoundaries": 10,
+        "draftsNeedingRevision": 2,
+        "schemaValidOutputs": 34,
+        "modelOutputs": 34,
+        "costUsd": 0.197196
+      },
+      "glm": {
+        "fullRubricPassed": 5,
+        "safeInitialBoundaries": 10,
+        "draftsNeedingRevision": 3,
+        "schemaValidOutputs": 34,
+        "modelOutputs": 34,
+        "costUsd": 0.024626796
+      }
+    }
+  }
+}
