@@ -1,0 +1,621 @@
+{
+  "date": "2026-10-03",
+  "batch": "2",
+  "configuredModel": "anthropic/claude-sonnet-5.5",
+  "checker": null,
+  "schemaCompatibility": "intake attachments[].personId restricted to null for attachment-free second-batch fixtures; original Zod validation unchanged",
+  "reviewer": "Codex coding agent independently inspecting original emails, frozen B01-B10 expectations, raw outputs, draft facts and database effects; no external/company secretary reviewer",
+  "grading": "Same conservative abstention, field fidelity and pending-versus-started reply conventions as second Gemini batch. Schema compliance is distinct from business correctness. Original ingestions alone contribute correctness; repeats only contribute consistency and schema stats. No Jev catches/false flags exist in this run.",
+  "stats": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 12,
+        "incorrectActions": 2
+      },
+      "routingAndParticulars": {
+        "correctActions": 11,
+        "incorrectActions": 3
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntentTypeChecks": 1,
+    "distinctServiceIntentsOmitted": 0,
+    "clientIdentification": {
+      "correct": 10,
+      "incorrect": 0
+    },
+    "intakeLanguage": {
+      "correct": 9,
+      "total": 9
+    },
+    "actualOutcome": {
+      "correct": 6,
+      "defective": 4
+    },
+    "replyQuality": {
+      "drafts": 6,
+      "correct": 3,
+      "defective": 3,
+      "contentDefects": 2,
+      "additionalLanguageOnlyDefects": 1,
+      "sourceFaithful": 6,
+      "languageDefects": 1
+    },
+    "schema": {
+      "all": {
+        "valid": 35,
+        "responses": 35,
+        "attempts": 35,
+        "providerOrParseErrors": 0
+      },
+      "original": {
+        "valid": 17,
+        "responses": 17,
+        "attempts": 17
+      },
+      "freshRepeats": {
+        "valid": 18,
+        "responses": 18,
+        "attempts": 18
+      },
+      "schemaRepairCalls": 0
+    },
+    "repeatAgreement": {
+      "coreRouting": {
+        "equalPairs": 25,
+        "pairs": 27
+      },
+      "strictStructured": {
+        "equalPairs": 19,
+        "pairs": 27
+      }
+    },
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 92167,
+        "medianMs": 11249.5,
+        "p95Ms": 15008
+      },
+      "modelRoutedIngestion": {
+        "n": 9,
+        "totalMs": 92165,
+        "medianMs": 11269,
+        "p95Ms": 15008
+      },
+      "individualModelCalls": {
+        "n": 35,
+        "totalMs": 181834,
+        "medianMs": 5155,
+        "p95Ms": 7309
+      },
+      "checkerOverhead": {
+        "n": 10,
+        "totalMs": 0,
+        "medianMs": 0.0,
+        "p95Ms": 0
+      }
+    },
+    "returnedModels": [
+      "anthropic/claude-sonnet-5.5"
+    ],
+    "network": {
+      "attempts": 35,
+      "successful": 35,
+      "jevAttempts": 0,
+      "returnedUsageCostUsd": 0.9082479999999999,
+      "usageCostReports": 35
+    },
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    },
+    "identicalOriginalIntakePrompts": [
+      {
+        "id": "B01",
+        "identical": true
+      },
+      {
+        "id": "B02",
+        "identical": true
+      },
+      {
+        "id": "B03",
+        "identical": true
+      },
+      {
+        "id": "B04",
+        "identical": true
+      },
+      {
+        "id": "B05",
+        "identical": true
+      },
+      {
+        "id": "B06",
+        "identical": true
+      },
+      {
+        "id": "B07",
+        "identical": true
+      },
+      {
+        "id": "B09",
+        "identical": true
+      },
+      {
+        "id": "B10",
+        "identical": true
+      }
+    ]
+  },
+  "comparisonGeminiBatch2": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 12,
+        "correctFlagged": 8,
+        "incorrectActions": 1,
+        "incorrectFlagged": 1,
+        "incorrectExplicitlyUnsupported": 1
+      },
+      "routingAndParticulars": {
+        "correctActions": 11,
+        "correctFlagged": 7,
+        "incorrectActions": 2,
+        "incorrectFlagged": 2,
+        "incorrectExplicitlyUnsupported": 1
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntents": 1,
+    "actualOutcome": {
+      "correct": 5,
+      "correctFlagged": 3,
+      "defective": 5,
+      "defectiveFlagged": 5,
+      "defectiveExplicitlyUnsupported": 0
+    },
+    "replyQuality": {
+      "drafts": 7,
+      "defective": 4,
+      "defectiveFlagged": 2,
+      "defectiveExplicitlyUnsupported": 0,
+      "correct": 3,
+      "correctFlagged": 2,
+      "languageDefects": 1
+    },
+    "schema": {
+      "gemini": {
+        "valid": 37,
+        "total": 37
+      },
+      "jev": {
+        "valid": 49,
+        "total": 49
+      }
+    },
+    "repeatAgreement": {
+      "geminiCoreRouting": {
+        "equalPairs": 18,
+        "pairs": 27
+      },
+      "geminiStrictStructured": {
+        "equalPairs": 13,
+        "pairs": 27
+      },
+      "jevLabels": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "jevLabelsAndFlags": {
+        "equalPairs": 28,
+        "pairs": 30
+      }
+    },
+    "latency": {
+      "inline": {
+        "n": 10,
+        "totalMs": 8254,
+        "medianMs": 928.5,
+        "p95Ms": 1295
+      },
+      "inlineModelRouted": {
+        "n": 9,
+        "totalMs": 8254,
+        "medianMs": 939,
+        "p95Ms": 1295
+      },
+      "fullInitialChecks": {
+        "n": 10,
+        "totalMs": 12415,
+        "medianMs": 1354.0,
+        "p95Ms": 1729
+      },
+      "estimatedGeminiOnly": {
+        "n": 10,
+        "totalMs": 116751,
+        "medianMs": 11917.0,
+        "p95Ms": 25810
+      }
+    },
+    "jevCostUsd": 0.012405371999999996,
+    "networkAttempts": 86,
+    "networkSuccessful": 86,
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    }
+  },
+  "comparisonGlmBatch2": {
+    "naturalIntake": {
+      "routing": {
+        "correctActions": 10,
+        "incorrectActions": 2
+      },
+      "routingAndParticulars": {
+        "correctActions": 8,
+        "incorrectActions": 4
+      }
+    },
+    "requiredIntents": 8,
+    "missedRequiredIntentTypeChecks": 1,
+    "distinctServiceIntentsOmitted": 0,
+    "clientIdentification": {
+      "correct": 9,
+      "incorrect": 1
+    },
+    "intakeLanguage": {
+      "correct": 8,
+      "total": 9
+    },
+    "actualOutcome": {
+      "correct": 4,
+      "defective": 6
+    },
+    "replyQuality": {
+      "drafts": 7,
+      "correct": 1,
+      "defective": 6,
+      "contentDefects": 5,
+      "additionalLanguageOnlyDefects": 1,
+      "sourceFaithful": 6,
+      "languageDefects": 1
+    },
+    "schema": {
+      "all": {
+        "valid": 37,
+        "responses": 37,
+        "attempts": 37,
+        "providerOrParseErrors": 0
+      },
+      "original": {
+        "valid": 19,
+        "responses": 19,
+        "attempts": 19
+      },
+      "freshRepeats": {
+        "valid": 18,
+        "responses": 18,
+        "attempts": 18
+      },
+      "schemaRepairCalls": 0
+    },
+    "repeatAgreement": {
+      "coreRouting": {
+        "equalPairs": 19,
+        "pairs": 27
+      },
+      "strictStructured": {
+        "equalPairs": 11,
+        "pairs": 27
+      }
+    },
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 168105,
+        "medianMs": 15355.5,
+        "p95Ms": 41355
+      },
+      "modelRoutedIngestion": {
+        "n": 9,
+        "totalMs": 168102,
+        "medianMs": 15665,
+        "p95Ms": 41355
+      },
+      "individualModelCalls": {
+        "n": 37,
+        "totalMs": 374728,
+        "medianMs": 9058,
+        "p95Ms": 17832
+      },
+      "checkerOverhead": {
+        "n": 10,
+        "totalMs": 0,
+        "medianMs": 0.0,
+        "p95Ms": 0
+      }
+    },
+    "returnedModels": [
+      "z-ai/glm-5.3-flash"
+    ],
+    "network": {
+      "attempts": 37,
+      "successful": 37,
+      "jevAttempts": 0,
+      "returnedUsageCostUsd": 0.027077558745999996,
+      "usageCostReports": 37
+    },
+    "invariants": {
+      "noMailSent": true,
+      "statutoryRecordsUnchanged": true
+    },
+    "identicalOriginalIntakePrompts": [
+      {
+        "id": "B01",
+        "identical": true
+      },
+      {
+        "id": "B02",
+        "identical": true
+      },
+      {
+        "id": "B03",
+        "identical": true
+      },
+      {
+        "id": "B04",
+        "identical": true
+      },
+      {
+        "id": "B05",
+        "identical": true
+      },
+      {
+        "id": "B06",
+        "identical": true
+      },
+      {
+        "id": "B07",
+        "identical": true
+      },
+      {
+        "id": "B09",
+        "identical": true
+      },
+      {
+        "id": "B10",
+        "identical": true
+      }
+    ]
+  },
+  "judgments": [
+    {
+      "id": "B01",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": true,
+      "notes": "Advice-only enquiry produces one question and no appointment task/invoice. Faithful holding reply promises to check rather than invent documents or price; unrelated stored deadlines are included. Limited actual answer, accepted under same prior holding-reply convention.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.97
+        }
+      ]
+    },
+    {
+      "id": "B02",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": true,
+      "incorrectActionIndices": [
+        1
+      ],
+      "notes": "Correct resignation and appointment with distinct stated dates, replacement and no share transfer. Existing shareholder Lee incorrectly represented as person mode:new, as in Gemini; engine resolves name to per_p2 and reuses documented KYC. Both effective dates and deadlines survive; HK$1,400 reply is faithful and does not ask again for supplied details.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.resignDirector",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.95
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": true,
+          "correct": false,
+          "modelConfidence": 0.93
+        }
+      ]
+    },
+    {
+      "id": "B03",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": true,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "notes": "Correct existing office task only, authoritative date 2026-11-20 and deadline 2026-12-05; director unchanged at 2026-10-15. Review correctly keeps same playbook and does not invent proof receipt. Fluent SC draft correctly requests only missing address. Inherited engine defect leaves extracted.effDate stale at 2026-11-01 although checklist/effectiveDate are correct; therefore strict overall state grade remains defective as in prior runs.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "change_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.97
+        }
+      ]
+    },
+    {
+      "id": "B04",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "notes": "Correct existing Wong task, explicitly supplied email and mobile, unchanged date and outstanding ID/address. Review returns contactInfo only despite full-checklist instruction; merge retains outstanding items. Engine enriches/normalizes contactInfo to slash form, then review uses labelled semicolon form and creates false conflict. Draft faithfully repeats bogus reconfirmation and asks recipient for their email/mobile, though message supplied Wong's. Inherited engine/state defect, no new tasks/invoices.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "provide_information",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.97
+        }
+      ]
+    },
+    {
+      "id": "B05",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "notes": "All three samples use untargeted low-confidence cancellation (0.35,0.35,0.40), explicitly require clarification. Actual ingestion creates staff triage only; both tasks stay open, no cancellation proposal or reply. Conservative abstention accepted under the same rule as prior runs.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "cancel_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.35
+        }
+      ]
+    },
+    {
+      "id": "B06",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "languageDefect": true,
+      "languageOnlyDraftDefect": true,
+      "notes": "Correct genuine prospect, takeover plus 2026 annual return, optional quote/checklist question, no incorporation or invented anniversary/deadline. All three intakes correctly SC and include both services. Both tasks and HK$1,927 upfront invoice generated. Draft covers both services and outstanding documents without claiming payment/completion, but copies the source payment-terms line in Traditional Chinese into an otherwise Simplified Chinese reply. Minor language-only defect; same three-language requirement as previous evaluations. Correcting the upstream fixed string would make this draft acceptable.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.transferIn",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        },
+        {
+          "index": 1,
+          "type": "start_request",
+          "playbookId": "hk.annualReturn",
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.85
+        },
+        {
+          "index": 2,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.92
+        }
+      ]
+    },
+    {
+      "id": "B07",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "notes": "All three outputs classify client unclear, explicitly identify payment-diversion/phishing risk and recommend verification/no payment. Unsupported action is a description of a non-client demand, not bank/payment authorization. Identity gate produces only triage; no prospect, jobs, invoice, planner or reply, unlike GLM. Attachments stay empty; original model notices no attachment was actually supplied.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        }
+      ]
+    },
+    {
+      "id": "B08",
+      "routingCorrect": true,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "notes": "Known linked auditor bypasses the model; correspondence logged on existing office task. No prospect, new job, client reply, modified particulars or proof receipt. Same deterministic outcome as earlier runs."
+    },
+    {
+      "id": "B09",
+      "routingCorrect": false,
+      "requiredIntentsMissed": 0,
+      "outcomeCorrect": true,
+      "incorrectRoutingIndices": [
+        0
+      ],
+      "correctRoutingIndices": [
+        1
+      ],
+      "notes": "Correct unclear/unverified identity and no protected information disclosed. Original intake nevertheless includes start_request:hk.appointDirector with confidence 0.60; repeats 0.60 and 0.70. Count as wrong raw routing under the same preregistered convention used for Gemini/GLM, even though description requires verification and low confidence would also triage. Unsupported disclosure description accepted because explicitly prohibits release pending trusted verification. Actual identity guard creates only staff triage, no tasks/prospect/reply. Unknown-sender prompt excludes existing-client person records, so no per_p2 expected here and no extra new-person defect counted.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.appointDirector",
+          "routingCorrect": false,
+          "correct": false,
+          "modelConfidence": 0.6
+        },
+        {
+          "index": 1,
+          "type": "unsupported_request",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.85
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "routingCorrect": false,
+      "requiredIntentsMissed": 1,
+      "distinctServiceIntentsOmitted": 0,
+      "draftCorrect": false,
+      "sourceFaithful": true,
+      "outcomeCorrect": false,
+      "incorrectRoutingIndices": [
+        0
+      ],
+      "notes": "Original intake uses start_request:hk.custom plus optional scope/quote question. Unlike the expected unsupported_request route, this bypasses the planner and custom_plan review. Generic task has empty params; taskScope supplied and bank approval caveat preserved, but default HK$800 invoice appears immediately. Draft presents fixed fee and says work started although client asked for quote first; also says no more information needed based on generic upstream facts. Content is broadly source-faithful but end-to-end wrong. Both fresh repeats choose the correct unsupported/planner route; only original is ingested. Preserve strict intent/type mismatch 1/8 without calling this a distinct service omission.",
+      "actionJudgments": [
+        {
+          "index": 0,
+          "type": "start_request",
+          "playbookId": "hk.custom",
+          "routingCorrect": false,
+          "correct": false,
+          "modelConfidence": 0.8
+        },
+        {
+          "index": 1,
+          "type": "ask_question",
+          "playbookId": null,
+          "routingCorrect": true,
+          "correct": true,
+          "modelConfidence": 0.9
+        }
+      ]
+    }
+  ]
+}

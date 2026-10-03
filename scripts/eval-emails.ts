@@ -15,10 +15,11 @@ import { createRequest, startTask } from "../src/domain/engine";
 import { createPerson } from "../src/domain/records";
 import { addThirdParty, linkThirdParty } from "../src/domain/third-parties";
 import { emailRun, optionalEvidenceCheck, permitsEvalEndpoint } from "../eval/email-run";
+import { sonnetEvalRequest } from "../eval/sonnet-schema";
 import { actionStats, agreement, evidenceQuestion, flagged, isolatedDatabase, JevEvidence, latencyStats, safeEvalCtx, type Verdict } from "../eval/email-evidence";
 
 type Check = { answers?: Record<string, Verdict>; raw?: unknown; ms: number; error?: string };
-type Call = { request: LlmRequest; response?: LlmResponse; error?: string; modelMs: number; schemaValid?: boolean; check?: Check };
+type Call = { request: LlmRequest; wireSchema?: LlmRequest["schema"]; response?: LlmResponse; error?: string; modelMs: number; schemaValid?: boolean; check?: Check };
 export function checkerQuestions(req: LlmRequest, response: LlmResponse) {
   const questions: Record<string, ReturnType<typeof evidenceQuestion>> = {};
   const intake = IntakeZ.safeParse(response.json);
@@ -44,7 +45,7 @@ async function main() {
   const effort = env.LLM_REASONING ?? "low";
   if (!["none", "low", "medium", "high"].includes(effort)) throw new Error("Invalid reasoning setting");
   const run = emailRun(process.argv.slice(2), { model: env.LLM_MODEL ?? process.env.LLM_MODEL ?? "google/gemini-3.8-flash", reasoning: effort as "none" | "low" | "medium" | "high" });
-  const { batch, model, outputDir, checkerEnabled } = run;
+  const { batch, model, outputDir, checkerEnabled, sonnetSchemaCompatible } = run;
   const cases = batch.cases;
   const url = isolatedDatabase("postgres://localhost/harbourline_emails_eval");
   await mkdir(outputDir, { recursive: true });
@@ -70,7 +71,8 @@ async function main() {
     catch (e) { row.error = cleanError(e); throw e; }
     finally { row.ms = Math.round(performance.now() - t); }
   };
-  const actual = new OpenRouterLlm(key, model, "http://localhost:3000", effort as "low");
+  const transport = new OpenRouterLlm(key, model, "http://localhost:3000", effort as "low");
+  const actual: LlmProvider = { name: transport.name, complete: request => transport.complete(sonnetEvalRequest(request, sonnetSchemaCompatible)) };
   const jev = checkerEnabled ? new JevEvidence(key) : undefined;
   const check = async (state: unknown, questions: Record<string, unknown>): Promise<Check | undefined> => optionalEvidenceCheck(checkerEnabled, async () => {
     const started = performance.now();
@@ -78,7 +80,7 @@ async function main() {
     catch (e) { return { error: cleanError(e), ms: Math.round(performance.now() - started) }; }
   });
   const results: Record<string, unknown>[] = [];
-  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", batch: batch.id, configuredModel: model, reasoning: effort, checker: checkerEnabled ? "typesafe/jev-1.13" : null, mode: checkerEnabled ? "shadow evidence checks, no actions blocked or staff approvals executed" : "model only, no evidence checker or staff approvals executed", repeats: 3, threshold: checkerEnabled ? "supported label and probability >= 0.9; preserve raw confidence separately" : null, database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: cases, results, network, unexecuted: cases.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
+  const persist = async () => writeFile(`${outputDir}/results.json`, JSON.stringify({ date: "2026-10-03", batch: batch.id, configuredModel: model, reasoning: effort, schemaCompatibility: sonnetSchemaCompatible ? "intake attachments[].personId restricted to null for attachment-free second-batch fixtures; original Zod validation unchanged" : null, checker: checkerEnabled ? "typesafe/jev-1.13" : null, mode: checkerEnabled ? "shadow evidence checks, no actions blocked or staff approvals executed" : "model only, no evidence checker or staff approvals executed", repeats: 3, threshold: checkerEnabled ? "supported label and probability >= 0.9; preserve raw confidence separately" : null, database: url, clock: "2026-10-03T02:00:00Z", expectedOutcomes: cases, results, network, unexecuted: cases.filter(c => !results.some(r => r.id === c.id)).map(c => c.id) }, null, 2));
   try {
     const admin = new Client({ connectionString: "postgres://localhost/postgres" });
     await admin.connect();
@@ -89,7 +91,7 @@ async function main() {
       const calls: Call[] = [];
       const llm: LlmProvider = { name: actual.name, async complete(request) {
         const start = performance.now();
-        const row: Call = { request, modelMs: 0 }; calls.push(row);
+        const row: Call = { request, ...(sonnetSchemaCompatible && request.agent === "intake" ? { wireSchema: sonnetEvalRequest(request, true).schema } : {}), modelMs: 0 }; calls.push(row);
         try {
           const response = await actual.complete(request); row.response = response; row.modelMs = Math.round(performance.now() - start);
           const schema = ({ intake: IntakeZ, draft: DraftZ, review: ReviewZ, plan: PlanZ } as Record<string, typeof IntakeZ | typeof DraftZ | typeof ReviewZ | typeof PlanZ>)[request.agent];

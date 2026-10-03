@@ -10,10 +10,12 @@ export function emailRun(args: string[], defaults: Defaults) {
   const batch = emailBatch(value("--batch") ?? "1");
   const model = value("--model") ?? defaults.model;
   const checkerEnabled = !args.includes("--no-jev");
+  const sonnetSchemaCompatible = args.includes("--sonnet-schema-compatible");
+  if (sonnetSchemaCompatible && (model !== "anthropic/claude-sonnet-5.5" || checkerEnabled || batch.id !== "2")) throw new Error("Sonnet schema profile requires model-only second-batch attachment-free fixtures");
   const outputDir = value("--output-dir") ?? batch.outputDir;
   const custom = args.includes("--model") || !checkerEnabled;
   if (!/^eval\/results\/[a-z0-9-]+$/.test(outputDir) || (custom && ["eval/results/emails-eval", "eval/results/emails-eval-2"].includes(outputDir))) throw new Error("Changed evaluations require a separate directory under eval/results");
-  return { ...defaults, batch, model, checkerEnabled, outputDir };
+  return { ...defaults, batch, model, checkerEnabled, outputDir, sonnetSchemaCompatible };
 }
 export async function optionalEvidenceCheck<T>(enabled: boolean, check: () => Promise<T>): Promise<T | undefined> { return enabled ? check() : undefined; }
 export function permitsEvalEndpoint(url: URL, checkerEnabled: boolean) {

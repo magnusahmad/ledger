@@ -2,6 +2,15 @@ import { describe, expect, it, vi } from "vitest";
 import { emailRun, optionalEvidenceCheck, permitsEvalEndpoint } from "../eval/email-run";
 
 describe("A model-only evaluation preserves prior evidence and never invokes the checker", () => {
+  it("the attachment-free Sonnet profile is explicit and limited to the model-only second batch", () => {
+    const args = ["--batch", "2", "--model", "anthropic/claude-sonnet-5.5", "--no-jev", "--output-dir", "eval/results/emails-eval-2-sonnet-55"];
+    const defaults = { model: "gemini", reasoning: "low" as const };
+    expect(emailRun(args, defaults)).toHaveProperty("sonnetSchemaCompatible", false);
+    expect(emailRun([...args, "--sonnet-schema-compatible"], defaults)).toHaveProperty("sonnetSchemaCompatible", true);
+    for (const changed of [args.map(a => a === "2" ? "1" : a), args.map(a => a === "anthropic/claude-sonnet-5.5" ? "gemini" : a), args.filter(a => a !== "--no-jev")]) {
+      expect(() => emailRun([...changed, "--sonnet-schema-compatible"], defaults)).toThrow();
+    }
+  });
   it("the default preserves the Gemini and Jev protocol and original output directory", () => {
     expect(emailRun([], { model: "google/gemini-3.8-flash", reasoning: "low" })).toMatchObject({ model: "google/gemini-3.8-flash", checkerEnabled: true, outputDir: "eval/results/emails-eval", batch: { id: "1" } });
   });
