@@ -1,0 +1,31 @@
+{
+  "newTestsRed": {
+    "command": "npx vitest run tests/emails-eval-batches.test.ts",
+    "passed": 3,
+    "failed": 2,
+    "expectedReason": "Unknown email evaluation batch: 3",
+    "note": "Initial sandbox attempt could not connect to Postgres and was not counted as the red run; rerun with local DB access produced the intended assertions."
+  },
+  "relevantTestsGreen": {
+    "command": "npx vitest run tests/emails-eval-batches.test.ts tests/emails-eval-run.test.ts tests/emails-eval.test.ts tests/emails-eval-sonnet-schema.test.ts tests/emails-eval-ingestion.test.ts",
+    "passed": 25,
+    "failed": 0,
+    "files": 5
+  },
+  "typecheck": "npm run typecheck passed",
+  "lint": "npx eslint eval/email-cases-3.ts eval/email-batches.ts tests/emails-eval-batches.test.ts passed",
+  "sourceHashesVerified": 178,
+  "priorArtifactsVerifiedUnchanged": 34,
+  "productionSourceOrPromptsChanged": false,
+  "uiChanged": false,
+  "liveRunComplete": true,
+  "http200": 36,
+  "calls": 36,
+  "returnedModels": [
+    "google/gemini-3.8-flash"
+  ],
+  "mailSendingDisabled": true,
+  "staffApprovalsExecuted": false,
+  "configuredCredentialScan": "Passed for all seven artifacts; no configured secret values persisted or printed.",
+  "gitDiffCheck": "Passed"
+}
