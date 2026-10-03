@@ -1,0 +1,390 @@
+{
+  "purpose": "Context-only diagnostic replay; no production prompt/code changes, no ingestion or effects. Same recorded draft system prompts, model, low reasoning and temperature. Expectations declared before calls. Single replay per case, not a reliability estimate.",
+  "model": "google/gemini-3.8-flash",
+  "cases": [
+    {
+      "id": "C01",
+      "expected": "Acknowledge planned 4 November 2026 resolution date without claiming resolution passed or company renamed.",
+      "originalRequest": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"en\",\n \"recipientName\": \"Mr Chan\",\n \"clientName\": \"Kowloon Bay Trading Limited\",\n \"signOff\": \"Karen Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\",\n \"newRequests\": [\n  {\n   \"title\": \"Change of company name\",\n   \"needed\": [\n    \"Members to sign a written resolution, or hold a general meeting\"\n   ],\n   \"onFile\": [],\n   \"alreadyReceived\": [\n    \"Proposed new name (English and/or Chinese), with a backup: Kowloon Bay Homewares Limited\"\n   ],\n   \"deadline\": null\n  },\n  {\n   \"title\": \"Change of registered office\",\n   \"needed\": [],\n   \"onFile\": [],\n   \"alreadyReceived\": [\n    \"New registered office address in Hong Kong: Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong\",\n    \"Effective date: 9 November 2026\"\n   ],\n   \"deadline\": \"24 November 2026 (File NR1 within 15 days after the change)\"\n  }\n ],\n \"updates\": [],\n \"changes\": [],\n \"cancellations\": [],\n \"questions\": [],\n \"clarifications\": [],\n \"invoice\": {\n  \"number\": \"CRCS-2026-0001\",\n  \"totalFormatted\": \"HK$2,395\",\n  \"lines\": [\n   {\n    \"description\": \"Change of company name\",\n    \"amount\": \"HK$1,500\"\n   },\n   {\n    \"description\": \"Change of registered office\",\n    \"amount\": \"HK$600\"\n   },\n   {\n    \"description\": \"Companies Registry fee for change of name (NNC2)\",\n    \"amount\": \"HK$295\"\n   }\n  ],\n  \"terms\": \"payable within 30 days\",\n  \"paymentInstructions\": \"Account name: Caine Road Corporate Services Limited\\nBank: Airwallex (Hong Kong) Limited (via DBS Bank (Hong Kong) Limited)\\nBank code: 016\\nAccount number: 7950 1234 5678\\nFPS ID: 1234567\\nSWIFT: DHBKHKHH\"\n },\n \"uploadUrl\": \"http://localhost:3000/u/tok00000000000000000000000000196\",\n \"workStatus\": \"awaiting_approval\"\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      },
+      "originalResponse": {
+        "json": {
+          "subject": "Proposed Scope and Fee Quote: Change of Company Name and Registered Office Address - Kowloon Bay Trading Limited",
+          "body": "Dear Mr Chan,\n\nThank you for reaching out regarding the corporate changes for Kowloon Bay Trading Limited. Please find our proposed scope of work and fee quote below for your review and approval.\n\nChange of Company Name\n- We have received your proposed new company name: Kowloon Bay Homewares Limited.\n- What we will do: Prepare the necessary documentation and arrange the filing with the Companies Registry once approved.\n- What we need from you: Members to sign a written resolution, or hold a general meeting.\n\nChange of Registered Office Address\n- We have received the new registered office address (Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong) and effective date (9 November 2026).\n- What we will do: Prepare and submit the statutory notification (Form NR1) to the Companies Registry.\n- What we need from you: No further information is required for this item at present.\n- Statutory deadline: 24 November 2026 (File NR1 within 15 days after the change).\n\nYou may upload any required documents via the following link:\nhttp://localhost:3000/u/tok00000000000000000000000000196\n\nPlease review our proposed fee quote below pending your approval. If you wish to proceed, kindly settle the amount and quote the invoice number as the payment reference:\n\n{{invoice}}\n\nPlease let us know if you have any questions or wish to proceed.\n\nBest regards,\nKaren Yip\nSenior Company Secretary\nCaine Road Corporate Services Limited"
+        },
+        "raw": "{\n  \"subject\": \"Proposed Scope and Fee Quote: Change of Company Name and Registered Office Address - Kowloon Bay Trading Limited\",\n  \"body\": \"Dear Mr Chan,\\n\\nThank you for reaching out regarding the corporate changes for Kowloon Bay Trading Limited. Please find our proposed scope of work and fee quote below for your review and approval.\\n\\nChange of Company Name\\n- We have received your proposed new company name: Kowloon Bay Homewares Limited.\\n- What we will do: Prepare the necessary documentation and arrange the filing with the Companies Registry once approved.\\n- What we need from you: Members to sign a written resolution, or hold a general meeting.\\n\\nChange of Registered Office Address\\n- We have received the new registered office address (Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong) and effective date (9 November 2026).\\n- What we will do: Prepare and submit the statutory notification (Form NR1) to the Companies Registry.\\n- What we need from you: No further information is required for this item at present.\\n- Statutory deadline: 24 November 2026 (File NR1 within 15 days after the change).\\n\\nYou may upload any required documents via the following link:\\nhttp://localhost:3000/u/tok00000000000000000000000000196\\n\\nPlease review our proposed fee quote below pending your approval. If you wish to proceed, kindly settle the amount and quote the invoice number as the payment reference:\\n\\n{{invoice}}\\n\\nPlease let us know if you have any questions or wish to proceed.\\n\\nBest regards,\\nKaren Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\"\n}",
+        "tokensIn": 1363,
+        "tokensOut": 411,
+        "model": "google/gemini-3.8-flash"
+      },
+      "request": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"en\",\n \"recipientName\": \"Mr Chan\",\n \"clientName\": \"Kowloon Bay Trading Limited\",\n \"signOff\": \"Karen Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\",\n \"newRequests\": [\n  {\n   \"title\": \"Change of company name\",\n   \"needed\": [\n    \"Members to sign a written resolution, or hold a general meeting\"\n   ],\n   \"onFile\": [],\n   \"alreadyReceived\": [\n    \"Proposed new name (English and/or Chinese), with a backup: Kowloon Bay Homewares Limited\"\n   ],\n   \"deadline\": null,\n   \"notes\": [\n    \"The client plans to pass the special resolution on 2026-11-04. This is a proposed future date, not evidence the resolution has passed. The new name only takes effect when the certificate is issued; the company has not already been renamed.\"\n   ]\n  },\n  {\n   \"title\": \"Change of registered office\",\n   \"needed\": [],\n   \"onFile\": [],\n   \"alreadyReceived\": [\n    \"New registered office address in Hong Kong: Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong\",\n    \"Effective date: 9 November 2026\"\n   ],\n   \"deadline\": \"24 November 2026 (File NR1 within 15 days after the change)\"\n  }\n ],\n \"updates\": [],\n \"changes\": [],\n \"cancellations\": [],\n \"questions\": [],\n \"clarifications\": [],\n \"invoice\": {\n  \"number\": \"CRCS-2026-0001\",\n  \"totalFormatted\": \"HK$2,395\",\n  \"lines\": [\n   {\n    \"description\": \"Change of company name\",\n    \"amount\": \"HK$1,500\"\n   },\n   {\n    \"description\": \"Change of registered office\",\n    \"amount\": \"HK$600\"\n   },\n   {\n    \"description\": \"Companies Registry fee for change of name (NNC2)\",\n    \"amount\": \"HK$295\"\n   }\n  ],\n  \"terms\": \"payable within 30 days\",\n  \"paymentInstructions\": \"Account name: Caine Road Corporate Services Limited\\nBank: Airwallex (Hong Kong) Limited (via DBS Bank (Hong Kong) Limited)\\nBank code: 016\\nAccount number: 7950 1234 5678\\nFPS ID: 1234567\\nSWIFT: DHBKHKHH\"\n },\n \"uploadUrl\": \"http://localhost:3000/u/tok00000000000000000000000000196\",\n \"workStatus\": \"awaiting_approval\"\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      }
+    },
+    {
+      "id": "C03",
+      "expected": "Acknowledge requested cancellation, not completed cancellation; preserve date/email correction and missing documents.",
+      "originalRequest": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"sc\",\n \"recipientName\": \"陈先生\",\n \"clientName\": \"九龙湾贸易有限公司\",\n \"signOff\": \"叶嘉欣\\n高级公司秘书\\n坚道企业服务有限公司\",\n \"newRequests\": [],\n \"updates\": [],\n \"changes\": [\n  {\n   \"title\": \"委任董事\",\n   \"change\": \"Change the effective date of WONG Ka Man's director appointment to 2026-10-22 and update his email address to wong.updated@fictional.example.\",\n   \"nowNeeded\": [\n    \"香港身份证或护照号码及签发国家／地区\",\n    \"住址\",\n    \"通讯地址（会载于公众记录）\",\n    \"香港身份证或护照副本\",\n    \"最近三个月内的住址证明\",\n    \"自拍身份核实（经安全链接完成）\"\n   ]\n  }\n ],\n \"cancellations\": [\n  {\n   \"title\": \"更改注册办事处地址\",\n   \"note\": \"Cancel the registered office change task as the company will not be moving address.\"\n  }\n ],\n \"questions\": [],\n \"clarifications\": [\n  \"Could you also please provide WONG Ka Man's mobile phone number?\"\n ],\n \"invoice\": null,\n \"uploadUrl\": \"http://localhost:3000/u/tok00000000000000000000000000193\"\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      },
+      "originalResponse": {
+        "json": {
+          "subject": "九龙湾贸易有限公司 - 公司秘书事宜更新",
+          "body": "陈先生：\n\n您好！关于九龙湾贸易有限公司的相关事项，谨此向您汇报最新进展及跟进事项：\n\n我们已确认以下变更及取消安排：\n- 委任董事：WONG Ka Man 先生委任为董事的生效日期将变更为2026年10月22日，其电子邮箱地址已更新为 wong.updated@fictional.example。\n- 更改注册办事处地址：由于贵司决定不搬迁地址，该项更改注册办事处地址的工作现已取消。\n\n为继续推进 WONG Ka Man 先生的董事委任程序，我们现需要以下资料及文件：\n- 香港身份证或护照号码及签发国家／地区\n- 住址\n- 通讯地址（会载于公众记录）\n- 香港身份证或护照副本\n- 最近三个月内的住址证明\n- 自拍身份核实（经安全链接完成）\n\n此外，请问您能否同时提供 WONG Ka Man 先生的流动电话号码？\n\n您可以通过以下专属安全链接上传上述文件及完成自拍身份核实：\nhttp://localhost:3000/u/tok00000000000000000000000000193\n\n如有任何疑问，欢迎随时与我们联系。\n\n叶嘉欣\n高级公司秘书\n坚道企业服务有限公司"
+        },
+        "raw": "{\n  \"subject\": \"九龙湾贸易有限公司 - 公司秘书事宜更新\",\n  \"body\": \"陈先生：\\n\\n您好！关于九龙湾贸易有限公司的相关事项，谨此向您汇报最新进展及跟进事项：\\n\\n我们已确认以下变更及取消安排：\\n- 委任董事：WONG Ka Man 先生委任为董事的生效日期将变更为2026年10月22日，其电子邮箱地址已更新为 wong.updated@fictional.example。\\n- 更改注册办事处地址：由于贵司决定不搬迁地址，该项更改注册办事处地址的工作现已取消。\\n\\n为继续推进 WONG Ka Man 先生的董事委任程序，我们现需要以下资料及文件：\\n- 香港身份证或护照号码及签发国家／地区\\n- 住址\\n- 通讯地址（会载于公众记录）\\n- 香港身份证或护照副本\\n- 最近三个月内的住址证明\\n- 自拍身份核实（经安全链接完成）\\n\\n此外，请问您能否同时提供 WONG Ka Man 先生的流动电话号码？\\n\\n您可以通过以下专属安全链接上传上述文件及完成自拍身份核实：\\nhttp://localhost:3000/u/tok00000000000000000000000000193\\n\\n如有任何疑问，欢迎随时与我们联系。\\n\\n叶嘉欣\\n高级公司秘书\\n坚道企业服务有限公司\"\n}",
+        "tokensIn": 1099,
+        "tokensOut": 366,
+        "model": "google/gemini-3.8-flash"
+      },
+      "request": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"sc\",\n \"recipientName\": \"陈先生\",\n \"clientName\": \"九龙湾贸易有限公司\",\n \"signOff\": \"叶嘉欣\\n高级公司秘书\\n坚道企业服务有限公司\",\n \"newRequests\": [],\n \"updates\": [],\n \"changes\": [\n  {\n   \"title\": \"委任董事\",\n   \"change\": \"Change the effective date of WONG Ka Man's director appointment to 2026-10-22 and update his email address to wong.updated@fictional.example.\",\n   \"nowNeeded\": [\n    \"香港身份证或护照号码及签发国家／地区\",\n    \"住址\",\n    \"通讯地址（会载于公众记录）\",\n    \"香港身份证或护照副本\",\n    \"最近三个月内的住址证明\",\n    \"自拍身份核实（经安全链接完成）\"\n   ]\n  }\n ],\n \"cancellations\": [\n  {\n   \"title\": \"更改注册办事处地址\",\n   \"note\": \"Client has requested cancellation. A cancellation proposal is pending staff approval. The task has NOT been cancelled yet. Acknowledge the request without claiming cancellation is complete.\",\n   \"status\": \"awaiting_staff_approval\",\n   \"actualTaskStatus\": \"open\"\n  }\n ],\n \"questions\": [],\n \"clarifications\": [\n  \"Could you also please provide WONG Ka Man's mobile phone number?\"\n ],\n \"invoice\": null,\n \"uploadUrl\": \"http://localhost:3000/u/tok00000000000000000000000000193\"\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      }
+    },
+    {
+      "id": "C04",
+      "expected": "Honest holding reply saying staff will check/revert, with no unrelated deadline list or invented substantive advice.",
+      "originalRequest": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"en\",\n \"recipientName\": \"Mr Chan\",\n \"clientName\": \"Kowloon Bay Trading Limited\",\n \"signOff\": \"Karen Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\",\n \"newRequests\": [],\n \"updates\": [],\n \"changes\": [],\n \"cancellations\": [],\n \"questions\": [\n  {\n   \"question\": \"What to discuss with their accountant before deciding to make the company dormant next year\",\n   \"facts\": \"Business registration renewal due 2026-10-27.\\nPeriodic KYC review due 2026-11-02.\\nAnnual return 2026 due 2026-12-09.\\nAGM and accounts for year ended 31 Mar 2026 due 2026-12-31.\"\n  }\n ],\n \"clarifications\": [],\n \"invoice\": null,\n \"uploadUrl\": null\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      },
+      "originalResponse": {
+        "json": {
+          "subject": "Kowloon Bay Trading Limited - Preparing for Dormancy Discussion",
+          "body": "Dear Mr Chan,\n\nThank you for reaching out. In relation to your query regarding what matters to discuss with your accountant before deciding whether to place Kowloon Bay Trading Limited into dormancy next year, please consider the following relevant dates and requirements:\n\n- Business registration renewal due: 2026-10-27\n- Periodic KYC review due: 2026-11-02\n- Annual return 2026 due: 2026-12-09\n- AGM and accounts for the year ended 31 March 2026 due: 2026-12-31\n\nPlease let us know if you have any questions or require further assistance.\n\nKaren Yip\nSenior Company Secretary\nCaine Road Corporate Services Limited"
+        },
+        "raw": "{\n  \"subject\": \"Kowloon Bay Trading Limited - Preparing for Dormancy Discussion\",\n  \"body\": \"Dear Mr Chan,\\n\\nThank you for reaching out. In relation to your query regarding what matters to discuss with your accountant before deciding whether to place Kowloon Bay Trading Limited into dormancy next year, please consider the following relevant dates and requirements:\\n\\n- Business registration renewal due: 2026-10-27\\n- Periodic KYC review due: 2026-11-02\\n- Annual return 2026 due: 2026-12-09\\n- AGM and accounts for the year ended 31 March 2026 due: 2026-12-31\\n\\nPlease let us know if you have any questions or require further assistance.\\n\\nKaren Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\"\n}",
+        "tokensIn": 972,
+        "tokensOut": 208,
+        "model": "google/gemini-3.8-flash"
+      },
+      "request": {
+        "agent": "draft",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You write client emails for a Hong Kong company secretarial firm. You get FACTS as JSON. Write one email in the language given (\"en\" English, \"tc\" Traditional Chinese in natural Hong Kong written style, \"sc\" Simplified Chinese).\n\nRules:\n- Warm, brief and professional; plain text; short paragraphs and simple bulleted lists with \"- \".\n- Greet the recipient by the salutation given. Sign off with the signOff text exactly.\n- Respect workStatus: proposed or awaiting_approval means scope/work is awaiting confirmation; never say work has started, completion occurred or fees have been accepted. Only started permits a started-work claim. A proposed custom plan is a proposed scope and quote for review, not an instruction to proceed.\n- Cover every item in FACTS: new requests (what we will do, what we need from them, what we already hold on file so they need not send it again), updates on information received and what is still outstanding, acknowledged changes, cancellations, and answers to questions (include only facts relevant to the question, not unrelated upcoming deadlines; answer only from the facts; if the facts don't answer it, say we will check and revert).\n- If an invoice is in the facts, insert {{invoice}} exactly once on its own line. Harbourline replaces it with the exact invoice number, amounts, localized payment terms and bank details. Do not rewrite those financial details or invent a price elsewhere. Ask the client to quote the invoice number as the payment reference. The inserted block describes the attached draft invoice; when workStatus is proposed, introduce it as a proposed quote pending review.\n- If an upload link is given, include it exactly, on its own line.\n- If a statutory deadline is given, mention it plainly.\n- If context is \"letter\", the firm received the attached official letter for the company (see extraNotes): explain plainly what it is, the date that matters, what we will do and what we need from them. Be calm and factual; do not give legal advice beyond the facts.\n- If context is \"chase\", this is a reminder for what is still outstanding: be brief and friendly, list only what is needed, include the upload link, and include any extraNotes (e.g. that the deadline is close) plainly.\n- If context is \"costs\", this sends an additional invoice for costs the firm paid on the client's behalf (listed in the invoice lines): say so plainly and briefly.\n- If context is \"meeting\", the client gave these instructions in person or by phone: thank them for meeting with us and confirm what was agreed. Do not thank them for a message.\n- If context is \"change\", staff approved additional or replacement work: confirm the new work and its separate quote. Do not imply a meeting, refund, credit or offset against an earlier invoice.\n- Clarifications about a named person concern that person, not automatically the recipient. Do not invent Chinese names or translate a person name not supplied in FACTS.\n- Never promise anything not in the facts. Never include internal notes, confidence scores or ids.\nReturn JSON with subject and body."
+          },
+          {
+            "role": "user",
+            "content": "FACTS:\n```json\n{\n \"language\": \"en\",\n \"recipientName\": \"Mr Chan\",\n \"clientName\": \"Kowloon Bay Trading Limited\",\n \"signOff\": \"Karen Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\",\n \"newRequests\": [],\n \"updates\": [],\n \"changes\": [],\n \"cancellations\": [],\n \"questions\": [\n  {\n   \"question\": \"What to discuss with their accountant before deciding to make the company dormant next year\",\n   \"facts\": \"No approved substantive answer to this dormancy-advice question is available in the supplied context. Staff need to check with the accountant and revert. No dates or requirements relevant to this advice have been supplied.\",\n   \"answerStatus\": \"staff_answer_required\"\n  }\n ],\n \"clarifications\": [],\n \"invoice\": null,\n \"uploadUrl\": null\n}\n```"
+          }
+        ],
+        "schema": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string",
+              "description": "Plain-text email body in the requested language, with greeting and sign-off"
+            }
+          },
+          "required": [
+            "subject",
+            "body"
+          ],
+          "additionalProperties": false
+        },
+        "schemaName": "draft"
+      }
+    }
+  ],
+  "results": [
+    {
+      "id": "C01",
+      "response": {
+        "json": {
+          "subject": "Proposed Scope and Fee Quote: Change of Company Name and Registered Office - Kowloon Bay Trading Limited",
+          "body": "Dear Mr Chan,\n\nThank you for reaching out. We have prepared our proposed scope and fee quote for Kowloon Bay Trading Limited regarding the change of company name and change of registered office, which are currently awaiting your approval before we proceed.\n\nChange of Company Name:\n- We have received your proposed new name: Kowloon Bay Homewares Limited.\n- Please note that the planned date of 2026-11-04 to pass the special resolution is a proposed future date, and the new name only takes effect once the certificate is issued by the Companies Registry.\n- What we need from you: members will need to sign a written resolution, or hold a general meeting.\n\nChange of Registered Office:\n- We have received the new registered office address (Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong) with an effective date of 9 November 2026.\n- We have all required details on hand. Please note the statutory deadline to file Form NR1 is 24 November 2026 (within 15 days after the change).\n\nYou can upload any necessary documents using the link below:\nhttp://localhost:3000/u/tok00000000000000000000000000196\n\nPlease find our proposed quote below for your review. When making payment, please quote the invoice number as the payment reference:\n\n{{invoice}}\n\nOnce you have approved the quote and we receive your confirmation, we will proceed with preparing the necessary documentation.\n\nBest regards,\nKaren Yip\nSenior Company Secretary\nCaine Road Corporate Services Limited"
+        },
+        "raw": "{\n  \"subject\": \"Proposed Scope and Fee Quote: Change of Company Name and Registered Office - Kowloon Bay Trading Limited\",\n  \"body\": \"Dear Mr Chan,\\n\\nThank you for reaching out. We have prepared our proposed scope and fee quote for Kowloon Bay Trading Limited regarding the change of company name and change of registered office, which are currently awaiting your approval before we proceed.\\n\\nChange of Company Name:\\n- We have received your proposed new name: Kowloon Bay Homewares Limited.\\n- Please note that the planned date of 2026-11-04 to pass the special resolution is a proposed future date, and the new name only takes effect once the certificate is issued by the Companies Registry.\\n- What we need from you: members will need to sign a written resolution, or hold a general meeting.\\n\\nChange of Registered Office:\\n- We have received the new registered office address (Unit 806, 8/F, Harbour Example Building, 22 Fictional Road, Kwun Tong, Kowloon, Hong Kong) with an effective date of 9 November 2026.\\n- We have all required details on hand. Please note the statutory deadline to file Form NR1 is 24 November 2026 (within 15 days after the change).\\n\\nYou can upload any necessary documents using the link below:\\nhttp://localhost:3000/u/tok00000000000000000000000000196\\n\\nPlease find our proposed quote below for your review. When making payment, please quote the invoice number as the payment reference:\\n\\n{{invoice}}\\n\\nOnce you have approved the quote and we receive your confirmation, we will proceed with preparing the necessary documentation.\\n\\nBest regards,\\nKaren Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\"\n}",
+        "tokensIn": 1431,
+        "tokensOut": 420,
+        "model": "google/gemini-3.8-flash"
+      },
+      "schemaValid": true,
+      "elapsedMs": 5065
+    },
+    {
+      "id": "C03",
+      "response": {
+        "json": {
+          "subject": "九龙湾贸易有限公司 - 董事委任变更详情及相关事宜跟进",
+          "body": "陈先生：\n\n您好！\n\n关于贵公司（九龙湾贸易有限公司）的事宜，我们已记录以下更新及跟进事项：\n\n委任董事\n我们已记下将 WONG Ka Man 的董事委任生效日期更改为 2026-10-22，并将其电邮地址更新为 wong.updated@fictional.example。\n\n为继续办理此项委任，目前需要您提供 WONG Ka Man 的以下资料及文件：\n- 香港身份证或护照号码及签发国家／地区\n- 住址\n- 通讯地址（会载于公众记录）\n- 香港身份证或护照副本\n- 最近三个月内的住址证明\n- 自拍身份核实（经安全链接完成）\n\n另外，请问能否同时提供 WONG Ka Man 的流动电话号码？\n\n文件及核实可通过以下安全链接上传：\nhttp://localhost:3000/u/tok00000000000000000000000000193\n\n更改注册办事处地址\n我们已收到您提出取消更改注册办事处地址的请求。相关取消申请目前正等待我们内部审批，该事项尚未正式取消，审批完成后我们会及时通知您。\n\n如有任何疑问，欢迎随时与我们联系。\n\n叶嘉欣\n高级公司秘书\n坚道企业服务有限公司"
+        },
+        "raw": "{\n \"subject\": \"九龙湾贸易有限公司 - 董事委任变更详情及相关事宜跟进\",\n \"body\": \"陈先生：\\n\\n您好！\\n\\n关于贵公司（九龙湾贸易有限公司）的事宜，我们已记录以下更新及跟进事项：\\n\\n委任董事\\n我们已记下将 WONG Ka Man 的董事委任生效日期更改为 2026-10-22，并将其电邮地址更新为 wong.updated@fictional.example。\\n\\n为继续办理此项委任，目前需要您提供 WONG Ka Man 的以下资料及文件：\\n- 香港身份证或护照号码及签发国家／地区\\n- 住址\\n- 通讯地址（会载于公众记录）\\n- 香港身份证或护照副本\\n- 最近三个月内的住址证明\\n- 自拍身份核实（经安全链接完成）\\n\\n另外，请问能否同时提供 WONG Ka Man 的流动电话号码？\\n\\n文件及核实可通过以下安全链接上传：\\nhttp://localhost:3000/u/tok00000000000000000000000000193\\n\\n更改注册办事处地址\\n我们已收到您提出取消更改注册办事处地址的请求。相关取消申请目前正等待我们内部审批，该事项尚未正式取消，审批完成后我们会及时通知您。\\n\\n如有任何疑问，欢迎随时与我们联系。\\n\\n叶嘉欣\\n高级公司秘书\\n坚道企业服务有限公司\"\n}",
+        "tokensIn": 1139,
+        "tokensOut": 372,
+        "model": "google/gemini-3.8-flash"
+      },
+      "schemaValid": true,
+      "elapsedMs": 4196
+    },
+    {
+      "id": "C04",
+      "response": {
+        "json": {
+          "subject": "Inquiry regarding dormancy - Kowloon Bay Trading Limited",
+          "body": "Dear Mr Chan,\n\nThank you for reaching out regarding Kowloon Bay Trading Limited.\n\nRegarding your question on what to discuss with your accountant prior to deciding whether to make the company dormant next year, we are currently checking the details and will revert to you as soon as possible.\n\nShould you have any other questions in the meantime, please feel free to let us know.\n\nKaren Yip\nSenior Company Secretary\nCaine Road Corporate Services Limited"
+        },
+        "raw": "{\n  \"subject\": \"Inquiry regarding dormancy - Kowloon Bay Trading Limited\",\n  \"body\": \"Dear Mr Chan,\\n\\nThank you for reaching out regarding Kowloon Bay Trading Limited.\\n\\nRegarding your question on what to discuss with your accountant prior to deciding whether to make the company dormant next year, we are currently checking the details and will revert to you as soon as possible.\\n\\nShould you have any other questions in the meantime, please feel free to let us know.\\n\\nKaren Yip\\nSenior Company Secretary\\nCaine Road Corporate Services Limited\"\n}",
+        "tokensIn": 940,
+        "tokensOut": 125,
+        "model": "google/gemini-3.8-flash"
+      },
+      "schemaValid": true,
+      "elapsedMs": 2236
+    }
+  ],
+  "network": [
+    {
+      "status": 200,
+      "model": "google/gemini-3.8-flash",
+      "usage": {
+        "prompt_tokens": 1431,
+        "completion_tokens": 420,
+        "total_tokens": 1851,
+        "cost": 0.00264825,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00264825,
+          "upstream_inference_prompt_cost": 0.00107325,
+          "upstream_inference_completions_cost": 0.001575
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    },
+    {
+      "status": 200,
+      "model": "google/gemini-3.8-flash",
+      "usage": {
+        "prompt_tokens": 1139,
+        "completion_tokens": 372,
+        "total_tokens": 1511,
+        "cost": 0.00224925,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00224925,
+          "upstream_inference_prompt_cost": 0.00085425,
+          "upstream_inference_completions_cost": 0.001395
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    },
+    {
+      "status": 200,
+      "model": "google/gemini-3.8-flash",
+      "usage": {
+        "prompt_tokens": 940,
+        "completion_tokens": 125,
+        "total_tokens": 1065,
+        "cost": 0.00117375,
+        "is_byok": false,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "cache_write_tokens": 0,
+          "audio_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost_details": {
+          "upstream_inference_cost": 0.00117375,
+          "upstream_inference_prompt_cost": 0.000705,
+          "upstream_inference_completions_cost": 0.00046875
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 0,
+          "image_tokens": 0,
+          "audio_tokens": 0
+        }
+      }
+    }
+  ],
+  "judgments": {
+    "reviewer": "Primary Codex agent reviewing original and replay output; no model grader or external human.",
+    "sameSystemPromptSchemaTemperature": true,
+    "results": [
+      {
+        "id": "C01",
+        "targetDefectResolved": true,
+        "evidence": "Replay includes planned 2026-11-04 special resolution, states it is future/proposed and name takes effect on certificate."
+      },
+      {
+        "id": "C03",
+        "targetDefectResolved": true,
+        "evidence": "Replay explicitly states requested cancellation is pending approval and not complete. Correct date/email and missing documents/phone retained.",
+        "limitation": "Internal approval wording needs customer-facing polish; checklist bug not repaired or executed."
+      },
+      {
+        "id": "C04",
+        "targetDefectResolved": true,
+        "evidence": "Replay supplies check-and-revert holding response with no unrelated deadline dump.",
+        "limitation": "No substantive dormancy advice generated or verified."
+      }
+    ],
+    "interpretation": "Single-sample context-only replay supports wiring/context diagnosis but does not measure reliability or repair the full pipeline.",
+    "costUsd": 0.00607125,
+    "externalEffects": 0
+  }
+}
