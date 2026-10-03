@@ -225,3 +225,9 @@ export function contactInfoPatch(ci: string | null | undefined, p: { email: stri
   if (phone && !p.phone) patch.phone = phone;
   return patch;
 }
+
+/** The library's contactInfo requirement needs both channels, not any contact value. */
+export function completeContactInfo(ci: string | null | undefined): boolean {
+  const parts = contactParts(ci ?? "");
+  return !parts.ambiguous && !!parts.email && !!parts.phone;
+}

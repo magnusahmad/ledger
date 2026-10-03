@@ -10,6 +10,7 @@ import { addDays, addMonths, isIsoDate } from "./dates";
 import { financialYearEnds } from "./fye-periods";
 import { itemKind } from "./labels";
 import { knownPersonName } from "./names";
+import { completeContactInfo } from "./records";
 
 export type Task = typeof taskT.$inferSelect & { checklist: (ChecklistEntry & { optional?: boolean })[]; _steps?: StepDef[] };
 export type Extracted = Record<string, { value: string; source?: string | null; confidence?: number | null; documentId?: string | null }>;
@@ -55,7 +56,7 @@ export async function hasCurrentCdd(ctx: Ctx, personId: string) {
 }
 
 async function personPrefill(ctx: Ctx, personId: string): Promise<Record<string, string | null>> {
-  const p = await ctx.db.query.person.findFirst({ where: eq(personT.id, personId) });
+  const p = await ctx.db.query.person.findFirst({ where: and(eq(personT.id, personId), eq(personT.firmId, ctx.firmId)) });
   if (!p) return {};
   return {
     fullName: knownPersonName(p.nameEn),
@@ -77,7 +78,7 @@ export async function buildChecklist(ctx: Ctx, pb: PlaybookDef, opts: { clientId
     const base = { key: r.key, personId, optional: !!r.optional };
     const ex = opts.extracted?.[r.key];
     if (ex?.value && (itemKind(r.key) !== "file" || ex.documentId)) {
-      out.push({ ...base, status: "received", value: ex.value, source: ex.source ?? null, documentId: ex.documentId ?? null, confidence: ex.confidence ?? null });
+      out.push({ ...base, status: r.key === "contactInfo" && !completeContactInfo(ex.value) ? "needed" : "received", value: ex.value, source: ex.source ?? null, documentId: ex.documentId ?? null, confidence: ex.confidence ?? null });
       continue;
     }
     if (r.condition === "personLacksCurrentCdd" && cdd) {
@@ -89,7 +90,7 @@ export async function buildChecklist(ctx: Ctx, pb: PlaybookDef, opts: { clientId
       continue;
     }
     if (r.scope === "person" && prefill[r.key]) {
-      out.push({ ...base, status: "on_file", value: prefill[r.key], source: "Person record" });
+      out.push({ ...base, status: r.key === "contactInfo" && !completeContactInfo(prefill[r.key]) ? "needed" : "on_file", value: prefill[r.key], source: "Person record" });
       continue;
     }
     out.push({ ...base, status: "needed" });
@@ -111,6 +112,7 @@ export async function setChecklist(ctx: Ctx, taskId: string, checklist: Task["ch
 
 async function setChecklistAtomic(ctx: Ctx, taskId: string, checklist: Task["checklist"], reason: string, actor: string) {
   const before = await assertTaskAmendable(ctx, taskId);
+  checklist = checklist.map(e => e.key === "contactInfo" && ["received", "on_file"].includes(e.status) && !completeContactInfo(e.value) ? { ...e, status: "needed", reason: "Email and mobile number are both required." } : e);
   const dateEntries = checklist.filter(e => /Date$|^lastDay$/.test(e.key) && e.status === "received");
   if (dateEntries.some(e => e.value && !isIsoDate(e.value))) throw new Error("Choose a valid date");
   const pb = await getPlaybook(ctx, before.playbookId, before.playbookVersion);

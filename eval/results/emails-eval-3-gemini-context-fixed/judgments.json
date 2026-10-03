@@ -1,0 +1,107 @@
+{
+  "reviewer": "Codex primary agent inspecting source emails, model requests/responses, stored drafts/effects and all three intake samples per case. No external human/company secretary review.",
+  "protocol": "Familiar-case regression check, not fresh holdout. No approvals or prospect continuation. This intermediate implementation precedes the final additional fixes.",
+  "cases": [
+    {
+      "id": "C01",
+      "judgment": "Acceptable: planned 4 November resolution now reaches facts and draft; correct office date/address/deadline, both service tasks and draft invoice. Proposed date remains distinct from actual name change.",
+      "needsRework": false
+    },
+    {
+      "id": "C02",
+      "judgment": "Needs revision: correct existing shareholder and appointment date, but draft introduces payment-before-work despite 30-day credit.",
+      "needsRework": true
+    },
+    {
+      "id": "C03",
+      "judgment": "Reply corrected: pending cancellation is explicit and date/email amendments acknowledged. Checklist still incorrectly received for contactInfo because this live reviewer itself returned received despite asking for phone; a deterministic completeness guard is needed.",
+      "needsRework": true
+    },
+    {
+      "id": "C04",
+      "judgment": "Acceptable holding: no invented dormancy advice or unrelated deadlines, no service job/invoice. This does not answer the substantive advisory question.",
+      "needsRework": false
+    },
+    {
+      "id": "C05",
+      "judgment": "Needs revision: quote-only route now invokes planner without job/invoice, but plan quotes an administrative quotation-preparation fee rather than monthly bookkeeping.",
+      "needsRework": true
+    },
+    {
+      "id": "C06",
+      "judgment": "Acceptable confirmation-only: both quotation services and new name retained, no client/work before approval. Continuation excluded.",
+      "needsRework": false
+    },
+    {
+      "id": "C07",
+      "judgment": "Acceptable confirmation-only: explicit incorporation preparation and proposed name/director/shareholder/100 shares/HK$100 captured. Continuation excluded.",
+      "needsRework": false
+    },
+    {
+      "id": "C08",
+      "judgment": "Correct noncustomer marketing triage.",
+      "needsRework": false
+    },
+    {
+      "id": "C09",
+      "judgment": "Correct legal correspondence triage, no client authority/disclosure.",
+      "needsRework": false
+    },
+    {
+      "id": "C10",
+      "judgment": "Correct unverified sender triage, no client snapshot or service work.",
+      "needsRework": false
+    }
+  ],
+  "stats": {
+    "safeInitialBoundaries": {
+      "correct": 10,
+      "total": 10
+    },
+    "acceptableInitialPreparationOrDisposition": {
+      "correct": 7,
+      "total": 10
+    },
+    "replies": {
+      "generated": 5,
+      "requiringRevision": [
+        "C02",
+        "C05"
+      ]
+    },
+    "schema": {
+      "valid": 38,
+      "networkCalls": 38
+    },
+    "repeatAgreement": {
+      "core": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "strict": {
+        "equalPairs": 19,
+        "pairs": 30
+      },
+      "coreIncludingPhase": {
+        "equalPairs": 26,
+        "pairs": 30
+      }
+    },
+    "costUsd": 0.22089540000000002,
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 84044,
+        "medianMs": 4937.5,
+        "p95Ms": 19693
+      },
+      "checkerOverhead": {
+        "n": 10,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    }
+  },
+  "followup": "The final implementation adds deterministic contact completeness, an explicit underlying-service quote purpose and fee basis, and a credit-term draft guard. Its separate run is emails-eval-3-gemini-context-final."
+}

@@ -4,6 +4,7 @@ import type { LlmRequest } from "@/integrations/types";
 
 export function action(a: Partial<IntakeAction> & Pick<IntakeAction, "type">): IntakeAction {
   return {
+    purpose: "prepare", questionTopic: "general",
     taskId: null, playbookId: null, person: null, fields: [], attachments: [], effectiveDate: null,
     description: null, confidence: 0.95, evidence: null, ...a,
   };

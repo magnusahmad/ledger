@@ -38,5 +38,13 @@ export async function runIntake(ctx: Ctx, input: IntakeInput): Promise<{ intake:
     input.attachments.length ? `Attachments:\n${input.attachments.map((a) => `- ${a.filename} (${a.mime ?? "unknown"})${a.textPreview ? `: ${a.textPreview.slice(0, 500)}` : ""}`).join("\n")}` : "No attachments.",
   ].filter(Boolean).join("\n\n");
   const intake = await callAgent(ctx, { agent: "intake", system: INTAKE_SYSTEM, user, schema: IntakeZ, messageId: input.messageId });
+  // Phase controls preparation, not authorization. Legacy fixtures default to
+  // prepare; production output explicitly provides the phase on every action.
+  intake.actions = intake.actions.map(a => {
+    if (!["start_request", "unsupported_request", "ask_question"].includes(a.type)) return a;
+    if (a.purpose === "advice") return { ...a, type: "ask_question" as const };
+    if (a.purpose === "prepare" && a.type === "ask_question" && a.playbookId) return { ...a, type: "start_request" as const };
+    return a;
+  });
   return { intake, snapshots };
 }

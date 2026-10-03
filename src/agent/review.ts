@@ -26,7 +26,7 @@ export async function runReview(ctx: Ctx, taskId: string, change: { kind: "infor
     `Today's date: ${ctx.clock.today()}`,
     `Playbook: ${JSON.stringify({ id: pb.id, name: pb.name.en, requirements: pb.requirements.map((r) => ({ key: r.key, label: itemLabel(r.key, "en"), aboutPerson: r.scope === "person", optional: !!r.optional, note: r.appliesWhenNote ?? null })), complianceNotes: pb.complianceNotes })}`,
     `Task: ${JSON.stringify({ taskId: t.id, title: t.title, person: person ? { personId: person.id, name: person.nameEn, nameZh: person.nameZh } : null, effectiveDate: t.effectiveDate, checklist: t.checklist.map((e) => ({ key: e.key, personId: e.personId ?? null, status: e.status, value: e.value && PROTECTED_KEYS.has(e.key) ? "(on file)" : e.value ?? null })), plan: t.params.plan ?? null })}`,
-    `On-file facts for the task's person: ${person ? JSON.stringify({ name: person.nameEn, nameZh: person.nameZh, correspondenceAddress: person.correspondenceAddress, email: person.email, idNumberOnFile: !!person.idNumberEnc }) : "none"}`,
+    `On-file facts for the task's person: ${person ? JSON.stringify({ name: person.nameEn, nameZh: person.nameZh, correspondenceAddress: person.correspondenceAddress, email: person.email, phone: person.phone, idNumberOnFile: !!person.idNumberEnc }) : "none"}`,
     `Other playbooks: ${JSON.stringify(catalogue)}`,
     `WHAT ARRIVED (${change.kind}): ${change.description}`,
     change.newFields?.length ? `New field values: ${JSON.stringify(change.newFields.map((f) => ({ key: f.key, value: PROTECTED_KEYS.has(f.key) ? f.value : f.value })))}` : "",

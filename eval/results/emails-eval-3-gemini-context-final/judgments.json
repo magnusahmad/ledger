@@ -1,0 +1,144 @@
+{
+  "reviewer": "Primary Codex independently reviewed original source, supplied facts, raw model responses, persisted effects and all three intake samples in each case. No external human/company secretary review.",
+  "protocol": "Matched familiar-case check of the second implementation. Contact-facts and false-positive refinements were made afterward and have separate verification. No staff approvals or prospect continuation in this run.",
+  "cases": [
+    {
+      "id": "C01",
+      "judgment": "Correct tasks and proposed resolution date acknowledged without claiming it passed; office date/address/deadline and invoice retained."
+    },
+    {
+      "id": "C02",
+      "judgment": "Correct existing shareholder and date, no duplicate person/share/resignation change; reply retains 30-day credit without requiring prepayment."
+    },
+    {
+      "id": "C03",
+      "judgment": "Correct pending cancellation, date amendment and needed contact status. Remaining reply gap: supplied email is absent from facts and generic email/mobile label causes an unnecessary email request. Corrected afterward by contact-facts polish."
+    },
+    {
+      "id": "C04",
+      "judgment": "Appropriate localized holding reply, no unrelated deadlines or invented advice; substantive advice still needs staff."
+    },
+    {
+      "id": "C05",
+      "judgment": "Proposed monthly bookkeeping quote now prices the actual service (HK$1,800/month), retains 80 transactions/currencies/exclusions and requirements, opens no task/invoice. The fee and new caveats require staff judgment, not an accepted firm price. Correct raw drafts were unnecessarily rejected because the rendered source quotation contained the words claim work started, despite being a prohibition. Corrected afterward by scoping claim checks to model prose."
+    },
+    {
+      "id": "C06",
+      "judgment": "Two separate quotes and supplied new name retained on prospect confirmation; no client/work before approval. Continuation not measured."
+    },
+    {
+      "id": "C07",
+      "judgment": "Explicit incorporation preparation and name, sole director/shareholder, 100 ordinary shares/HK$100 retained in confirmation. Continuation not measured."
+    },
+    {
+      "id": "C08",
+      "judgment": "Correct marketing triage."
+    },
+    {
+      "id": "C09",
+      "judgment": "Correct adverse-party legal triage without authority/disclosure."
+    },
+    {
+      "id": "C10",
+      "judgment": "Correct unverified-sender triage without trusted-client context or work."
+    }
+  ],
+  "stats": {
+    "safeInitialBoundaries": {
+      "correct": 10,
+      "total": 10
+    },
+    "acceptableInitialPreparationOrDispositionBeforeFinalPolish": {
+      "correct": 9,
+      "total": 10,
+      "remainingCase": "C03"
+    },
+    "replyRevisionBeforeFinalPolish": {
+      "generated": 5,
+      "cases": [
+        "C03"
+      ]
+    },
+    "schema": {
+      "valid": 38,
+      "attempts": 38,
+      "errors": 0
+    },
+    "repeatAgreement": {
+      "core": {
+        "equalPairs": 28,
+        "pairs": 30
+      },
+      "strict": {
+        "equalPairs": 23,
+        "pairs": 30
+      },
+      "coreIncludingPhase": {
+        "equalPairs": 26,
+        "pairs": 30
+      }
+    },
+    "agents": {
+      "intake": 10,
+      "draft": 6,
+      "review": 1,
+      "plan": 1
+    },
+    "costUsd": 0.21826462499999996,
+    "latency": {
+      "ingestion": {
+        "n": 10,
+        "totalMs": 82427,
+        "medianMs": 5107,
+        "p95Ms": 19573
+      },
+      "checkerOverhead": {
+        "n": 10,
+        "totalMs": 0,
+        "medianMs": 0,
+        "p95Ms": 0
+      }
+    },
+    "guards": {
+      "unsafeIntakeCatchRecall": null,
+      "intendedConfirmationCases": [
+        "C06",
+        "C07"
+      ],
+      "intendedVerificationOrNoncustomerCases": [
+        "C08",
+        "C09",
+        "C10"
+      ],
+      "unnecessaryDraftRejections": [
+        {
+          "case": "C03",
+          "count": 1,
+          "reason": "harmless cancellation heading"
+        },
+        {
+          "case": "C05",
+          "count": 2,
+          "reason": "a quoted source prohibition matched the work-start substring check"
+        }
+      ],
+      "incorrectDraftsAccepted": [
+        "C03"
+      ],
+      "jevCalls": 0
+    }
+  },
+  "finalContactPolish": {
+    "samples": 3,
+    "allAcknowledgeSuppliedEmail": true,
+    "allAvoidCompoundEmailMobileReask": true,
+    "allKeepCancellationPending": true,
+    "phoneChecklistStillNeeded": true,
+    "schemaValid": 6,
+    "liveCalls": 6,
+    "costUsd": 0.013734,
+    "safeHeadingRejections": 3,
+    "note": "All final samples acceptable; each used two live draft attempts. Benign heading variants outside the bounded allowlist remain conservative rejections. Recorded intake/review are held fixed, not new interpretation samples."
+  },
+  "verificationCostUsdAllNewRuns": 0.46670302499999994
+}

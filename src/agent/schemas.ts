@@ -23,6 +23,10 @@ export const ActionZ = z.object({
     "start_request", "provide_information", "change_request", "cancel_request",
     "ask_question", "unsupported_request", "general_correspondence",
   ]),
+  purpose: z.enum(["advice", "quote", "prepare"]).default("prepare")
+    .describe("Requested phase, separate from service identity and authority: advice only, prepare a nonbinding quote, or prepare instructed work. Never permission to execute or send."),
+  questionTopic: z.enum(["general", "task_status", "annual_return", "business_registration", "kyc", "agm"]).default("general")
+    .describe("For advice/questions: which trusted records can answer it. General advisory questions require a staff answer unless approved guidance is supplied."),
   taskId: z.string().nullable().describe("For provide_information / change_request / cancel_request: the open task id"),
   playbookId: z.string().nullable().describe("For start_request: playbook id from the catalogue"),
   person: PersonRefZ.nullable(),
@@ -81,6 +85,7 @@ export const PlanZ = z.object({
   items: z.array(z.object({ key: z.string(), labelEn: z.string(), labelTc: z.string(), labelSc: z.string(), kind: z.enum(["data", "file"]) })),
   steps: z.array(z.string()),
   feeHkd: z.number(),
+  feeBasis: z.enum(["one_off", "monthly", "annual"]).default("one_off").describe("Billing basis of the proposed underlying service fee, not a charge for preparing the quotation"),
   caveats: z.array(z.string()),
 });
 export type Plan = z.infer<typeof PlanZ>;

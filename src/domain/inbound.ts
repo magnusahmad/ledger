@@ -5,7 +5,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { knownPersonName, sameValue } from "./names";
 import type { InboundMail } from "@/integrations/types";
-import { attachment, client as clientT, conversation, document, message, request as requestT, task as taskT, type Lang } from "@/db/schema";
+import { attachment, client as clientT, conversation, document, message, request as requestT, task as taskT, taskEvent, type Lang } from "@/db/schema";
 import { Crypto } from "@/lib/crypto";
 import type { Snapshot } from "@/agent/context";
 import { runIntake } from "@/agent/intake";
@@ -24,8 +24,9 @@ import { getPlaybook, effectiveDateRequirement } from "./playbooks";
 import { createInvoiceForRequest, invoiceWithLines } from "./invoices";
 import { createProposal, pendingProposals } from "./proposals";
 import { getFirm } from "./firm";
-import { itemLabel, money, PROTECTED_KEYS } from "./labels";
-import { fmtDate, isIsoDate } from "./dates";
+import { itemLabel, neededItemLabel, receivedItemLabel, money, PROTECTED_KEYS } from "./labels";
+import { fmtDate } from "./dates";
+import { questionFacts, quoteFacts } from "./reply-context";
 import "./handlers";
 import "./payments";
 import "./accounting-sync";
@@ -211,8 +212,15 @@ async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspe
     } else actions.push(a);
   }
 
-  const starts = actions.filter((a) => a.type === "start_request" && a.playbookId);
-  const unsupported = actions.filter((a) => a.type === "unsupported_request");
+  for (const a of actions.filter(a => a.purpose === "quote" && ["start_request", "unsupported_request", "ask_question"].includes(a.type))) {
+    try { facts.quotes!.push(await quoteFacts(ctx, a, { clientId, clientName: cl.nameEn, jurisdiction: cl.jurisdiction, language: intake.language, messageId })); }
+    catch (e) {
+      const p = await createProposal(ctx, { kind: "triage", title: "Review quotation request", clientId, summary: e instanceof AgentError ? "The quote planner could not prepare a proposal." : "The proposed service or fee needs staff review.", payload: { messageId, action: a } });
+      result.proposalIds.push(p.id);
+    }
+  }
+  const starts = actions.filter((a) => a.purpose !== "quote" && a.type === "start_request" && a.playbookId);
+  const unsupported = actions.filter((a) => a.purpose !== "quote" && a.type === "unsupported_request");
   const validStarts: { a: IntakeAction; pbId: string }[] = [];
   for (const a of starts) {
     const pb = await getPlaybook(ctx, a.playbookId!).catch(() => null);
@@ -224,7 +232,7 @@ async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspe
   }
   if (cl.jurisdiction === "HK" && cl.lifecycle === "prospect" && (validStarts.length || unsupported.length) && !validStarts.some((s) => ONBOARDING.has(s.pbId))) {
     const sender = await ctx.db.query.contact.findFirst({ where: (x, { and, eq }) => and(eq(x.clientId, clientId!), eq(x.isInstructing, true)) });
-    validStarts.unshift({ a: { type: "start_request", taskId: null, playbookId: "hk.transferIn", person: sender?.personId ? { mode: "existing", personId: sender.personId, nameEn: sender.name, nameZh: null, email: sender.email } : null, fields: [], attachments: [], effectiveDate: null, description: "Onboarding as a new client", confidence: 1, evidence: null }, pbId: "hk.transferIn" });
+    validStarts.unshift({ a: { type: "start_request", purpose: "prepare", questionTopic: "general", taskId: null, playbookId: "hk.transferIn", person: sender?.personId ? { mode: "existing", personId: sender.personId, nameEn: sender.name, nameZh: null, email: sender.email } : null, fields: [], attachments: [], effectiveDate: null, description: "Onboarding as a new client", confidence: 1, evidence: null }, pbId: "hk.transferIn" });
   }
 
   let requestId: string | null = null;
@@ -272,7 +280,7 @@ async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspe
     if (a.type === "cancel_request") {
       const p = await proposeCancel(ctx, t, a.description ?? "Client asked to cancel", messageId);
       local.proposals.push(p.id);
-      local.cancellations.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), note: a.description ?? "" });
+      local.cancellations.push({ taskId: t.id, status: "pending", title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), note: a.description ?? "" });
       return;
     }
     const sub = { proposalIds: [] as string[] } as ProcessResult;
@@ -282,15 +290,19 @@ async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspe
     local.proposals.push(...sub.proposalIds);
     local.questions.push(...questions);
     if (!local.touched.some((x) => x.id === t.id)) local.touched.push(await getTask(ctx, t.id));
-    if (a.type === "change_request") local.changes.push({ title: pbTitle(await getPlaybook(ctx, t.playbookId, t.playbookVersion), intake.language), change: a.description ?? "", nowNeeded: outstanding(await getTask(ctx, t.id)).map((e) => itemLabel(e.key, intake.language, t.params)) });
+    if (a.type === "change_request") {
+      const current = await getTask(ctx, t.id);
+      const title = pbTitle(await getPlaybook(ctx, current.playbookId, current.playbookVersion), intake.language);
+      local.changes.push({ title, change: (a.description ?? "").replaceAll(current.id, title), nowNeeded: outstanding(current).map(e => neededItemLabel(e, intake.language, current.params)), received: current.checklist.filter(e => e.value && a.fields.some(f => f.key === e.key && (e.key === "contactInfo" ? compatibleContactInfo(e.value!, f.value) : sameValue(e.value!, f.value)))).map(e => receivedItemLabel(e, intake.language, current.params)) });
+    }
   }
-  for (const a of actions.filter((x) => x.type === "ask_question")) facts.questions.push({ question: a.description ?? "", facts: await answerFacts(ctx, clientId) });
+  for (const a of actions.filter((x) => x.purpose !== "quote" && x.type === "ask_question")) facts.questions.push(await questionFacts(ctx, clientId, a));
 
   // Advance touched tasks (e.g. collection complete) and new tasks (send step waits for approval).
   for (const t of touchedTasks) await advance(ctx, t.id);
 
   // ----- Reply -----
-  const needsReply = newTasks.length > 0 || facts.questions.length > 0 || facts.changes.length > 0 || facts.cancellations.length > 0 || touchedTasks.length > 0 || facts.clarifications.length > 0;
+  const needsReply = newTasks.length > 0 || facts.quotes!.length > 0 || facts.questions.length > 0 || facts.changes.length > 0 || facts.cancellations.length > 0 || touchedTasks.length > 0 || facts.clarifications.length > 0;
   if (needsReply) {
     facts.newRequests.push(...await newRequestFacts(ctx, newTasks.map((t) => t.id), intake.language));
     for (const t of touchedTasks) {
@@ -299,7 +311,7 @@ async function processInboundAtomic(ctx: Ctx, messageId: string, confirmedProspe
       if (facts.changes.some((c) => c.title.startsWith(ttTitle))) continue;
       facts.updates.push({
         title: tt.title, received: tt.checklist.filter((e) => e.status === "received").map((e) => itemLabel(e.key, intake.language, tt.params)),
-        stillNeeded: outstanding(tt).map((e) => itemLabel(e.key, intake.language, tt.params)), nextStep: tt._steps[tt.stepIndex]?.label ?? null,
+        stillNeeded: outstanding(tt).map((e) => neededItemLabel(e, intake.language, tt.params)), nextStep: tt._steps[tt.stepIndex]?.label ?? null,
       });
     }
     const reqForLink = requestId ?? touchedTasks[0]?.requestId ?? null;
@@ -322,12 +334,14 @@ export async function newRequestFacts(ctx: Ctx, taskIds: string[], lang: Lang): 
   for (const id of taskIds) {
     const tt = await getTask(ctx, id);
     const pb = await getPlaybook(ctx, tt.playbookId, tt.playbookVersion);
+    const instructions = await ctx.db.select().from(taskEvent).where(and(eq(taskEvent.firmId, ctx.firmId), eq(taskEvent.taskId, id), eq(taskEvent.kind, "agent.intake"))).orderBy(asc(taskEvent.at));
     out.push({
       title: pbTitle(pb, lang) + (tt.personId && pb.category !== "New client onboarding" ? ` (${(await ctx.db.query.person.findFirst({ where: (p, { eq }) => eq(p.id, tt.personId!) }))?.nameEn})` : ""),
-      needed: outstanding(tt).map((e) => itemLabel(e.key, lang, tt.params)),
+      needed: outstanding(tt).map((e) => neededItemLabel(e, lang, tt.params)),
       onFile: tt.checklist.filter((e) => e.status === "on_file").map((e) => itemLabel(e.key, lang, tt.params)),
-      alreadyReceived: tt.checklist.filter((e) => e.status === "received").map((e) => `${itemLabel(e.key, lang, tt.params)}${e.value && !PROTECTED_KEYS.has(e.key) ? `: ${isIsoDate(e.value) ? fmtDate(e.value, lang) : e.value}` : ""}`),
+      alreadyReceived: tt.checklist.filter((e) => e.status === "received" || (e.key === "contactInfo" && e.status === "needed" && e.value)).map(e => receivedItemLabel(e, lang, tt.params)),
       deadline: tt.dueDate ? `${fmtDate(tt.dueDate, lang)} (${pb.deadline.kind !== "none" ? pb.deadline.rule : ""})` : null,
+      notes: instructions.map(e => typeof e.data.replyNote === "string" ? e.data.replyNote : e.summary.replace(/^Harbourline read the client's message: /, "")),
     });
   }
   return out;
@@ -355,7 +369,7 @@ async function namePropsect(ctx: Ctx, clientId: string, intake: Intake) {
 }
 
 export function emptyFacts(language: Lang): ReplyFacts {
-  return { language, recipientName: "", clientName: "", signOff: "", newRequests: [], updates: [], changes: [], cancellations: [], questions: [], clarifications: [], invoice: null, uploadUrl: null };
+  return { language, recipientName: "", clientName: "", signOff: "", newRequests: [], quotes: [], updates: [], changes: [], cancellations: [], questions: [], clarifications: [], invoice: null, uploadUrl: null };
 }
 
 function pbTitle(pb: { name: Record<Lang, string> }, lang: Lang) { return pb.name[lang] ?? pb.name.en; }
@@ -397,7 +411,9 @@ async function startFromAction(ctx: Ctx, clientId: string, requestId: string, pb
   const conflicts = personId ? await writePersonParticulars(ctx, personId, extracted, clientId) : [];
   for (const c of conflicts) delete extracted[c];
   const t = await startTask(ctx, { requestId, clientId, playbookId: pb.id, personId, extracted });
-  await logEvent(ctx, t.id, "agent.intake", `Harbourline read the client's message: ${a.description ?? pb.name.en}`, { evidence: a.evidence, confidence: a.confidence, messageId }, "agent");
+  let replyNote = a.evidence ?? a.description ?? "";
+  for (const f of a.fields.filter(f => PROTECTED_KEYS.has(f.key))) replyNote = replyNote.replaceAll(f.value, "(protected information supplied)");
+  await logEvent(ctx, t.id, "agent.intake", `Harbourline read the client's message: ${a.description ?? pb.name.en}`, { evidence: a.evidence, replyNote, confidence: a.confidence, messageId }, "agent");
   return t;
 }
 
@@ -504,7 +520,7 @@ async function applyChange(ctx: Ctx, t: Task, a: IntakeAction, messageId: string
     const cur = await getTask(ctx, t.id);
     const blocked = new Set((await pendingProposals(ctx, { taskId: t.id, kind: "conflict" })).map(p => p.payload.key as string));
     const ex = toExtracted(a.fields, new Set(cur.checklist.map((e) => e.key).filter(key => !blocked.has(key))));
-    const next = cur.checklist.map((e) => ex[e.key] && e.status !== "on_file" && (!e.personId || e.personId === cur.personId) ? { ...e, status: "received" as const, value: ex[e.key].value } : e);
+    const next = cur.checklist.map((e) => ex[e.key] && !review.items.some(i => i.key === e.key && (!i.personId || i.personId === e.personId)) && e.status !== "on_file" && (!e.personId || e.personId === cur.personId) ? { ...e, status: "received" as const, value: ex[e.key].value, source: ex[e.key].source } : e);
     await setChecklist(ctx, t.id, next, "Updated from the client's change", "agent");
   }
   result.proposalIds.push(...out.proposals);
@@ -524,18 +540,6 @@ async function proposeCancel(ctx: Ctx, t: Task, reason: string, messageId: strin
   return createProposal(ctx, { kind: "cancel_task", title: `Cancel: ${t.title}`, summary: reason, clientId: t.clientId, taskId: t.id, requestId: t.requestId, payload: { taskId: t.id, voidInvoice, reason, messageId } });
 }
 
-async function answerFacts(ctx: Ctx, clientId: string): Promise<string> {
-  const tasks = await ctx.db.select().from(taskT).where(and(eq(taskT.clientId, clientId), eq(taskT.status, "open")));
-  const lines: string[] = [];
-  for (const t0 of tasks) {
-    const t = await getTask(ctx, t0.id);
-    lines.push(`${t.title}: current step "${t._steps[t.stepIndex]?.label ?? "done"}"; waiting for ${outstanding(t).map((e) => itemLabel(e.key)).join(", ") || "nothing from the client"}${t.dueDate ? `; statutory deadline ${t.dueDate}` : ""}.`);
-  }
-  const { upcomingDeadlines } = await import("./deadlines");
-  for (const d of await upcomingDeadlines(ctx, { clientId, withinDays: 180 })) lines.push(`${d.label} due ${d.dueDate}.`);
-  return lines.join("\n") || "No open work for this client.";
-}
-
 /** Refresh invoice facts from the staff-editable draft, immediately before drafting. */
 export async function invoiceReplyFacts(ctx: Ctx, invoiceId: string, lang: Lang): Promise<ReplyFacts["invoice"]> {
   const inv = await invoiceWithLines(ctx, invoiceId);
@@ -552,6 +556,7 @@ export async function invoiceReplyFacts(ctx: Ctx, invoiceId: string, lang: Lang)
 /** Builds recipient, invoice and link facts and drafts the outbound message. */
 export async function composeReply(ctx: Ctx, o: { clientId: string; conversationId: string; inReplyTo: typeof message.$inferSelect | null; facts: ReplyFacts; requestId: string | null; messageId?: string | null; to?: string[]; purpose?: string; invoiceId?: string | null; subject?: string }) {
   const f = o.facts;
+  if (f.quotes?.length) f.workStatus = "proposed";
   if (f.newRequests.length) {
     const requested = o.requestId ? await tasksForRequest(ctx, o.requestId) : [];
     f.workStatus = requested.some(t => t.params.planStatus === "proposed") ? "proposed" : "awaiting_approval";

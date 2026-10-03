@@ -1,0 +1,6 @@
+{
+  "sourceAndOlderArtifactsMatchedAtRunCompletion": true,
+  "sourceSnapshot": "source-manifest.json",
+  "followupVerification": "../emails-eval-3-gemini-context-final/verification.json",
+  "note": "Intermediate snapshot was verified before further edits; it does not equal the final source."
+}

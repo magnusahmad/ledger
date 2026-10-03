@@ -1,0 +1,71 @@
+{
+  "tdd": {
+    "initialRed": {
+      "failed": 14,
+      "passed": 2,
+      "note": "Corrected seed-specific fixture selection first; business failures then confirmed."
+    },
+    "quoteDateAmountRed": {
+      "failed": 3,
+      "passed": 15
+    },
+    "compoundContactPricingCreditRed": {
+      "failed": 7,
+      "passed": 244,
+      "files": 23
+    },
+    "contactReplyRed": {
+      "failed": 1,
+      "note": "Strengthened regression failed because supplied email was absent; signer preflight fixture separately needed isolation from the new earlier collection guard."
+    },
+    "falsePositiveRed": {
+      "failed": 4,
+      "passed": 44,
+      "files": 2
+    },
+    "targetedFinalGreen": {
+      "passed": 71,
+      "files": 4
+    },
+    "fullRelevantFinalGreen": {
+      "passed": 273,
+      "files": 24,
+      "durationSeconds": 264.36
+    }
+  },
+  "typecheck": "npm run typecheck: passed, including after restoring unchanged Next generated environment file",
+  "lint": "explicit changed source/test files: passed with no warnings",
+  "diffCheck": "git diff --check: passed",
+  "visual": {
+    "screens": 48,
+    "languages": [
+      "en",
+      "tc",
+      "sc"
+    ],
+    "types": [
+      "quote",
+      "cancel",
+      "advice",
+      "partial-contact"
+    ],
+    "widths": [
+      375,
+      768,
+      1280,
+      1440
+    ],
+    "horizontalOverflow": 0,
+    "browserErrors": 0,
+    "resetViewport": 1280,
+    "artifacts": "gitignored test-results/draft-context-ui/"
+  },
+  "sourcePreservation": {
+    "finalSourceFiles": 188,
+    "allFinalSourceHashesMatch": true,
+    "olderArtifactFiles": 43,
+    "allOlderArtifactsUnchanged": true,
+    "configuredCredentialScan": "No configured secret/API/token/password values found in new eval artifacts"
+  },
+  "scope": "Local emails-eval branch only. No deployment, push, real email, real bank/accounting effects or statutory changes. Fixture approval tests use fake delivery. Live intake repeats execute no effects. See report.md for the familiar-case and focused-replay distinction."
+}

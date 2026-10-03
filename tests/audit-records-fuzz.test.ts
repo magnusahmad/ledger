@@ -3,7 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { eq } from "drizzle-orm";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
 import { seedDemo } from "@/db/seed-demo";
-import { createRequest, startTask, advance, markStepState, getTask } from "@/domain/engine";
+import { createRequest, startTask, advance, markStepState, getTask, setChecklist } from "@/domain/engine";
 import { approveProposal, pendingProposals } from "@/domain/proposals";
 import { portalSubmit, portalSubmitField, portalView, portalUpload } from "@/domain/portal";
 import { openSigning, requestOtp, verifyOtp, signDocuments } from "@/domain/signing";
@@ -127,10 +127,12 @@ it("R-10 unstructured non-share controller instructions block rather than silent
   expect(await ctx.db.select().from(significantController)).toEqual(before);
 });
 
-it("R-11 a missing email on the second signer rejects the pack before any link is sent", async () => {
+it("R-11 a missing email on the second signer rejects the pack before any link is sent even if collection was waived", async () => {
   const req = await createRequest(ctx, { clientId: "cli_c1" });
   const person = await createPerson(ctx, { nameEn: "Audit No Email", idNumber: "K987654(3)", residentialAddress: "Audit home", correspondenceAddress: "Audit office", phone: "+852 9000 0000" });
   const t = await startTask(ctx, { requestId: req.id, clientId: "cli_c1", personId: person.id, playbookId: "hk.appointDirector", extracted: { effDate: { value: "2026-09-29" } } });
+  // Isolate delivery preflight from the earlier compound-contact collection guard.
+  await setChecklist(ctx, t.id, t.checklist.map(e => e.key === "contactInfo" ? { ...e, status: "not_needed" } : e), "Fixture: collection waived; signer delivery still needs an email", "staff");
   await markStepState(ctx, t.id, "send", { sent: true });
   ctx.llm.on("extract", { fields: [], documents: [], conflicts: [] });
   const pdf = await PDFDocument.create(); pdf.addPage();
