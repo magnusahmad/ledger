@@ -80,7 +80,7 @@ Each item says who answers it. Policy items need company-secretary verification 
 - The DN workbook is the starting point, with the client's folder on F: as fallback. The DN columns recorded on 6 October don't include directors, shareholders or controllers, so confirm which columns hold people. If most people only appear in documents in the client folders (annual returns, CDD forms), the model reads those documents to propose the roster, and staff confirm it. CSA holds registers that staff type in; check whether CSA can export directors and shareholders, which may be the cleaner source.
 
 **CDD policy (Allan/Ruby; compliance owner)**
-- The checklist per role: director, shareholder, significant controller, beneficial owner, person purporting to act, corporate shareholder or director. Not yet known.
+- The checklist per role. The regulator's minimum by role is summarised in the KB ([TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md)): full identity checks for owners above 25%, people acting for the client and the client company itself; names only for directors who are neither. UHY's procedure is stricter (certified ID for every director, recent proof of residential address, expiry reopening CDD). Confirm which of UHY's extra requirements are deliberate firm policy; all of them become firm-configurable policy data.
 - Who signs off completion, and whether a second checker is required. To be checked.
 - Whether certifiers beyond TCSP compliance officers, CPAs, lawyers and notaries are accepted, and the required certification wording.
 - What record of a Zoom call is kept (screenshot, note, recording).
