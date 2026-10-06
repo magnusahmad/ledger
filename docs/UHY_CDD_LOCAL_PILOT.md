@@ -68,6 +68,9 @@ Policy confirmed by Magnus on 6 October (company-secretary verification still ne
 - **Scope is every client**: a firm project to bring all clients into compliance, not an inspection deadline. The case list needs ordering (suggested default: by next annual-return date, since staff contact the client then anyway).
 - **Non-response:** the pilot proposes a next chase date and prepares the chaser; Ruby or a teammate decides whether to send it. Default interval two weeks, configurable.
 - **Chasers go to the company contact recorded in the DN workbook.**
+- **A TCSP compliance officer can certify a copy** (confirmed). Whether the A01 form's narrower list (CPA, lawyer, notary) also needs updating is for UHY.
+- **Sanctions screening** is done today with Sentroweb KYC/AML (as UHY reports). Moving to a more modern provider such as Didit is being considered, not decided; the pilot does not integrate screening.
+- **The F: drive is the record for CDD documents, and nothing is deleted from it.** No retention or deletion handling is needed in the pilot.
 
 ## Open questions
 
@@ -79,11 +82,10 @@ Each item says who answers it. Policy items need company-secretary verification 
 **CDD policy (Allan/Ruby; compliance owner)**
 - The checklist per role: director, shareholder, significant controller, beneficial owner, person purporting to act, corporate shareholder or director. Not yet known.
 - Who signs off completion, and whether a second checker is required. To be checked.
-- Accepted certifiers and certification wording (the A01 form and the chase email list different people).
+- Whether certifiers beyond TCSP compliance officers, CPAs, lawyers and notaries are accepted, and the required certification wording.
 - What record of a Zoom call is kept (screenshot, note, recording).
 - Whether "within three months" for proof of address runs from issue date to receipt or to review.
-- Risk rating: who sets it, review frequency by rating, enhanced steps for high-risk or PEP cases; sanctions/PEP screening today.
-- Retention period and whether the share is the accepted record.
+- Risk rating: who sets it, review frequency by rating, enhanced steps for high-risk or PEP cases; how often Sentroweb screening is re-run and where its results are kept.
 
 **Scanned post (Ruby)**
 - Whether an incoming-post log exists.
