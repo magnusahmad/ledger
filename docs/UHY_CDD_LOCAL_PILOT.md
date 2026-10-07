@@ -21,7 +21,7 @@ CDD is a first-class Harbourline module (#54). The domain code (people, evidence
 
 ## Package and local state
 
-Several staff need the app, so it runs as **one backend process on one always-on machine in the office**, and staff open it in a browser from their own PCs. Preferred host: the server behind the F: drive, if it runs Windows and can run the app; otherwise an always-on office PC. Program files and state stay on that host. The database file must not sit on F: and be opened by several copies of the app at once: embedded databases are not safe with several writers over a network share.
+Several staff need the app, so it runs as **one backend process on one always-on machine in the office**, and staff open it in a browser from their own PCs. Preferred host: the Windows Server behind the F: drive (confirmed 7 October), set up with UHY's outsourced IT company; otherwise an always-on office PC. Program files and state stay on that host. The database file must not sit on F: and be opened by several copies of the app at once: embedded databases are not safe with several writers over a network share.
 
 The host runs a portable bundle (Node runtime and the backend) as a Windows service under an agreed account with read access to the approved share folders and write access to the agreed output folders. It listens on the office network only, never the internet, over HTTPS with a certificate installed on the staff PCs. Each staff member signs in; reviews, approvals and drafts are recorded against the person who made them. A single-instance guard prevents two backends running against the same state.
 
@@ -36,7 +36,7 @@ One gitignored installation config holds the approved share root (UNC path), aut
 ## Connectors
 
 1. **Shared files.** Read only approved directories. Show matching evidence with source path, date and file fingerprint. Read relevant DN rows using a small installation-specific column mapping; keep the source rows for review. An Access export is optional input, not a prerequisite for the first selected cases. Never open the `.laccdb` lock file as the database. Confirm which of the two similar DN workbooks is authoritative.
-2. **Mail.** Microsoft Graph if the mailbox is Exchange Online / Microsoft 365. This matters more now that the backend runs as a shared service: Graph works from a service with no one signed in, and drafts can be created in the mailbox Ruby or a colleague sends from. Classic Outlook COM only works inside a signed-in user's desktop session, so with on-premises or other mail each user's PC would need a small helper for drafts, and history scanning would depend on one user's profile. Confirm on 7 October. Either way: inspect only selected stores/folders, include sent and received messages and attachments across separate threads, record scan coverage and errors so an absent match never reads as "not supplied", persist checkpoints and deduplicate reruns. Initial history search must not rely on a received-date cursor alone. Confirm access to shared mailboxes and archives (PST files) in the actual office setup.
+2. **Mail.** Microsoft Graph: UHY uses Microsoft 365 (confirmed 7 October). This matters now that the backend runs as a shared service: Graph works from a service with no one signed in, and drafts can be created in the mailbox Ruby or a colleague sends from. Classic Outlook COM only works inside a signed-in user's desktop session, so with on-premises or other mail each user's PC would need a small helper for drafts, and history scanning would depend on one user's profile. The COM route is kept only as a fallback. Either way: inspect only selected stores/folders, include sent and received messages and attachments across separate threads, record scan coverage and errors so an absent match never reads as "not supplied", persist checkpoints and deduplicate reruns. Initial history search must not rely on a received-date cursor alone. Confirm access to shared mailboxes and archives (PST files) in the actual office setup.
 3. **Scanned post.** CTCs and other evidence can arrive by courier; Ruby opens the post and scans it on the office Fujifilm Apeos C3570 into **one scan inbox folder** on the share (the model supports scan to a network folder; settings to confirm on the device; PDF at 300 dpi). Harbourline watches that folder. For each scan it:
    - splits a batch into separate documents;
    - reads each with the model and identifies the document type, the client company, the person and the checklist item it answers, matching on client code, company or CR/BR number and names against the DN workbook and existing records;
@@ -72,36 +72,42 @@ Policy confirmed by Magnus on 6 October (company-secretary verification still ne
 - **Sanctions screening** is done today with Sentroweb KYC/AML (as UHY reports). Moving to a more modern provider such as Didit is being considered, not decided; the pilot does not integrate screening.
 - **The F: drive is the record for CDD documents, and nothing is deleted from it.** No retention or deletion handling is needed in the pilot.
 
+## Answers from Allan, 7 October
+
+By email, in reply to the 6 October question list. Firm-reported; policy items still need company-secretary verification.
+
+- **Mail:** Microsoft 365 with Outlook, so the mail connector is Microsoft Graph.
+- **F: drive:** a Windows Server, which becomes the preferred host for the backend.
+- **IT:** an outsourced IT company manages UHY's PCs, scanner, server, software, antivirus and backup. All setup on the server, PCs and scanner is coordinated with them.
+- **People per company:** directors, shareholders and significant controllers are held in CSA, not the DN workbook. Reading CSA's data is a prerequisite for the case list.
+- **Existing CDD tracker:** none. UHY is updating all CDD manually now and expects it to be complete before the pilot runs, so backlog reconstruction may no longer be needed.
+- **Documents required:** for individuals, passport or HKID and proof of address issued within the last three months; for companies, the annual return and an organisation chart.
+- **Sign-off:** Coe and Ruby carry out CDD with the client; Allan signs off completion. This is a two-step approval (prepared by staff, approved by Allan).
+- **Sample cases:** Coe and Ruby will supply five; UHY asked what data we need for them.
+- **Priority:** Allan sees CDD as mainly an engagement-time task with occasional updates, while annual returns, AGMs and Companies Registry filings are routine. He expects Companies Registry work to be the most valuable long term and has left the order to CRV.
+
 ## Open questions
 
 Each item says who answers it. Policy items need company-secretary verification before they become validation rules.
 
-**Roster of people per company (Ruby; most blocking)**
-- The DN workbook is the starting point, with the client's folder on F: as fallback. The DN columns recorded on 6 October don't include directors, shareholders or controllers, so confirm which columns hold people. If most people only appear in documents in the client folders (annual returns, CDD forms), the model reads those documents to propose the roster, and staff confirm it. CSA holds registers that staff type in; check whether CSA can export directors and shareholders, which may be the cleaner source.
+**CSA data (UHY's IT company)**
+- Where and in what format CSA stores its data (local database file, SQL Server or other), and whether we can read it or get a regular export without changing CSA.
 
-**CDD policy (Allan/Ruby; compliance owner)**
-- The checklist per role. The regulator's minimum by role is summarised in the KB ([TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md)): full identity checks for owners above 25%, people acting for the client and the client company itself; names only for directors who are neither. UHY's procedure is stricter (certified ID for every director, recent proof of residential address, expiry reopening CDD). Confirm which of UHY's extra requirements are deliberate firm policy; all of them become firm-configurable policy data.
-- Who signs off completion, and whether a second checker is required. To be checked.
-- Whether certifiers beyond TCSP compliance officers, CPAs, lawyers and notaries are accepted, and the required certification wording.
-- What record of a Zoom call is kept (screenshot, note, recording).
-- Whether "within three months" for proof of address runs from issue date to receipt or to review.
+**CDD policy (Allan)**
+- Which of UHY's requirements beyond the regulator's minimum are deliberate ([TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md)): ID and address proof for every director regardless of ownership, and whether an expired ID reopens CDD. Allan's 7 October list does not mention certification, A01/A02 forms, engagement letters or authorisation letters; confirm whether Ruby's chase checklist still applies.
+- What record of a Zoom call is kept.
+- Whether "within three months" for proof of address runs to receipt or to review.
 - Risk rating: who sets it, review frequency by rating, enhanced steps for high-risk or PEP cases; how often Sentroweb screening is re-run and where its results are kept.
 
 **Scanned post (Ruby)**
-- Whether an incoming-post log exists.
-- Whether one envelope often holds documents for several people or companies.
-- The exact folder and file-naming convention for CDD documents, with examples.
-- Whether the paper originals are returned, kept or destroyed after scanning.
+- Whether an incoming-post log exists, and whether one envelope often holds documents for several clients.
+- The folder and file-naming convention for CDD documents, with examples.
+- Whether paper originals are returned, kept or destroyed after scanning.
 
-**Data sources (Ruby)**
+**Data sources and access (Ruby, IT company)**
 - The authoritative DN workbook, active-client definition and returning-client code handling.
-- Any tracker Ruby already keeps for CTC chasing.
-- How much CDD evidence arrives through the shared WeChat account. It is out of scope for the connectors; staff file it as now.
-
-**Mail and machines (7 October; Ruby, IT contact)**
-- Exchange Online / Microsoft 365, on-premises Exchange or another provider; shared mailboxes; archive PST files and how far back.
-- What the F: drive server is (Windows server, NAS or other) and whether it can host the app; otherwise which always-on PC.
-- Who needs access, and agreed method and approval for CRV remote access.
+- Shared mailboxes in use, and how far back mail history goes.
+- Who needs access to the app, and the agreed method for CRV remote access.
 
 ## Work order and red/green acceptance
 
