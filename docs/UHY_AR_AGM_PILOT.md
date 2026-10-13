@@ -1,7 +1,7 @@
 # UHY-ASK pilot: annual returns and AGMs, with CDD folded in
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-10-09
+Last reviewed: 2026-10-13
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
 Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Harbourline module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
@@ -75,9 +75,21 @@ One gitignored installation config holds the approved share root (UNC path), CSA
 
 ## Connectors
 
-1. **CSA (read-only).** CSA holds directors, secretaries, shareholders, significant controllers, share capital and the details the NAR1 needs. Read it without changing CSA: direct read-only access to its data files or database, or a scheduled export, depending on the format (to be found out with the IT company). Keep the source values next to every derived fact so staff can see where a particular came from. This is the most blocking unknown.
+1. **CSA (read-only).** CSA holds directors, secretaries, shareholders, significant controllers, share capital and the details the NAR1 needs. Topone reports (13 October) that CSA is installed on UHY's Windows Server with a Microsoft SQL Server database; they don't know its internal structure. Plan:
+   - a SQL login with read-only rights (`db_datareader`) on the CSA database only, created by whoever administers that SQL Server instance;
+   - map the tables during the assessment by reading the schema and comparing it with what CSA shows on screen for one company;
+   - read with short queries outside busy hours so CSA is never slowed or locked;
+   - never write to the database.
+
+   UHY should first confirm that its CSA licence doesn't restrict reading its own database. **CRV does not contact CSA's vendor, P & L, about this:** P & L declined CRV's approach on 6 October and the KB records no approach through its customers. If a vendor export turns out to be necessary, that is UHY's own support request to P & L, made without CRV. Keep the source values next to every derived fact so staff can see where a particular came from.
 2. **Shared files.** Read only approved directories: last year's annual return and AGM documents, audit reports and CDD evidence in each client folder. Read DN rows (financial year end, AGM month, registration anniversary, auditor, contact email, DD form, risk assessment) using a small installation-specific column mapping. Never open the `.laccdb` lock file as a database. Confirm which DN workbook is authoritative.
-3. **Mail (Microsoft Graph).** UHY uses Microsoft 365. Graph works from the server with no one signed in. It reads client replies (attachments included, across separate threads) and creates drafts in the mailbox staff send from. Record scan coverage and errors, persist checkpoints and deduplicate reruns.
+3. **Mail (Microsoft Graph).** UHY uses Microsoft 365. Graph works from the server with no one signed in. Access uses Exchange Online's RBAC for Applications, which scopes the app to named mailboxes:
+   - the app registration (Topone offers a Cloud Application Administrator account for this);
+   - **no tenant-wide Mail permission granted in Entra ID**, because that grant would cover every mailbox and override the scope;
+   - an Exchange Administrator creates a management scope for the team mailbox(es) and assigns the `Application Mail.ReadWrite` role to the app within it. That role can read and create drafts but cannot send;
+   - `Test-ServicePrincipalAuthorization` confirms the app is in scope for the team mailbox and out of scope for another.
+
+   The pilot reads client replies (attachments included, across separate threads) and creates drafts in the mailbox staff send from. Record scan coverage and errors, persist checkpoints and deduplicate reruns.
 4. **Scanned post.** Ruby scans incoming post on the office Fujifilm Apeos C3570 into one scan inbox folder on the share (scan-to-folder settings to be set up with the IT company; PDF at 300 dpi). Harbourline watches that folder. For each scan it:
    - splits a batch into documents;
    - reads each with the model and identifies the document type (signed annual return, AGM papers, audit report, ID, address proof, Registry letter), the client company and, for CDD documents, the person;
@@ -161,9 +173,12 @@ Firm-reported or confirmed by Magnus; company-secretary verification still neede
 ## Open questions
 
 **CSA data (UHY's IT company, Topone; most blocking)**
-- Where and in what format CSA stores its data (local database files, SQL Server or other), and whether we can read it, or get a scheduled export, without changing CSA. Allan asked us to email Topone with an introduction first; he will then ask them to work with us by email.
-- Microsoft 365: an app registration with mail access for the pilot, limited to the mailbox(es) staff send from, needs a tenant administrator's consent.
-- Server: Windows Server version and spare capacity, a service account, the HTTPS certificate on staff PCs, scan-to-folder on the Apeos C3570, and the remote-access method.
+Topone answered on 13 October: CSA uses Microsoft SQL Server on UHY's server; they offered a temporary domain administrator account for the assessment, a dedicated service account once requirements are known, a Cloud Application Administrator account for the app registration, and AnyDesk for remote access. Still open:
+- Who administers the CSA SQL Server instance and can create a read-only login; whether UHY's CSA licence restricts reading the database.
+- An Exchange Administrator to create the mailbox scope and role assignment (a Cloud Application Administrator can't do that part); which mailbox(es) staff send from.
+- A narrower account than domain administrator for the assessment (local administrator on the UHY server only), credentials passed by phone or a password manager rather than email, and changed when the assessment ends.
+- Whether AnyDesk sessions are approved by someone at UHY each time or left unattended.
+- Windows Server version and spare capacity, the HTTPS certificate on staff PCs, outbound access to Microsoft 365 and the AI provider, and scan-to-folder on the Apeos C3570.
 
 **Sample companies (Coe, Ruby)**
 - UHY will send last year's annual returns and related documents in one batch once we confirm what we need. Financial statements are client-confidential: UHY wants an NDA signed before sharing them. Until then, AGM drafting is built and tested against a fictional audit report.
