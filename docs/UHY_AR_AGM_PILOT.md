@@ -89,7 +89,7 @@ One gitignored installation config holds the approved share root (UNC path), CSA
    - an Exchange Administrator creates a management scope for the team mailbox(es) and assigns the `Application Mail.ReadWrite` role to the app within it. That role can read and create drafts but cannot send;
    - `Test-ServicePrincipalAuthorization` confirms the app is in scope for the team mailboxes and out of scope for another.
 
-   UHY's client team uses three mailboxes, and each member can open the others' (Magnus, 20 October). The scope is a mail-enabled security group containing exactly those three, so adding or replacing a team member is a group change, not a script change. The pilot reads all three, because a client's history can sit in any of them. The same message appearing in several mailboxes (copies, forwards) is recorded once, matched on its Internet message ID. A draft goes into the mailbox of the staff member responsible for the client; until that is known, the mailbox that last corresponded with the client. The other two can see it through their existing access. Staff should be told that the pilot reads these mailboxes.
+   UHY's client team uses three personal mailboxes, one per staff member, and each can open the others' (Magnus, 20 October). The scope is a mail-enabled security group containing exactly those three, so adding or replacing a team member is a group change, not a script change. The pilot reads all three, because a client's history can sit in any of them. The same message appearing in several mailboxes (copies, forwards) is recorded once, matched on its Internet message ID. Clients have no assigned staff member; anyone in the team may contact any client. A draft therefore goes into the mailbox of the staff member who prepares it in the app (they are signed in), and the other two can see it through their existing access. Because these are personal mailboxes, the pilot reads only messages exchanged with known client contacts or addresses, not the rest of the mailbox, and Allan tells the three staff in advance that the pilot reads their client email.
 
    The pilot reads client replies (attachments included, across separate threads) and creates drafts in the mailbox staff send from. Record scan coverage and errors, persist checkpoints and deduplicate reruns.
 4. **Scanned post.** Ruby scans incoming post on the office Fujifilm Apeos C3570 into one scan inbox folder on the share (scan-to-folder settings to be set up with the IT company; PDF at 300 dpi). Harbourline watches that folder. For each scan it:
@@ -179,7 +179,7 @@ Topone answered on 13 October: CSA uses Microsoft SQL Server on UHY's server; th
 
 On 20 October Topone gave CRV an administrator account with the Exchange Administrator role added (for the RBAC for Applications setup), AnyDesk access to the Windows Server, and an unlicensed Microsoft 365 account. They confirmed outbound HTTPS from the server is unrestricted, and offered a quotation if the server needs more hardware. They asked CRV to install the HTTPS certificate on each staff PC remotely, arranging TeamViewer access with each user. Credentials are held in a password manager only, never in this repo, the KB or chat. Still open:
 - Who administers the CSA SQL Server instance and can create a read-only login; whether UHY's CSA licence restricts reading the database.
-- The three client-team mailboxes (each staff member can open the others'): whether they are personal or shared mailboxes, whether each client has an assigned staff member and where that is recorded, and so which mailbox a draft should go to.
+- The three personal mailbox addresses (Magnus to supply).
 - Whether the administrator account is a domain administrator; if so, use it only for the setup steps that need it, and ask Topone to change its password once setup is done and the dedicated service account exists.
 - Whether AnyDesk sessions on the server are approved by someone at UHY each time or left unattended.
 - Windows Server version and spare capacity (measured during the assessment), and scan-to-folder on the Apeos C3570.
@@ -206,7 +206,7 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 - Whether paper originals are returned, kept or destroyed after scanning.
 
 **Access**
-- Which staff need the app; shared mailboxes in use.
+- Which staff need the app.
 
 ## Work order and red/green acceptance
 
