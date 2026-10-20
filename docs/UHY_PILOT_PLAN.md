@@ -2,19 +2,35 @@
 
 Owner: Magnus Ahmad
 Last reviewed: 2026-10-20
-Status: working plan. Target dates are estimates and move with UHY's answers.
+Status: working plan, fast track. Target dates are estimates and move with UHY's and Topone's response times.
 Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does and its acceptance tests), [Decisions](DECISIONS.md) #53–55, [UHY-ASK KB page](../crv-kb/research/targets/uhy-ask.md).
 
 This plan says who does what, in order, to get the [pilot brief](UHY_AR_AGM_PILOT.md) running at UHY. Each stage lists what Magnus does, what Claude builds or prepares, what UHY or Topone must do, and how we know the stage is done. Tick items off here as they happen.
 
-## Timing reality
+## Fast track: live for the five (decided 20 October)
 
-The five sample companies have annual returns due roughly between early November and early December 2026. UHY starts preparing a month before the due date, so the earliest are already in preparation, and the pilot won't be live in time for them.
+The five sample companies have annual returns due roughly between early November and early December 2026, and UHY starts preparing a month ahead. Magnus decided on 20 October to have the pilot live for them, not a later cycle. Building isn't the constraint; UHY-side access is: the CSA table mapping, the mailbox addresses, the service account and the staff PCs. Every date below assumes UHY and Topone respond within a day.
 
-- **This cycle (the five):** Coe and Ruby do them by hand as usual and time each step. That is the baseline. We also use their documents to test the NAR1 generator and AGM drafting against real outputs.
-- **Pilot cycle:** companies due from mid-December 2026 to January 2027, run through the pilot side by side with the manual process.
+| Target | Milestone | Gate |
+|---|---|---|
+| Thu 22 Oct | Server assessment done; CSA mapped for NAR1 fields | Allan agrees a session time |
+| Fri 23 Oct | Mailbox access live and tested | Three addresses from Magnus or Topone |
+| Wed 28 Oct | Fast-track build passes its tests on the Windows test VM | CSA mapping from Stage 1 |
+| Thu 29 Oct | Installed on UHY's server | Dedicated service account from Topone |
+| Fri 30 Oct | Staff PCs done; day-one session with Coe and Ruby | Staff available for TeamViewer |
+| Mon 2 Nov onward | All five run through the pilot | — |
 
-Ask Allan to agree this switch (Stage 0).
+**Fast-track scope (live 30 October):** calendar; particulars from CSA; NAR1 generation with a side-by-side check against CSA's; the assisted Registry check; the payment gate; the dispatch email drafted in the preparer's mailbox; reading replies into proposed changes; status from due to registered; filing the generated papers to F:; the status workbook and review log.
+
+**Follows in the next fortnight:** AGM written resolutions (AGM deadlines run from year end, so they won't always coincide with these annual returns); scanned-post filing (staff save signed copies to F: by hand meanwhile); CDD in the dispatch email.
+
+**Companies already part-way through.** Some of the five will already have been prepared, invoiced or sent by 30 October. The pilot picks each one up at its current stage (staff set it once) and runs the remaining steps; it doesn't redo finished work.
+
+**Fallback if CSA's tables are hard to read.** Last year's NAR1 for each company is on F: and is a public document. The model reads the particulars from it and staff confirm them, so the five aren't blocked while the CSA mapping is finished.
+
+**Baseline.** The five run through the pilot, so Coe and Ruby time three to five other annual returns done by hand this month, step by step. Those timings are the comparison.
+
+**AI checks before live.** The AI steps in this pilot (reading last year's NAR1, reading client replies into proposed changes, drafting the dispatch email) haven't been evaluated on documents like UHY's yet. Before 30 October, run them against the five companies' real annual returns and emails and review the results; drafting for live use is switched on only for steps that pass.
 
 ## Stage 0: Accounts, agreements and asks (this week)
 
@@ -27,7 +43,7 @@ Ask Allan to agree this switch (Stage 0).
   - a request that he tell Coe and Ruby the pilot will read client email in their mailboxes;
   - where the CDD cleanup will be recorded (DN's DD form column or a list);
   - whether outstanding CDD should ever block an annual return;
-  - the switch above: time the five by hand now, pilot the companies due from mid-December;
+  - the fast track: the five run through the pilot from 30 October; Coe and Ruby time three to five other annual returns by hand as the baseline, and tell us each of the five's due date and current stage;
   - for the five: last year's annual returns, AGM written resolutions and annual-return emails, in one batch or collected on your next visit.
 - [ ] Review the revised NDA (Claude), fill in the parties and send it to Allan, so the financial statements can follow.
 - [ ] Create a separate OpenRouter API key for the UHY installation, with a monthly spend limit.
@@ -35,12 +51,11 @@ Ask Allan to agree this switch (Stage 0).
 - [ ] Set up a test Microsoft 365 tenant with two or three test mailboxes, so the mail connector is built without UHY's mail.
 
 **Claude**
+- [x] Write the server assessment and mailbox scripts: `scripts/uhy/` (not yet run on Windows; check them on the test VM first).
 - [ ] Rewrite NDA clauses 5.3 and 5.4: client records stay on UHY's server; AI processing allowed through named providers, with no training on UHY data and no location restriction.
-- [ ] Write the server assessment checklist and read-only scripts (Stage 1).
-- [ ] Write the mailbox-access PowerShell script (Stage 2).
 - [ ] Draft the emails above.
 
-**Done when:** mailbox addresses received, CSA licence confirmed, NDA sent, assessment session booked.
+**Done when:** mailbox addresses received, CSA licence confirmed, NDA sent, assessment session booked. Target: Wed 21 October.
 
 ## Stage 1: Server assessment (one AnyDesk session, 1–2 hours)
 
@@ -48,19 +63,17 @@ Look only. No installs, no changes, and no client data leaves the server.
 
 **Before**
 - [ ] Magnus books a time with Allan, so UHY knows when CRV is connected.
-- [ ] Claude prepares:
-  - a PowerShell script for server facts (Windows version, CPU, memory, free disk, .NET and PowerShell versions, outbound HTTPS test to Microsoft 365 and OpenRouter);
-  - a SQL script that exports CSA's schema only (tables, columns, types, keys, row counts; no values);
-  - a mapping worksheet listing the fields the NAR1 and AGM papers need, to fill in against CSA's tables.
+- [ ] Copy `scripts/uhy/` to the server (AnyDesk file transfer) into `C:\uhy-pilot\`.
+- Scripts ready: `assess-server.ps1` (server facts and outbound HTTPS test), `csa-schema.sql` (tables, columns, types, keys, row counts; no values), `csa-find-value.sql` (which table holds a value you see on CSA's screen, printing names and counts only), `csa-readonly-login.sql`.
 
 **Magnus, during the session**
 - [ ] Connect over AnyDesk with the server account.
-- [ ] Run the server-facts script; save its output.
+- [ ] Run `assess-server.ps1`; it writes `C:\uhy-pilot\out\server-facts.txt`.
 - [ ] Find the SQL Server instance CSA uses and the CSA database name. Check whether the account can connect to it (domain administrators are often not SQL administrators).
-  - If it can: create a SQL login with `db_datareader` on the CSA database only, store its password in the vault, and confirm it can read but not write.
+  - If it can: run `csa-readonly-login.sql` for the account the pilot will use (read-only, with writes explicitly denied). Until the dedicated service account exists, use your own admin session for the schema export only.
   - If it can't: note who can, and ask Topone or UHY for the login.
-- [ ] Run the schema export. Copy only that file off the server.
-- [ ] Open CSA on one company. For each field on the mapping worksheet (directors, secretary, members and shares, registered office, incorporation date, year end, NAR1 particulars), find the matching table and column with a lookup query. Record table and column names only, never the values. If CSA has a demo or test company, use that.
+- [ ] Run `csa-schema.sql` with sqlcmd (command in the file header). Copy only `csa-schema.csv` and `server-facts.txt` off the server.
+- [ ] Open CSA on one company. For each field on the mapping worksheet (directors, secretary, members and shares, registered office, incorporation date, year end, NAR1 particulars), run `csa-find-value.sql` with a distinctive value from the screen to find its table and column. Record table and column names only, never the values. If CSA has a demo or test company, use that.
 - [ ] On F:, note the folder structure, where the DN workbook is (and which of the two similar ones is current), and the naming pattern for annual return and AGM files. Record patterns, not client names.
 - [ ] Confirm the server can reach `graph.microsoft.com` and `openrouter.ai` over HTTPS.
 - [ ] Disconnect. Tell Allan you're done.
@@ -74,24 +87,24 @@ Look only. No installs, no changes, and no client data leaves the server.
 ## Stage 2: Mailbox access (30–60 minutes, after the addresses arrive)
 
 **Magnus**
-- [ ] Ask Topone to create a mail-enabled security group containing exactly the three team mailboxes. You can do it yourself with the admin account if Leon prefers.
-- [ ] In Microsoft Entra (portal.azure.com), signed in with the account Topone provided:
-  - register an app named "UHY Harbourline pilot";
-  - add a certificate credential. Generate it on UHY's server so the private key never leaves it; Claude provides the command;
+- [ ] On the server, run `new-app-cert.ps1` (as administrator). It creates a non-exportable certificate and writes the public `.cer` file.
+- [ ] In Microsoft Entra (entra.microsoft.com), signed in with the account Topone provided:
+  - register an app named "UHY Harbourline pilot" (single tenant, no redirect URI);
+  - upload the `.cer` under Certificates & secrets;
   - **do not add or consent to any Microsoft Graph mail permission in Entra.** That would open every mailbox at UHY;
   - from **Enterprise applications** (not App registrations), copy the Application ID and Object ID.
-- [ ] Run Claude's PowerShell script with the Exchange Administrator account. It:
-  1. connects to Exchange Online;
+- [ ] Run `mailbox-rbac.ps1` with the Exchange Administrator account (parameters in its header). It:
+  1. creates the mail-enabled security group with the three mailboxes, if Topone hasn't;
   2. registers the app's service principal in Exchange;
   3. creates a management scope matching that security group;
   4. assigns `Application Mail.ReadWrite` (read and draft, cannot send) within that scope;
   5. tests that the app is in scope for each of the three mailboxes and out of scope for one other mailbox.
-- [ ] Wait up to two hours for Microsoft's permission cache, then run Claude's smoke test from the server. It lists folder names and message counts only, no content.
+- [ ] Wait up to two hours for Microsoft's permission cache, then run `mailbox-smoke.ps1` on the server. It lists folder names and counts only, and checks that the other mailbox is refused.
 - [ ] Save the IDs (not the certificate) to the vault, and the test output to the pilot notes.
 
 **Done when:** the test shows access to the three team mailboxes and no access to any other mailbox.
 
-## Stage 3: Build on fictional data (CRV side, about 3–4 weeks)
+## Stage 3: Build on fictional data (fast-track scope by 28 October; the rest over the following fortnight)
 
 Claude builds test-first, following the brief's work order and acceptance tests, on the `uhy-cdd-pilot` branch or a successor. Real red and green test runs are reported at each step.
 
@@ -141,7 +154,7 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 
 **Done when:** every user signs in with no browser warnings.
 
-## Stage 6: Live run with the pilot cycle (6–8 weeks, side by side)
+## Stage 6: Live run with the five, then the next month's companies (6–8 weeks)
 
 **Magnus**
 - [ ] Day-one session in person with Coe and Ruby: run the first company together.
@@ -155,9 +168,9 @@ Claude builds test-first, following the brief's work order and acceptance tests,
   - scans misfiled.
 
 **Coe and Ruby**
-- Use the pilot for the pilot-cycle companies: record payment confirmation, review and send drafts, compare NAR1s with CSA's, file as usual.
+- Use the pilot for the five and then the next month's companies: record payment confirmation, review and send drafts, compare NAR1s with CSA's, file as usual.
 
-**Done when:** the pilot-cycle companies are filed through the pilot, with measured time per company.
+**Done when:** the five are filed through the pilot, with measured time per company against the baseline.
 
 ## Stage 7: Turn on the rest
 
