@@ -51,6 +51,28 @@ Measure staff minutes per company against UHY's current process. Start with the 
 - CSA supplies a basic version. Staff start from the previous year's Word document, cross-check the audit report and amend for client-specific changes.
 - When audited accounts are late, the written resolution (or notice and minutes) states that the accounts are not yet available, and their consideration and adoption is deferred to an adjourned meeting or a later written resolution.
 
+## UHY's current email wording (Ruby, 20 October)
+
+Ruby supplied one real annual-return and AGM email. The client's and director's names are left out here. The pilot reproduces this structure and wording in the client's language, with every bracketed field filled from one computed record.
+
+**Annual return section**
+- "We enclose herewith the followings for your attention: [year] Annual Return ("AR") - made up to [made-up date]".
+- Examine the AR; print TWO copies (A4, one-sided); [signing director] signs on page [signature page] "as the director of the Company"; return to UHY's office address by [return-by date] "to avoid an increased filing fee of up to HK$[maximum late fee] (standard fee is HK$[standard fee])".
+- Part 9 (page 2): confirm whether the company has any mortgages or charges as at the made-up date ([made-up date]); if so, send details (e.g. a bank statement as at [statement date]) by email.
+
+**AGM section**
+- "We have prepared and enclosed herewith the following documents of the captioned company for your signatures arrangement." Examine them; print ONE copy (A4, one-sided); return the signed documents to UHY's office as soon as possible.
+- Numbered list of enclosures, each with "Please sign on the signature line":
+  1. Written Resolutions of the [Sole Director | Directors];
+  2. Written Resolutions of the [Sole Member | Members] in lieu of an Annual General Meeting for the Year [year];
+  3. Authorization letter.
+- Closing note: by signing and returning the written resolutions, the member agrees the company need not send the notice under section 559(1)(a) of the Companies Ordinance that the resolutions have been passed (company-secretary verification needed).
+
+**What the sample shows**
+- The example gives three different dates for the same made-up date (17/10/2026 in the heading, 11 September 2026 in Part 9), and a return-by date (10 September 2026) earlier than either. It also numbers two enclosures "2". This looks like last year's or another client's email edited by hand. Generating every date and number from one record, and checking that the return-by date falls after the made-up date and before the filing deadline (a rule for company-secretary verification), removes this class of error.
+- "Sole Director" and "Sole Member" wording must follow the company's actual numbers of directors and members from CSA.
+- Filing fees (HK$105 standard, up to HK$3,480 late, as quoted) belong in playbook data with the late-fee bands, not in the template.
+
 ## Principles
 
 - **The firm's systems stay the record.** CSA, DN, Access, Xero, the shared drive and the mailbox remain sources. The pilot writes results back into them: documents filed into the client folders on F:, Outlook drafts, and a status workbook plus an append-only review log on the share. If the pilot is switched off, staff keep everything without our app.
@@ -192,6 +214,9 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 - Where signed and filed papers are saved on F:, with three or four example file names.
 
 **Annual returns (Coe, Ruby, accounting)**
+- Are the annual return and AGM sent in one email or two? Does the AGM section only appear when the AGM falls in the same window?
+- What is the authorisation letter enclosed with the AGM papers, and who is it addressed to?
+- How the bank-statement date in the Part 9 request is chosen (the sample uses the month end before the made-up date).
 - How staff learn a client has paid today, and whether accounting would later let the pilot read invoice status from Xero.
 - How the return-by date is chosen (UHY's example asked for signed papers back well before the 42-day deadline).
 
