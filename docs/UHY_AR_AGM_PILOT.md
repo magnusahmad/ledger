@@ -1,7 +1,7 @@
 # UHY-ASK pilot: annual returns and AGMs, with CDD folded in
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-10-13
+Last reviewed: 2026-10-20
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
 Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Harbourline module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
@@ -63,7 +63,7 @@ Measure staff minutes per company against UHY's current process. Start with the 
 
 Several staff use the app, so it runs as **one backend process on UHY's Windows Server** (the server behind F:, confirmed 7 October), set up with UHY's outsourced IT company. Staff open it in a browser from their PCs. Program files and state stay on that server. The database file must not be opened by several copies of the app over the share: embedded databases are not safe with several writers on a network drive.
 
-The server runs a portable bundle (Node runtime and the backend) as a Windows service under an agreed account. That account has read access to the approved share folders and CSA data, and write access to the agreed output folders. It accepts connections from the office network only, never from the internet, over HTTPS with a certificate installed on the staff PCs. It makes outbound HTTPS connections to Microsoft 365 (Graph) and to the AI model provider's API, which receives document and email content for processing; UHY's IT company must allow both through the firewall, and we will give them the exact hosts to allow. Each staff member signs in, and every approval is recorded against the person who made it. A single-instance guard prevents two backends running against the same state.
+The server runs a portable bundle (Node runtime and the backend) as a Windows service under an agreed account. That account has read access to the approved share folders and CSA data, and write access to the agreed output folders. It accepts connections from the office network only, never from the internet, over HTTPS. Staff PCs trust it through a small private certificate authority created for the pilot and limited by X.509 name constraints to the server's own hostname, so it can't vouch for any other site. Its root certificate is installed once on each staff PC (by CRV over TeamViewer, as Topone asked); server certificates can then be renewed without touching the PCs again. The CA's private key is kept offline, never on the server. It makes outbound HTTPS connections to Microsoft 365 (Graph) and to the AI model provider's API, which receives document and email content for processing; UHY's IT company must allow both through the firewall, and we will give them the exact hosts to allow. Each staff member signs in, and every approval is recorded against the person who made it. A single-instance guard prevents two backends running against the same state.
 
 State lives in an embedded database file owned by that one process. PGlite is the first choice because the existing schema and migrations are Postgres; the spike must confirm that the migrations, the NAR1 generator and the CDD module's queries run on it (`src/db/client.ts` currently assumes node-postgres and advisory locks). Fall back to SQLite for pilot tables only if PGlite fails. Every row carries the installation's `firm_id`. A single-firm installation on the firm's own server provides firm separation (#53); RLS remains required for any shared deployment.
 
@@ -173,12 +173,15 @@ Firm-reported or confirmed by Magnus; company-secretary verification still neede
 ## Open questions
 
 **CSA data (UHY's IT company, Topone; most blocking)**
-Topone answered on 13 October: CSA uses Microsoft SQL Server on UHY's server; they offered a temporary domain administrator account for the assessment, a dedicated service account once requirements are known, a Cloud Application Administrator account for the app registration, and AnyDesk for remote access. Still open:
+Topone answered on 13 October: CSA uses Microsoft SQL Server on UHY's server; they offered a temporary domain administrator account for the assessment, a dedicated service account once requirements are known, a Cloud Application Administrator account for the app registration, and AnyDesk for remote access.
+
+On 20 October Topone gave CRV an administrator account with the Exchange Administrator role added (for the RBAC for Applications setup), AnyDesk access to the Windows Server, and an unlicensed Microsoft 365 account. They confirmed outbound HTTPS from the server is unrestricted, and offered a quotation if the server needs more hardware. They asked CRV to install the HTTPS certificate on each staff PC remotely, arranging TeamViewer access with each user. Credentials are held in a password manager only, never in this repo, the KB or chat. Still open:
 - Who administers the CSA SQL Server instance and can create a read-only login; whether UHY's CSA licence restricts reading the database.
-- An Exchange Administrator to create the mailbox scope and role assignment (a Cloud Application Administrator can't do that part); which mailbox(es) staff send from.
-- A narrower account than domain administrator for the assessment (local administrator on the UHY server only), credentials passed by phone or a password manager rather than email, and changed when the assessment ends.
-- Whether AnyDesk sessions are approved by someone at UHY each time or left unattended.
-- Windows Server version and spare capacity, the HTTPS certificate on staff PCs, outbound access to Microsoft 365 and the AI provider, and scan-to-folder on the Apeos C3570.
+- Which mailbox(es) staff send client email from.
+- Whether the administrator account is a domain administrator; if so, use it only for the setup steps that need it, and ask Topone to change its password once setup is done and the dedicated service account exists.
+- Whether AnyDesk sessions on the server are approved by someone at UHY each time or left unattended.
+- Windows Server version and spare capacity (measured during the assessment), and scan-to-folder on the Apeos C3570.
+- Certificate approach for staff PCs: installed per PC over TeamViewer, so it must be long-lived and must not let the pilot impersonate other sites (see "Package and local state").
 
 **Sample companies (Coe, Ruby)**
 - UHY will send last year's annual returns and related documents in one batch once we confirm what we need. Financial statements are client-confidential: UHY wants an NDA signed before sharing them. Until then, AGM drafting is built and tested against a fictional audit report.
