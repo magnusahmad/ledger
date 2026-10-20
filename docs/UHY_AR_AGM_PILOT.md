@@ -72,6 +72,8 @@ Ruby supplied one real annual-return and AGM email. The client's and director's 
 - The example gives three different dates for the same made-up date (17/10/2026 in the heading, 11 September 2026 in Part 9), and a return-by date (10 September 2026) earlier than either. It also numbers two enclosures "2". This looks like last year's or another client's email edited by hand. Generating every date and number from one record, and checking that the return-by date falls after the made-up date and before the filing deadline (a rule for company-secretary verification), removes this class of error.
 - "Sole Director" and "Sole Member" wording must follow the company's actual numbers of directors and members from CSA.
 - Filing fees (HK$105 standard, up to HK$3,480 late, as quoted) belong in playbook data with the late-fee bands, not in the template.
+- The annual return is attached as its own PDF. The AGM papers are one PDF containing the directors' written resolutions, the members' written resolutions in lieu of an AGM and the authorisation letter (Ruby, 20 October).
+- One email or two depends on timing: when a company's incorporation anniversary and year end bring the annual return and AGM due close together, both sections go in one email; otherwise each goes on its own (Magnus, 20 October). Pilot default: combine when the AGM's preparation window overlaps the annual return's (both prepared about a month ahead), and let staff split or combine before drafting. The window is a setting.
 
 ## Principles
 
@@ -214,8 +216,7 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 - Where signed and filed papers are saved on F:, with three or four example file names.
 
 **Annual returns (Coe, Ruby, accounting)**
-- Are the annual return and AGM sent in one email or two? Does the AGM section only appear when the AGM falls in the same window?
-- What is the authorisation letter enclosed with the AGM papers, and who is it addressed to?
+- What the authorisation letter in the AGM PDF authorises, and who it is addressed to.
 - How the bank-statement date in the Part 9 request is chosen (the sample uses the month end before the made-up date).
 - How staff learn a client has paid today, and whether accounting would later let the pilot read invoice status from Xero.
 - How the return-by date is chosen (UHY's example asked for signed papers back well before the 42-day deadline).
