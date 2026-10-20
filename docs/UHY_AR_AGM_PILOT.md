@@ -75,6 +75,35 @@ Ruby supplied one real annual-return and AGM email. The client's and director's 
 - The annual return is attached as its own PDF. The AGM papers are one PDF containing the directors' written resolutions, the members' written resolutions in lieu of an AGM and the authorisation letter (Ruby, 20 October).
 - One email or two depends on timing: when a company's incorporation anniversary and year end bring the annual return and AGM due close together, both sections go in one email; otherwise each goes on its own (Magnus, 20 October). Pilot default: combine when the AGM's preparation window overlaps the annual return's (both prepared about a month ahead), and let staff split or combine before drafting. The window is a setting.
 
+## What UHY's 2025 documents show (read 20 October)
+
+Ruby supplied last year's annual return and AGM papers for the five sample companies. They are held in the git-ignored `private/uhy/` folder and nothing from them is committed. Structural findings:
+
+**Annual returns**
+- The PDFs on file are **scans of the filed copy** (from the office Apeos C3570), image only with no text layer, 9–11 pages each. Reading them needs OCR or a vision model.
+- Each scan includes the Registry's payment receipt (submission date and time, form type, fee, payment method). That is evidence of filing and of the fee actually paid, so a scan can propose "filed" with its date and fee for staff to confirm.
+- The forms come from CSA (footer "CSA by P & L Associates") and match the current Registry specification, which is the same one Harbourline's NAR1 template uses (No. 2/2025).
+- **One of the five is a registered non-Hong Kong company,** which files **Form NN3** on the anniversary of its registration, not NAR1. Harbourline has no NN3 template, so that company falls back to CSA's form unless NN3 is added.
+- The presenter is UHY's secretarial company. The presenter's reference combines staff initials, the client code and the filing due date.
+- File naming on F:: `<client code>-Annual Return-<made-up date, e.g. 17Oct2025>.pdf` and `<client code>-AGM-<year>.pdf`.
+
+**AGM papers (Word-generated text PDFs, 2–9 pages)**
+- Each PDF holds the **directors' written resolutions** (under the articles), dated one day before the **members' written resolutions in lieu of an AGM** (under section 548 of the Companies Ordinance). It also holds **one letter of authorisation per corporate member**, in which that member authorises a named individual to sign the members' resolutions on its behalf. Individual members get no letter. This answers the open question about the authorisation letter.
+- Variants seen across five companies:
+  - sole director or several;
+  - sole member or several; individual or corporate members ("For and on behalf of … Authorised Signature(s)");
+  - English with Chinese names, or entirely in Traditional Chinese;
+  - accounts adopted, or accounts not available (deferral wording, two of the five);
+  - directors' retirement wording that depends on each company's articles (all retire and may be re-elected under a cited article; no rotation provision so directors continue; unlimited term under a cited article);
+  - a directors' remuneration table with figures and currency (US$, RMB) taken from the audited accounts;
+  - auditor, or auditor and tax representative, re-appointed;
+  - a copy to the auditor under sections 555 and 559;
+  - signature dates left blank for the client to fill in, in one case.
+- Footer reference: `<client code>-DIR-<yy>/<staff initials>` and `<client code>-AGM-<yy>/<staff initials>`.
+- Several things come from the audited accounts: the year end, the date the directors signed them, and the remuneration figures. Those are what the NDA gates. Everything else carries over from last year's document plus CSA.
+- Small template errors carried from year to year (for example "ensuring year" for "ensuing year"). Drafting from last year's document will copy them unless the template is cleaned once.
+- One company is incorporated outside Hong Kong but its members' resolution cites section 548 of the Hong Kong Companies Ordinance. A company secretary should check which law governs its written resolutions.
+
 ## Principles
 
 - **The firm's systems stay the record.** CSA, DN, Access, Xero, the shared drive and the mailbox remain sources. The pilot writes results back into them: documents filed into the client folders on F:, Outlook drafts, and a status workbook plus an append-only review log on the share. If the pilot is switched off, staff keep everything without our app.
@@ -153,7 +182,7 @@ The NAR1 and resolutions are attached. Staff review and send it in Outlook. Prop
 
 Staff accept or reject each one. A change to particulars means the NAR1 is regenerated and re-sent for signature. A change that needs its own filing (for example a director change) is flagged as a separate matter, as the `annualReturn` playbook notes. Staff update CSA themselves.
 
-**NAR1.** Generate the NAR1 from the confirmed particulars with Harbourline's existing generator (`src/documents/cr-forms.ts`). It refuses continuation sheets and currency totals it can't fill; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
+**NAR1 (and NN3).** Registered non-Hong Kong companies file NN3, which Harbourline doesn't generate yet; for them the card says to use CSA's form. Generate the NAR1 from the confirmed particulars with Harbourline's existing generator (`src/documents/cr-forms.ts`). It refuses continuation sheets and currency totals it can't fill; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
 
 **AGM documents.** Default to written resolutions in lieu of an AGM, which most UHY clients use; a meeting (notice and minutes) is the alternative per client. Draft this year's papers from the previous year's Word document in the client folder and this year's audit report, carrying over standing items and updating dates, figures and changed particulars. Changes are tracked so staff see exactly what moved. Where audited accounts are late, use UHY's deferral wording: the accounts are not yet available, and their consideration and adoption is deferred to an adjourned meeting or a later written resolution. A follow-up item then waits for the accounts. The draft is saved as a Word file in the client folder for staff to edit.
 
@@ -216,7 +245,6 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 - Where signed and filed papers are saved on F:, with three or four example file names.
 
 **Annual returns (Coe, Ruby, accounting)**
-- What the authorisation letter in the AGM PDF authorises, and who it is addressed to.
 - How the bank-statement date in the Part 9 request is chosen (the sample uses the month end before the made-up date).
 - How staff learn a client has paid today, and whether accounting would later let the pilot read invoice status from Xero.
 - How the return-by date is chosen (UHY's example asked for signed papers back well before the 42-day deadline).
