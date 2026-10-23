@@ -5,6 +5,7 @@ Run on UHY's Windows Server over AnyDesk, as described in `docs/UHY_PILOT_PLAN.m
 | Script | Stage | Changes anything? |
 |---|---|---|
 | `assess-server.ps1` | 1 | No. Writes a facts file. |
+| `run-sql.ps1` | 1, 4 | Runs any `.sql` file here with Windows authentication when `sqlcmd` isn't installed; writes results to CSV. |
 | `csa-schema.sql` | 1 | No. Exports table and column names, types and row counts. |
 | `csa-find-value.sql` | 1 | No. Reports which table and column hold a value you type from the CSA screen; prints names and counts, never values. |
 | `csa-readonly-login.sql` | 1 or 4 | Yes: creates a read-only (`db_datareader`) user for one Windows account on the CSA database only. |
