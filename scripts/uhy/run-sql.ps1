@@ -8,9 +8,9 @@
 #   .\run-sql.ps1 -Server 'localhost\CSA' -Database 'CSADB' -File .\csa-find-value.sql -Vars @{ needle = 'ABC123' }
 #   .\run-sql.ps1 -Server 'localhost\CSA' -Database 'master' -File .\csa-readonly-login.sql -Vars @{ account = 'UHYASK\svc-pilot'; csadb = 'CSADB' }
 param(
-  [Parameter(Mandatory)] [string] $Server,
-  [Parameter(Mandatory)] [string] $Database,
-  [Parameter(Mandatory)] [string] $File,
+  [Parameter(Mandatory=$true)] [string] $Server,
+  [Parameter(Mandatory=$true)] [string] $Database,
+  [Parameter(Mandatory=$true)] [string] $File,
   [hashtable] $Vars = @{},
   [string] $OutDir = 'C:\uhy-pilot\out'
 )
