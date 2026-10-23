@@ -112,9 +112,12 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 |---|---|---|
 | 3a Spike | PGlite running existing migrations and the NAR1 generator; packaged as a Windows service; a fictional CSA database in SQL Server; Graph against the test tenant | Install and run it on the Windows test VM; service starts, survives a reboot, health page loads |
 | 3b Annual-return loop | Calendar from CSA and DN, NAR1 from CSA particulars, assisted Registry check, payment gate, dispatch draft in the preparer's mailbox, reply intake and proposed changes, status, filing to a fake F: | Walk through one fictional company end to end. Compare the generated NAR1 with a real NAR1 from the five (public documents) |
-| 3c AGM | Written resolutions from last year's Word document and the audit report, with tracked changes and the deferral case | Compare with UHY's real resolutions from the five; fictional audit report until the NDA is signed |
-| 3d Scanned post | Scan inbox watcher, split, classify, match, file with undo, confirmation mode | Drop test scans into the fake scan folder; check matching and undo |
+| 3c AGM | Firm templates from UHY's 2025 wording; per-company standing clauses read from last year's PDF and confirmed once; audit-report facts extracted and confirmed; the deferral case | Ask Coe or Ruby to review the template wording once. Compare generated papers with UHY's real 2025 resolutions; fictional audit report until the NDA is signed |
+| 3d Scanned post | Scan inbox watcher, split, classify, client match in code on identifiers, file with undo, shadow mode | Drop test scans into the fake scan folder; check matching and undo |
 | 3e CDD | Cleanup record, triggers, CDD items in the dispatch email, two-step sign-off, ID expiry | Check that the preparer can't sign off their own case |
+| 3g Module switches | Installation module list; switched-off modules not loaded; no fake fallbacks; demo tools off; read-only register copy from CSA | Check the UHY build shows only the pilot's screens, and refuses to start with a setting missing |
+| 3h Defect log | Every edit, rejection and addition to an AI output recorded as a defect; weekly defect report; shadow-mode switch per AI task | Edit a proposal in the test build and see the defect appear |
+| 3i AI test sets | Frozen fictional test sets (about 30 cases each, EN/TC/SC) for reply reading, scan reading, audit-report facts and standing clauses; results reported under `eval/results/` | Agree the expected answers before the first run; read the report |
 | 3f Pilot CA and HTTPS | Script to create the name-constrained pilot CA offline and issue the server certificate | Create the CA on your machine; keep its private key offline (encrypted USB or the password manager), never on the server |
 
 **Magnus, throughout**
@@ -158,14 +161,14 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 
 **Magnus**
 - [ ] Day-one session in person with Coe and Ruby: run the first company together.
-- [ ] Scanned post runs in confirmation mode for the first two weeks.
+- [ ] Every AI task starts in shadow mode: staff review every AI output before use, nothing is accepted in bulk. Never rely on the model's own confidence.
+- [ ] Brief Coe and Ruby: correct anything wrong and add anything missed in the app (not outside it), because each change is recorded as a defect.
 - [ ] Weekly 20-minute check-in: what was slow, wrong or missing. Claude fixes test-first between check-ins.
-- [ ] Weekly: review the pilot's error log and OpenRouter spend.
+- [ ] Weekly: review the defect log (edited, rejected, missed) with Claude, plus the error log and OpenRouter spend. Each defect becomes a fictional test case and is fixed test-first.
 - [ ] Record per company:
   - minutes at each step against the baseline from the five;
   - differences between the generated NAR1 and CSA's;
-  - proposals accepted and rejected;
-  - scans misfiled.
+  - defects per AI task, by kind (edited, rejected, missed).
 
 **Coe and Ruby**
 - Use the pilot for the five and then the next month's companies: record payment confirmation, review and send drafts, compare NAR1s with CSA's, file as usual.
@@ -174,7 +177,8 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 
 ## Stage 7: Turn on the rest
 
-- [ ] Switch scanned post from confirmation mode to automatic filing if accuracy over the two weeks supports it.
+- [ ] Move an AI task out of shadow mode only on its defect record. Proposed bar: at least 30 real items, no missed defects in the last 30, edits or rejections on fewer than 1 in 10. Staff still click to approve every client-facing or statutory output, and a missed defect puts the task back into shadow mode.
+- [ ] Switch scanned post to automatic filing only when its defect record meets the bar; staff keep a daily list of filings they can undo.
 - [ ] Switch on CDD in the dispatch email for companies without a cleanup entry.
 - [ ] Run a full monthly cycle.
 

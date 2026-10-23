@@ -1,7 +1,7 @@
 # UHY-ASK pilot: annual returns and AGMs, with CDD folded in
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-10-20
+Last reviewed: 2026-10-23
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
 Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Harbourline module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Implementation plan](UHY_PILOT_PLAN.md), [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
@@ -110,6 +110,9 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
 - **Light footprint.** No separate database service, job queue, installer framework or self-managed backup system. Source files are referenced by path and fingerprint, not copied. CRV maintains the installation remotely through UHY's IT company.
 - **The AI suggests; staff approve.** Proposed changes to particulars, generated forms, AGM drafts, filing of scanned post, CDD completion and every outbound message need a staff click. Nothing is sent automatically.
 - **Records stay on the firm's server; processing can happen anywhere.** UHY's requirement is that the client-records database lives on their server. Sending documents and email content to the product model (currently Gemini via OpenRouter, #22) is acceptable (Magnus, 6 October).
+- **Only the pilot's modules are switched on.** Harbourline is one codebase and one database schema; each installation lists the modules it runs. UHY runs the annual cycle, AGM papers and scanned post, with CDD added later. Everything else stays off: request intake, invoicing and bank matching, signing, the client portal, screening, WeChat and the other form playbooks. Off means not loaded: its pages return 404, its menu items are hidden and its background jobs never start. Switching a module on later is a setting plus its tests run against UHY's data, with no migration.
+- **No silent fakes in an installation.** Today `src/lib/config.ts` falls back to a fake adapter when a key is missing, and turns on demo tools outside production builds. In an installation, a switched-on module with missing settings stops the app from starting; fake adapters exist only in tests; demo tools are always off.
+- **Model confidence is never relied on.** Our evaluations showed the model answers confidently even when it is wrong (`eval/results/emails-eval-4-gemini`: one consistently wrong classification at self-reported confidence 0.95). No routing, skipping of review, automatic action or warning depends on a model's own confidence, and confidence is not shown to staff. Oversight comes from people reviewing every AI output and from recorded defects (see "AI accuracy and oversight").
 - **Statutory rules come from playbook data.** Annual-return and AGM deadlines, forms and notes come from the existing `annualReturn` and `agm` playbooks (`seed/playbooks.json`), marked for company-secretary verification. No deadline is hard-coded in pilot code.
 
 ## Package and local state
@@ -135,6 +138,8 @@ One gitignored installation config holds the approved share root (UNC path), CSA
    - never write to the database.
 
    UHY should first confirm that its CSA licence doesn't restrict reading its own database. **CRV does not contact CSA's vendor, P & L, about this:** P & L declined CRV's approach on 6 October and the KB records no approach through its customers. If a vendor export turns out to be necessary, that is UHY's own support request to P & L, made without CRV. Keep the source values next to every derived fact so staff can see where a particular came from.
+
+   Each read is copied into Harbourline's own register tables (officers, members, share capital, registered office) as a read-only copy marked "from CSA", with the read time and CSA's own dates where it has them. CSA stays the record: the pilot never edits these rows, and a fresh read replaces them. The forms, AGM papers and later CDD all work from this one copy. It is also the bridge to the dormant modules: once the registers are filled, the other Registry form generators and CDD's list of people run on the same data.
 2. **Shared files.** Read only approved directories: last year's annual return and AGM documents, audit reports and CDD evidence in each client folder. Read DN rows (financial year end, AGM month, registration anniversary, auditor, contact email, DD form, risk assessment) using a small installation-specific column mapping. Never open the `.laccdb` lock file as a database. Confirm which DN workbook is authoritative.
 3. **Mail (Microsoft Graph).** UHY uses Microsoft 365. Graph works from the server with no one signed in. Access uses Exchange Online's RBAC for Applications, which scopes the app to named mailboxes:
    - the app registration (Topone offers a Cloud Application Administrator account for this);
@@ -152,7 +157,7 @@ One gitignored installation config holds the approved share root (UNC path), CSA
    - moves it there, records it against the company's annual-return or CDD record, and stores extracted facts (for example ID expiry) as proposed facts;
    - keeps a filing log so any filing can be undone in one click.
 
-   A document is filed automatically only when it matches exactly one client and its type is recognised; anything else goes to a review queue. For the first two weeks every filing waits for a one-click confirmation to measure accuracy. Nothing is overwritten. This is the same pipeline as CWCCPA's government-mail flow and is built once.
+   The client match is done in code: the identifiers the model reads (client code, BR or CR number, company name) must match exactly one client in the register copy, or the scan goes to the review queue. The model's own confidence plays no part. Every filing waits for a staff confirmation in shadow mode, and every correction is recorded as a defect (see "AI accuracy and oversight"). Automatic filing is switched on only if the defect record meets the bar, and staff still see every filing in a daily list they can undo from. Nothing is overwritten. This is the same pipeline as CWCCPA's government-mail flow and is built once.
 5. **Registry changes.** The Registry portal blocks automated browsers and must not be scripted (`CR_MONITORING.md`). Two routes:
    - **Version 0, assisted:** each company in the cycle has a "check the Registry" step showing what CSA holds. Staff check the free document index as today and record the result in one click.
    - **e-Monitor (Other Companies)** at HK$17 per company per year was offered and **declined by UHY on 9 October**: few clients file on their own. If that changes, use its email mode read through Graph (the webhook needs an internet-facing endpoint with a Hong Kong CA certificate). The assisted check stays for the pilot.
@@ -180,13 +185,46 @@ The NAR1 and resolutions are attached. Staff review and send it in Outlook. Prop
 - the charges answer for Part 9;
 - any changes to particulars, as a checklist delta citing the source message or document.
 
-Staff accept or reject each one. A change to particulars means the NAR1 is regenerated and re-sent for signature. A change that needs its own filing (for example a director change) is flagged as a separate matter, as the `annualReturn` playbook notes. Staff update CSA themselves.
+Staff accept, edit or reject each one, and must open the source message before accepting; there is no "accept all". Staff also record anything the model missed. Every edit, rejection and addition is a defect (next section). A reply the model reads as "no changes" is reviewed like any other. A change to particulars means the NAR1 is regenerated and re-sent for signature. A change that needs its own filing (for example a director change) is flagged as a separate matter, as the `annualReturn` playbook notes. Staff update CSA themselves.
 
-**NAR1 (and NN3).** Registered non-Hong Kong companies file NN3, which Harbourline doesn't generate yet; for them the card says to use CSA's form. Generate the NAR1 from the confirmed particulars with Harbourline's existing generator (`src/documents/cr-forms.ts`). It refuses continuation sheets and currency totals it can't fill; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
+**NAR1 (and NN3).** Registered non-Hong Kong companies file NN3, which Harbourline doesn't generate yet; for them the card says to use CSA's form. Generate the NAR1 from the confirmed particulars with Harbourline's existing generator (`src/documents/cr-forms.ts`). It handles further directors on continuation sheets and members' schedules. It refuses more than four share classes or mixed currencies, and has no page for corporate directors; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
 
-**AGM documents.** Default to written resolutions in lieu of an AGM, which most UHY clients use; a meeting (notice and minutes) is the alternative per client. Draft this year's papers from the previous year's Word document in the client folder and this year's audit report, carrying over standing items and updating dates, figures and changed particulars. Changes are tracked so staff see exactly what moved. Where audited accounts are late, use UHY's deferral wording: the accounts are not yet available, and their consideration and adoption is deferred to an adjourned meeting or a later written resolution. A follow-up item then waits for the accounts. The draft is saved as a Word file in the client folder for staff to edit.
+**AGM documents: templates, not AI-edited Word files.** Most UHY clients use written resolutions in lieu of an AGM; a meeting (notice and minutes) is the alternative per client. The papers are generated from templates filled from data, not by having the model edit last year's document, which is harder to test and copies old errors forward (for example "ensuring year").
+- **Firm template, once.** UHY's wording from the 2025 papers becomes the firm's template set, extending the existing trilingual templates (`src/documents/templates.ts`): directors' written resolutions, members' written resolutions in lieu of an AGM, one authorisation letter per corporate member, the deferral wording for late accounts and the copy to the auditor. Template text is reviewed by Coe or Ruby and cleaned of carried-over errors.
+- **Per-company standing clauses, once.** The clauses that depend on each company's articles (directors' retirement and re-election wording and the article cited), the auditor and any tax representative, and the language of the papers are read from last year's PDF, proposed by the model and confirmed by staff, then stored with the company. In later years they carry over unless staff change them.
+- **Each year from data.** Sole or several directors and members, names and corporate members come from the register copy; the year end, the date the directors signed the accounts and the remuneration table (figures and currency) come from the audit report. The model extracts those audit facts and staff confirm each one against the report. Where audited accounts are late, the deferral variant is used and a follow-up item waits for the accounts.
+- The papers are produced as one PDF (directors' resolutions, members' resolutions, authorisation letters), as UHY sends them, with an editable Word copy saved to the client folder.
 
 **Status.** Each company moves through: due -> prepared -> payment confirmed -> sent for signature -> signed copy received -> filed -> registered. Staff record "filed" and "registered"; a scanned signed copy can propose "signed copy received". Status is mirrored to the workbook on the share.
+
+## AI accuracy and oversight
+
+The model is used for a few tasks only. Everything else (dates, forms, emails, matching, status) is deterministic code with tests.
+
+| AI task | What goes wrong if it's wrong | How it is checked |
+|---|---|---|
+| Reading a client reply: changes to particulars, the mortgages and charges answer, signed papers attached | A missed change gives a wrong annual return | Staff review every reply; the charges answer is always entered by staff, with the model's reading shown beside it |
+| Reading a scan: document type, identifiers, signature pages present | A misfiled document | Client matched in code on identifiers; staff confirm every filing in shadow mode |
+| Reading the audit report: year end, directors' signing date, remuneration figures | Wrong figures in the resolutions | Staff confirm each fact against the report |
+| Reading last year's AGM papers for standing clauses (once per company) | Wrong article or retirement wording | Staff confirm each clause |
+| Reading last year's scanned annual returns (filing evidence, fee paid) | A wrong "filed" date or fee | Staff confirm |
+
+The existing email evaluations measure a different task (understanding new client requests). On the latest fresh batch, 7 of 10 were fully correct, 10 of 10 safe, and 3 of 5 drafts good enough to send. None of the tasks above has been measured yet.
+
+**Never rely on the model saying it isn't sure.** Its self-reported confidence was high even on answers that were consistently wrong. Nothing in the pilot uses it.
+
+**Test sets before shipping.** For each AI task, a frozen set of fictional cases in English, Traditional and Simplified Chinese, with expected answers agreed before the first run. For example, about 30 replies (buried changes, partial answers, "no changes" with an attachment that shows a change, replies in two messages) and about 30 scans. These follow the email evaluation method: frozen inputs and expectations, every output reviewed, results recorded under `eval/results/`. They run again after every prompt or model change. Real UHY documents are never copied into the repo; test cases are fictional, modelled on the structures seen.
+
+**Shadow mode on the live cycle.** For the first weeks with real companies, every AI output is reviewed by a person before it is used: nothing is accepted in bulk, and staff see the source beside each proposal. The work still goes out on time because staff correct as they go.
+
+**Defects are recorded whenever a person changes the model's output.** The app records each one automatically, with no extra step for staff:
+- **edited:** staff changed a proposed value;
+- **rejected:** staff removed a proposal;
+- **missed:** staff added something the model should have found (the most serious kind, because review is the only thing that catches it).
+
+Each defect keeps the task, the input reference, the model's output, the final value, who changed it and when, and the model and prompt version. The defect log is reviewed at the weekly check-in. Each defect becomes a fictional test case, so the test set grows from real failure patterns, and fixes are made test-first.
+
+**When a task can leave shadow mode.** Only on the defect record, never on the model's own view. Proposed bar, for Magnus to confirm: at least 30 real items for the task, no "missed" defects in the last 30, and edits or rejections on fewer than 1 in 10. Leaving shadow mode only means routine items stop needing a side-by-side comparison with the manual process. Every client-facing or statutory output still needs a staff click (`AGENTS.md`), and defect recording never switches off. Any "missed" defect puts the task back into shadow mode.
 
 ## CDD inside the annual cycle
 
@@ -266,10 +304,12 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 
 1. **Spike on fictional data:** PGlite running the migrations and the NAR1 generator; a fictional CSA data sample in the confirmed format; a fictional share; a test Microsoft 365 mailbox through Graph; a fictional scan folder.
 2. **The annual-return loop for one company:** calendar, NAR1, payment gate, dispatch draft, reply and signed-copy intake, status, filing into F:.
-3. **AGM written resolutions** from last year's Word document and the audit report, including the deferral case (fictional audit report until an NDA is in place).
+3. **AGM papers from templates:** UHY's wording as the firm template, per-company standing clauses confirmed once, audit-report facts extracted and confirmed, the deferral case (fictional audit report until an NDA is in place).
 4. **Scanned post and the assisted Registry check.**
 5. **CDD folded into the request,** with two-step sign-off.
-6. **Run on UHY's server, PCs and mailbox** with the five real companies before calling it usable.
+6. **Module switches and the defect log:** installation module list, no fake fallbacks, defect recording on every AI output.
+7. **AI test sets** for each AI task, run and reported before the live cycle.
+8. **Run on UHY's server, PCs and mailbox** in shadow mode before calling it usable.
 
 Before implementation, write and run failing business tests, then report the actual red and green runs. Minimum acceptance tests:
 
@@ -285,12 +325,15 @@ Before implementation, write and run failing business tests, then report the act
 - "a change proposed from a client reply does not alter particulars until staff accept it".
 - "an accepted director change is flagged as a separate matter".
 - "a NAR1 the generator cannot fill completely falls back to CSA and says so".
-- "the AGM draft shows every change from last year's document".
+- "AGM papers say Sole Director or Directors, and Sole Member or Members, from the register copy".
+- "a corporate member gets one authorisation letter and an individual member gets none".
+- "a company's confirmed standing clauses carry over to next year unless staff change them".
+- "an audit-report fact is not used in the resolutions until staff confirm it".
 - "late audited accounts produce the deferral wording and a follow-up item, never last year's figures".
 - "a company is not marked filed or registered without a staff action".
 
 **Intake and filing**
-- "a scan that matches more than one client, or none, is never filed automatically".
+- "a scan whose identifiers match more than one client, or none, is never filed automatically, whatever the model reports".
 - "while confirmation mode is on, no scan is filed without a staff click".
 - "an automatic filing can be undone from the filing log".
 - "an approved scan is filed under the firm's naming convention without overwriting an existing file".
@@ -307,7 +350,18 @@ Before implementation, write and run failing business tests, then report the act
 - "a same-name person at another company is not linked without staff confirmation".
 - "a residential-address suggestion cannot pass the address check without staff acceptance, and sends only the address to the model".
 
+**AI oversight**
+- "no decision, route or warning depends on a model's self-reported confidence".
+- "a reply proposal can't be accepted without opening its source message, and there is no accept-all".
+- "editing, rejecting or adding to a model output records a defect with the model's output, the final value, the user and the model and prompt version".
+- "a task in shadow mode can't move out of it while the defect log is below the bar, and a missed defect moves it back".
+- "the charges answer for Part 9 is always entered by staff".
+
 **Platform**
+- "a switched-off module's pages return 404 and its background jobs don't start".
+- "an installation with a switched-on module missing its settings refuses to start instead of using a fake adapter".
+- "demo tools are off in an installation".
+- "the register copy from CSA can't be edited in the pilot, and a fresh read replaces it".
 - "creating a mail draft does not send it or record it as sent".
 - "the pilot never writes to CSA".
 - "every approval appears in the status workbook and review log on the share".
