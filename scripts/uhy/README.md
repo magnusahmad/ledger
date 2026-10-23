@@ -5,7 +5,7 @@ Run on UHY's Windows Server over AnyDesk, as described in `docs/UHY_PILOT_PLAN.m
 | Script | Stage | Changes anything? |
 |---|---|---|
 | `1-assess-server.cmd` | 1 | No. Double-click launcher for `assess-server.ps1` (no typing or pasting needed). |
-| `2-list-databases.cmd` | 1 | No. Launcher for `list-databases.ps1`: asks for the SQL instance and lists its databases with sizes, to identify CSA's. |
+| `2-list-databases.cmd` | 1 | No. Launcher for `list-databases.ps1`: SQL version, databases, last backups and how clients connect (counts only). Defaults to localhost\CSAEXPERT. |
 | `assess-server.ps1` | 1 | No. Writes a facts file. |
 | `run-sql.ps1` | 1, 4 | Runs any `.sql` file here with Windows authentication when `sqlcmd` isn't installed; writes results to CSV. |
 | `csa-schema.sql` | 1 | No. Exports table and column names, types and row counts. |
