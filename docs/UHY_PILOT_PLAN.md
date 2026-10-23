@@ -57,7 +57,7 @@ The five sample companies have annual returns due roughly between early November
 
 **Done when:** mailbox addresses received, CSA licence confirmed, NDA sent, assessment session booked. Target: Wed 21 October.
 
-## Stage 1: Server assessment (one AnyDesk session, 1–2 hours)
+## Stage 1: Server assessment (done 23 October; findings in the brief)
 
 Look only. No installs, no changes, and no client data leaves the server.
 
