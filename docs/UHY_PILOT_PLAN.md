@@ -177,7 +177,7 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 
 ## Stage 7: Turn on the rest
 
-- [ ] Move an AI task out of shadow mode only on its defect record. Proposed bar: at least 30 real items, no missed defects in the last 30, edits or rejections on fewer than 1 in 10. Staff still click to approve every client-facing or statutory output, and a missed defect puts the task back into shadow mode.
+- [ ] Move an AI task out of shadow mode only on its defect record. Bar (confirmed 23 October): at least 30 real items, no missed defects in the last 30, edits or rejections on fewer than 1 in 10. Staff still click to approve every client-facing or statutory output, and a missed defect puts the task back into shadow mode.
 - [ ] Switch scanned post to automatic filing only when its defect record meets the bar; staff keep a daily list of filings they can undo.
 - [ ] Switch on CDD in the dispatch email for companies without a cleanup entry.
 - [ ] Run a full monthly cycle.

@@ -224,7 +224,7 @@ The existing email evaluations measure a different task (understanding new clien
 
 Each defect keeps the task, the input reference, the model's output, the final value, who changed it and when, and the model and prompt version. The defect log is reviewed at the weekly check-in. Each defect becomes a fictional test case, so the test set grows from real failure patterns, and fixes are made test-first.
 
-**When a task can leave shadow mode.** Only on the defect record, never on the model's own view. Proposed bar, for Magnus to confirm: at least 30 real items for the task, no "missed" defects in the last 30, and edits or rejections on fewer than 1 in 10. Leaving shadow mode only means routine items stop needing a side-by-side comparison with the manual process. Every client-facing or statutory output still needs a staff click (`AGENTS.md`), and defect recording never switches off. Any "missed" defect puts the task back into shadow mode.
+**When a task can leave shadow mode.** Only on the defect record, never on the model's own view. Bar (confirmed by Magnus, 23 October): at least 30 real items for the task, no "missed" defects in the last 30, and edits or rejections on fewer than 1 in 10. Leaving shadow mode only means routine items stop needing a side-by-side comparison with the manual process. Every client-facing or statutory output still needs a staff click (`AGENTS.md`), and defect recording never switches off. Any "missed" defect puts the task back into shadow mode.
 
 ## CDD inside the annual cycle
 
