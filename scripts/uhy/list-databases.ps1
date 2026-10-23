@@ -2,7 +2,7 @@
 param([string] $Instance)
 if (-not $Instance) { $Instance = Read-Host 'SQL Server instance (as shown in server-facts.txt, e.g. localhost\SQLEXPRESS or localhost)' }
 $out = 'C:\uhy-pilot\out'
-New-Item -ItemType Directory -Force -Path $out | Out-Null
+if (-not (Test-Path $out)) { New-Item -ItemType Directory -Path $out | Out-Null }
 $c = New-Object System.Data.SqlClient.SqlConnection "Server=$Instance;Database=master;Integrated Security=True;TrustServerCertificate=True;Application Name=UHY pilot assessment"
 try {
   $c.Open()

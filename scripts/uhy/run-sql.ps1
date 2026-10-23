@@ -1,5 +1,5 @@
 # UHY-ASK pilot: run one of the .sql files in this folder without needing sqlcmd.
-# Uses Windows authentication as the signed-in user. Splits on GO lines, substitutes
+# Works on Windows PowerShell 2.0 and later. Uses Windows authentication as the signed-in user. Splits on GO lines, substitutes
 # sqlcmd-style $(name) variables, and writes every result set to CSV in C:\uhy-pilot\out.
 # Read-only unless the .sql file itself says otherwise (csa-readonly-login.sql changes security).
 #
@@ -15,9 +15,9 @@ param(
   [string] $OutDir = 'C:\uhy-pilot\out'
 )
 $ErrorActionPreference = 'Stop'
-New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir | Out-Null }
 
-$sql = Get-Content -Raw -Path $File
+$sql = [IO.File]::ReadAllText((Resolve-Path $File).Path)
 foreach ($k in $Vars.Keys) { $sql = $sql.Replace("`$($k)", [string]$Vars[$k]) }
 if ($sql -match '\$\((\w+)\)') { throw "Missing -Vars value for `$($($Matches[1]))" }
 
