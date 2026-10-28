@@ -45,14 +45,13 @@ The five sample companies have annual returns due roughly between early November
   - whether outstanding CDD should ever block an annual return;
   - the fast track: the five run through the pilot from 30 October; Coe and Ruby time three to five other annual returns by hand as the baseline, and tell us each of the five's due date and current stage;
   - for the five: last year's annual returns, AGM written resolutions and annual-return emails, in one batch or collected on your next visit.
-- [ ] Review the revised NDA (Claude), fill in the parties and send it to Allan, so the financial statements can follow.
+- [x] NDA signed with UHY (confirmed 28 October).
 - [ ] Create a separate OpenRouter API key for the UHY installation, with a monthly spend limit.
 - [ ] Set up a Windows test machine for us: a Windows Server or Windows 11 VM (on the Mac, or a cloud VM). Everything is tested there before it touches UHY's server.
 - [ ] Set up a test Microsoft 365 tenant with two or three test mailboxes, so the mail connector is built without UHY's mail.
 
 **Claude**
 - [x] Write the server assessment and mailbox scripts: `scripts/uhy/` (not yet run on Windows; check them on the test VM first).
-- [ ] Rewrite NDA clauses 5.3 and 5.4: client records stay on UHY's server; AI processing allowed through named providers, with no training on UHY data and no location restriction.
 - [ ] Draft the emails above.
 
 **Done when:** mailbox addresses received, CSA licence confirmed, NDA sent, assessment session booked. Target: Wed 21 October.
@@ -112,7 +111,7 @@ Claude builds test-first, following the brief's work order and acceptance tests,
 |---|---|---|
 | 3a Spike | PGlite running existing migrations and the NAR1 generator; packaged as a Windows service; a fictional CSA database in SQL Server; Graph against the test tenant | Install and run it on the Windows test VM; service starts, survives a reboot, health page loads |
 | 3b Annual-return loop | Calendar from CSA and DN, NAR1 from CSA particulars, assisted Registry check, payment gate, dispatch draft in the preparer's mailbox, reply intake and proposed changes, status, filing to a fake F: | Walk through one fictional company end to end. Compare the generated NAR1 with a real NAR1 from the five (public documents) |
-| 3c AGM | Firm templates from UHY's 2025 wording; per-company standing clauses read from last year's PDF and confirmed once; audit-report facts extracted and confirmed; the deferral case | Ask Coe or Ruby to review the template wording once. Compare generated papers with UHY's real 2025 resolutions; fictional audit report until the NDA is signed |
+| 3c AGM | Firm templates from UHY's 2025 wording; per-company standing clauses read from last year's PDF and confirmed once; audit-report facts extracted and confirmed; the deferral case | Ask Coe or Ruby to review the template wording once. Compare generated papers with UHY's real 2025 resolutions; real audit reports for checking (NDA signed), fictional ones in committed tests |
 | 3d Scanned post | Scan inbox watcher, split, classify, client match in code on identifiers, file with undo, shadow mode | Drop test scans into the fake scan folder; check matching and undo |
 | 3e CDD | Cleanup record, triggers, CDD items in the dispatch email, two-step sign-off, ID expiry | Check that the preparer can't sign off their own case |
 | 3g Module switches | Installation module list; switched-off modules not loaded; no fake fallbacks; demo tools off; read-only register copy from CSA | Check the UHY build shows only the pilot's screens, and refuses to start with a setting missing |

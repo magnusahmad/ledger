@@ -100,7 +100,7 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
   - a copy to the auditor under sections 555 and 559;
   - signature dates left blank for the client to fill in, in one case.
 - Footer reference: `<client code>-DIR-<yy>/<staff initials>` and `<client code>-AGM-<yy>/<staff initials>`.
-- Several things come from the audited accounts: the year end, the date the directors signed them, and the remuneration figures. Those are what the NDA gates. Everything else carries over from last year's document plus CSA.
+- Several things come from the audited accounts: the year end, the date the directors signed them, and the remuneration figures. The NDA with UHY is signed (confirmed by Magnus, 28 October), so audit reports can be shared. Everything else carries over from last year's document plus CSA.
 - Small template errors carried from year to year (for example "ensuring year" for "ensuing year"). Drafting from last year's document will copy them unless the template is cleaned once.
 - One company is incorporated outside Hong Kong but its members' resolution cites section 548 of the Hong Kong Companies Ordinance. A company secretary should check which law governs its written resolutions.
 
@@ -278,7 +278,7 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 - Certificate approach for staff PCs: installed per PC over TeamViewer, so it must be long-lived and must not let the pilot impersonate other sites (see "Package and local state").
 
 **Sample companies (Coe, Ruby)**
-- UHY will send last year's annual returns and related documents in one batch once we confirm what we need. Financial statements are client-confidential: UHY wants an NDA signed before sharing them. Until then, AGM drafting is built and tested against a fictional audit report.
+- The NDA is signed (28 October), so UHY can now share financial statements. Ask for this year's audit reports for the five companies, to go in `private/uhy/` only; tests and committed fixtures stay fictional.
 - Magnus can also collect the documents on his next office visit.
 - Last year's AGM written resolutions and the email exchange from last year's cycle for each company.
 - Where signed and filed papers are saved on F:, with three or four example file names.
@@ -305,7 +305,7 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 
 1. **Spike on fictional data:** PGlite running the migrations and the NAR1 generator; a fictional CSA data sample in the confirmed format; a fictional share; a test Microsoft 365 mailbox through Graph; a fictional scan folder.
 2. **The annual-return loop for one company:** calendar, NAR1, payment gate, dispatch draft, reply and signed-copy intake, status, filing into F:.
-3. **AGM papers from templates:** UHY's wording as the firm template, per-company standing clauses confirmed once, audit-report facts extracted and confirmed, the deferral case (fictional audit report until an NDA is in place).
+3. **AGM papers from templates:** UHY's wording as the firm template, per-company standing clauses confirmed once, audit-report facts extracted and confirmed, the deferral case; real audit reports for checking, fictional ones in committed tests.
 4. **Scanned post and the assisted Registry check.**
 5. **CDD folded into the request,** with two-step sign-off.
 6. **Module switches and the defect log:** installation module list, no fake fallbacks, defect recording on every AI output.
