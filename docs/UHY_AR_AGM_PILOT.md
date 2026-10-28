@@ -241,7 +241,15 @@ Each defect keeps the task, the input reference, the model's output, the final v
 
 **Who does what.** Coe or Ruby assess the evidence and prepare the case; Allan signs off completion. The pilot enforces the two steps: the preparer can't sign off their own case. Completion is written to the status workbook and the cleanup record.
 
-**Whether CDD blocks the annual return.** By default the annual return and AGM go ahead while CDD is outstanding: the annual return has a statutory deadline and late fees. The company card shows CDD as outstanding until Allan signs off. Whether UHY wants a firm rule that stops other new work until CDD is done is for Allan to decide.
+**CDD never blocks a government filing (Allan, 28 October).** UHY's rule is that missing internal forms never delay a Registry filing. The annual return and AGM always go ahead; the company card shows CDD as outstanding until Allan signs off. Two gaps happen in practice today, and the pilot is built to catch both:
+
+- **A new company for an existing client.** The client often doesn't send a new CDD form; staff do the annual return anyway, and sometimes fill in the CDD form for the client. The pilot opens entity CDD for the new company and links it to the existing client group. It reuses the people's existing evidence only where staff confirm it is the same person and still current.
+- **A new director at an existing company.** The individual CDD form is often overlooked; the annual return goes ahead. The pilot opens CDD for that person as soon as the new director appears (CSA, a client reply or the Registry check), and adds the missing items to the next client email.
+
+Points for UHY's compliance owner, not pilot rules:
+- A new company is a new customer. The Registry's guideline allows identity verification to finish after the relationship starts only exceptionally: generally within 30 working days, with the relationship suspended after that and ended after 120 ([TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md), 4.7). The pilot shows the days since onboarding on each open new-company case, so the clock is visible; it never stops a filing.
+- When staff fill in a client's CDD form, the pilot records that it was prepared by staff from information the client supplied. Whether UHY then needs the client to confirm or sign it is UHY's decision; the case can't be completed until Allan signs off either way.
+- A new director who is neither a 25%+ owner nor acting for the client needs only to be named under the guideline; UHY's own form for every director is stricter, which is UHY's choice.
 
 **Effort.** Most of what CDD needs is already built for the annual cycle: the CSA roster of people, company contacts, the dispatch email and chasers, the mail and scan intake, filing into F: and staff approvals. CDD adds:
 - person-level evidence with received, assessed and complete states;
@@ -290,7 +298,6 @@ On 20 October Topone gave CRV an administrator account with the Exchange Adminis
 
 **CDD (Allan)**
 - Whether the cleanup can be recorded per company with date and sign-off, and where (DN's DD form column or a separate list).
-- Whether outstanding CDD should ever block an annual return, AGM or other work.
 - Whether Ruby's earlier chase checklist (A01/A02 forms, certification, engagement letter, authorisation letters) still applies alongside the 7 October list.
 - What record of a Zoom call is kept; whether "within three months" for proof of address runs to receipt or to review; risk rating and review frequency; how often Sentroweb screening is re-run.
 
@@ -347,7 +354,9 @@ Before implementation, write and run failing business tests, then report the act
 - "a new director from a client reply or Registry change opens CDD for that person".
 - "an ID that expires before the next annual return reopens that person's CDD".
 - "the person who prepared a CDD case cannot sign it off".
-- "outstanding CDD does not block the annual return unless the firm's policy says so".
+- "outstanding CDD never blocks an annual return or AGM".
+- "a new company for an existing client opens entity CDD and shows the days since onboarding".
+- "a CDD form filled in by staff is recorded as staff-prepared and still needs Allan's sign-off".
 - "a same-name person at another company is not linked without staff confirmation".
 - "a residential-address suggestion cannot pass the address check without staff acceptance, and sends only the address to the model".
 
