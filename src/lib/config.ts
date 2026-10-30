@@ -33,6 +33,16 @@ const Env = z.object({
   POLL_INTERVAL_MS: z.coerce.number().default(5000),
   /** Demo tools (demo panel actions such as the clock). Default: on except in production builds. */
   DEMO_TOOLS: z.enum(["0", "1"]).optional(),
+  /** Mail room (inbound post). Folders default under storage/mailroom for the demo. */
+  MAILROOM_SCAN_DIR: z.string().optional(),
+  MAILROOM_SERVER_DIR: z.string().optional(),
+  MAILROOM_DRAFTS: z.enum(["eml", "gmail"]).default("eml"),
+  MAILROOM_DRAFTS_DIR: z.string().optional(),
+  MAILROOM_RULES: z.string().default("seed/mailroom/rules.json"),
+  MAILROOM_FIRM_NAME: z.string().default("CWC CPA"),
+  MAILROOM_FROM: z.string().default("mail@cwccpa.example"),
+  /** 1: save live model answers for the mail room as replayable fixtures (fictional letters only). */
+  MAILROOM_RECORD: z.enum(["0", "1"]).default("0"),
 });
 
 export type Config = z.infer<typeof Env> & {

@@ -6,11 +6,13 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-export const BASE = "http://localhost:3200";
+export const BASE = process.env.REC_BASE ?? "http://localhost:3200";
 export const STAGE = `${BASE}/__stage`;
 const DRY = process.env.DRY === "1";
 
-type OverlayState = { x: number; y: number; caption: { label: string; text: string; where: "bottom" | "left" } | null };
+/** Where a caption sits: the classic spots, or an exact box (page px) kept clear of what matters. */
+export type Where = "bottom" | "left" | { x: number; y: number; w: number };
+type OverlayState = { x: number; y: number; caption: { label: string; text: string; where: Where } | null };
 
 const OVERLAY = `(() => {
   if (window.top !== window) return;
@@ -22,6 +24,8 @@ const OVERLAY = `(() => {
   #rec-cap{position:fixed;z-index:2147483646;pointer-events:none;background:rgba(22,24,29,.94);color:#fff;border-radius:12px;padding:12px 20px 14px;font:15px/1.45 "IBM Plex Sans","Noto Sans TC","PingFang TC",system-ui,sans-serif;opacity:0;transition:opacity .35s}
   #rec-cap.bottom{left:50%;bottom:28px;transform:translateX(-50%);max-width:720px;min-width:420px}
   #rec-cap.left{left:64px;top:50%;transform:translateY(-50%);width:400px;font-size:17px;padding:18px 24px 20px}
+  #rec-cap.at{font-size:16px;padding:16px 20px 18px}
+  #rec-key{position:fixed;z-index:2147483647;pointer-events:none;background:#16181d;color:#fff;border-radius:8px;padding:6px 12px;font:600 15px/1.2 "IBM Plex Mono",ui-monospace,monospace;box-shadow:0 4px 14px rgba(0,0,0,.25);opacity:0;transition:opacity .25s}
   #rec-cap .l{font-size:12px;color:#aeb4bd;margin-bottom:3px}
   #rec-cap.left .l{font-size:13px}
   #rec-title{position:fixed;inset:0;z-index:2147483647;background:#f4f6f8;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s;font-family:"IBM Plex Sans",system-ui,sans-serif;color:#16181d;text-align:center}
@@ -37,6 +41,7 @@ const OVERLAY = `(() => {
     document.body.appendChild(c);
     const r = document.createElement("div"); r.id = "rec-ring"; document.body.appendChild(r);
     const cap = document.createElement("div"); cap.id = "rec-cap"; cap.className = "bottom"; cap.innerHTML = '<div class="l"></div><div class="t"></div>'; document.body.appendChild(cap);
+    const k = document.createElement("div"); k.id = "rec-key"; document.body.appendChild(k);
     const t = document.createElement("div"); t.id = "rec-title"; t.innerHTML = '<div class="p"></div><div class="h"></div><div class="s"></div><div class="b"></div>'; document.body.appendChild(t);
     window.__rec.pos(window.__recX ?? 640, window.__recY ?? 400);
   };
@@ -47,7 +52,10 @@ const OVERLAY = `(() => {
       const step = (now) => { const k = Math.min(1, (now - t0) / ms), e = ease(k); window.__rec.pos(x0 + (x - x0) * e, y0 + (y - y0) * e); if (k < 1) requestAnimationFrame(step); else res(); };
       requestAnimationFrame(step); }); },
     ripple(x, y) { const d = document.createElement("div"); d.className = "rec-ripple"; d.style.left = x + "px"; d.style.top = y + "px"; document.body.appendChild(d); setTimeout(() => d.remove(), 700); },
-    caption(label, text, where) { const c = document.getElementById("rec-cap"); if (!c) return; c.className = where || "bottom"; c.querySelector(".l").textContent = label || ""; c.querySelector(".l").style.display = label ? "" : "none"; c.querySelector(".t").textContent = text; c.style.opacity = "1"; },
+    keycap(text, x, y) { const k = document.getElementById("rec-key"); if (!k) return; k.textContent = text; k.style.left = x + "px"; k.style.top = y + "px"; k.style.opacity = "1"; clearTimeout(window.__recKeyT); window.__recKeyT = setTimeout(() => { k.style.opacity = "0"; }, 1100); },
+    caption(label, text, where) { const c = document.getElementById("rec-cap"); if (!c) return;
+      if (where && typeof where === "object") { c.className = "at"; c.style.left = where.x + "px"; c.style.top = where.y + "px"; c.style.width = where.w + "px"; c.style.bottom = ""; c.style.transform = "none"; }
+      else { c.className = where || "bottom"; c.style.left = ""; c.style.top = ""; c.style.width = ""; c.style.transform = ""; } c.querySelector(".l").textContent = label || ""; c.querySelector(".l").style.display = label ? "" : "none"; c.querySelector(".t").textContent = text; c.style.opacity = "1"; },
     hideCaption() { const c = document.getElementById("rec-cap"); if (c) c.style.opacity = "0"; },
     ring(x, y, w, h) { const r = document.getElementById("rec-ring"); if (!r) return; r.style.left = x + "px"; r.style.top = y + "px"; r.style.width = w + "px"; r.style.height = h + "px"; r.style.opacity = "1"; },
     hideRing() { const r = document.getElementById("rec-ring"); if (r) r.style.opacity = "0"; },
@@ -128,14 +136,14 @@ export class Recorder {
     await this.page.waitForLoadState("networkidle").catch(() => {});
   }
 
-  async caption(label: string, text: string, where: "bottom" | "left" = "bottom") {
+  async caption(label: string, text: string, where: Where = "bottom") {
     this.state.caption = { label, text, where };
     await this.ev("caption", label, text, where);
   }
   async hideCaption() { this.state.caption = null; await this.ev("hideCaption"); }
 
   /** Caption, then hold long enough to read it. */
-  async say(label: string, text: string, where: "bottom" | "left" = "bottom") {
+  async say(label: string, text: string, where: Where = "bottom") {
     await this.caption(label, text, where);
     await this.wait(Math.max(2600, 1400 + text.length * 48));
   }
@@ -176,6 +184,17 @@ export class Recorder {
     await l.fill("");
     if (DRY) await l.fill(text); else await l.pressSequentially(text, { delay });
     await this.wait(250);
+  }
+
+  /** Press a key, showing it as a keycap near the control it acts on (with a ripple there). */
+  async press(key: string, shown: string, on?: Locator) {
+    let x = this.state.x, y = this.state.y;
+    if (on) { const b = await on.boundingBox(); if (b) { x = b.x + b.width / 2; y = b.y + b.height / 2; } }
+    await this.ev("keycap", shown, Math.max(12, x - 18), Math.max(12, y - 64));
+    await this.wait(450);
+    if (on) await this.ev("ripple", x, y);
+    await this.page.keyboard.press(key);
+    await this.wait(400);
   }
 
   /** Blue ring around an element (or several: the ring covers their union). */
@@ -281,4 +300,4 @@ export function docStage(title: string, pageUrls: string[], note: string) {
   </style></head><body><div class="bar"><div>${title}</div><span>${note}</span></div>${pageUrls.map((u) => `<img class="pg" src="${u}">`).join("")}<div style="height:60px"></div></body></html>`;
 }
 
-declare global { interface Window { __rec: Record<string, (...a: unknown[]) => unknown>; __recX?: number; __recY?: number; __recState: () => Promise<OverlayState> } }
+declare global { interface Window { __rec: Record<string, (...a: unknown[]) => unknown>; __recX?: number; __recY?: number; __recKeyT?: ReturnType<typeof setTimeout>; __recState: () => Promise<OverlayState> } }

@@ -1,0 +1,16 @@
+{
+  "type": "bank_statement",
+  "sender": "Victoria Harbour Bank Limited",
+  "addressee": "SUNRISE FLORIST LIMITED",
+  "identifiers": {
+    "irdFileNo": null,
+    "brNo": null,
+    "crNo": null,
+    "mpfNo": null
+  },
+  "summaryEn": "This is a Business Integrated Account bank statement for September 2026 showing opening, transaction totals, and closing balances.",
+  "actionNeeded": null,
+  "dueDate": null,
+  "amountHkd": null,
+  "taxYear": null
+}

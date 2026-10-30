@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export function LiveRefresh({ intervalMs = 3000, label = true }: { intervalMs?: number; label?: boolean }) {
+export function LiveRefresh({ intervalMs = 3000, label = true, src = "/api/live" }: { intervalMs?: number; label?: boolean; src?: string }) {
   const router = useRouter();
   const last = useRef<string | null>(null);
   const [ok, setOk] = useState(true);
@@ -12,7 +12,7 @@ export function LiveRefresh({ intervalMs = 3000, label = true }: { intervalMs?: 
     let alive = true;
     const tick = async () => {
       try {
-        const r = await fetch("/api/live", { cache: "no-store" });
+        const r = await fetch(src, { cache: "no-store" });
         const { v } = await r.json();
         setOk(true);
         if (last.current && v !== last.current) router.refresh();
@@ -22,7 +22,7 @@ export function LiveRefresh({ intervalMs = 3000, label = true }: { intervalMs?: 
     };
     tick();
     return () => { alive = false; };
-  }, [router, intervalMs]);
+  }, [router, intervalMs, src]);
   // Pages update silently; only a lost connection is worth showing.
   if (!label || ok) return null;
   return <span className="live" role="status">Reconnecting…</span>;

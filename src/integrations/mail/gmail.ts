@@ -67,6 +67,17 @@ export class GmailMail implements MailProvider {
     return { providerMessageId: r.data.id, providerThreadId: r.data.threadId ?? null, rfcMessageId: rfc };
   }
 
+  async createDraft(m: OutboundMail): Promise<string> {
+    const raw = await buildRaw(this.address, m);
+    const r = await this.gmail.users.drafts.create({ userId: "me", requestBody: { message: { raw: raw.toString("base64url") } } });
+    if (!r.data.id) throw new Error("Gmail did not return a draft id");
+    return r.data.id;
+  }
+
+  async deleteDraft(id: string): Promise<void> {
+    await this.gmail.users.drafts.delete({ userId: "me", id });
+  }
+
   async reconcileDelivery(correlationId: string): Promise<{ status: "accepted"; sent: SentMail } | { status: "unknown" }> {
     const found = await this.gmail.users.messages.list({ userId: "me", q: `in:sent rfc822msgid:${correlationId.replace(/^<|>$/g, "")}`, maxResults: 2 });
     const matches = found.data.messages ?? [];

@@ -1,0 +1,16 @@
+{
+  "type": "ird_assessment_no_tax",
+  "sender": "Inland Revenue Department",
+  "addressee": "Cheung & Co Trading Limited",
+  "identifiers": {
+    "irdFileNo": "61/55667788",
+    "brNo": null,
+    "crNo": null,
+    "mpfNo": null
+  },
+  "summaryEn": "Notice of assessment showing an adjusted loss of HK$86,210 for Profits Tax 2025/26 with no tax payable.",
+  "actionNeeded": null,
+  "dueDate": null,
+  "amountHkd": null,
+  "taxYear": "2025-26"
+}

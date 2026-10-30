@@ -67,6 +67,9 @@ export interface MailProvider {
   /** Returns messages newer than the stored cursor, and the new cursor. */
   fetchNew(cursor: string | null): Promise<{ messages: InboundMail[]; cursor: string | null }>;
   send(mail: OutboundMail): Promise<SentMail>;
+  /** Saves a draft for staff to send from their own mail client. */
+  createDraft?(mail: OutboundMail): Promise<string>;
+  deleteDraft?(draftId: string): Promise<void>;
   reconcileDelivery?(correlationId: string): Promise<{ status: "accepted"; sent: SentMail } | { status: "not_sent" | "unknown" }>;
 }
 

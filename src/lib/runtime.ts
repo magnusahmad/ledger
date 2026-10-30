@@ -9,6 +9,7 @@ import type { Ctx } from "./ctx";
 import { OpenRouterLlm } from "@/integrations/llm/openrouter";
 import { ScriptedLlm } from "@/integrations/llm/scripted";
 import { E2eLlm } from "@/integrations/llm/e2e";
+import { ReplayLlm } from "@/mailroom/replay-llm";
 import { DiskStorage } from "@/integrations/storage";
 import { FakeMail } from "@/integrations/mail/fake";
 import { FakeBank } from "@/integrations/bank/fake";
@@ -36,7 +37,9 @@ export function makeRuntimeCtx(overrides: Partial<Config> = {}): Ctx {
   const cache = g.__hlAdapters;
   const once = <T>(k: string, f: () => T): T => (cache[k] ??= f()) as T;
   const storage = new DiskStorage(STORAGE_ROOT);
-  const llm = config.llmMode === "e2e" ? new E2eLlm() : config.llmMode === "live" && config.or_api_key ? new OpenRouterLlm(config.or_api_key, config.LLM_MODEL, config.APP_URL, config.LLM_REASONING) : new ScriptedLlm();
+  const live = config.llmMode === "live" && config.or_api_key ? new OpenRouterLlm(config.or_api_key, config.LLM_MODEL, config.APP_URL, config.LLM_REASONING) : null;
+  const base = config.llmMode === "e2e" ? new E2eLlm() : live ?? new ScriptedLlm();
+  const llm = new ReplayLlm(base, config.llmMode === "e2e" ? null : live, path.join(process.cwd(), "seed/mailroom/recordings"), config.MAILROOM_RECORD === "1");
   return {
     db: getDb(config.DATABASE_URL),
     firmId: config.FIRM_ID,

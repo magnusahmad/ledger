@@ -1,0 +1,16 @@
+{
+  "type": "junk",
+  "sender": "Pacific Office Supplies",
+  "addressee": "Kowloon Bay Dental Limited",
+  "identifiers": {
+    "irdFileNo": null,
+    "brNo": null,
+    "crNo": null,
+    "mpfNo": null
+  },
+  "summaryEn": "This is promotional mail from Pacific Office Supplies advertising an autumn sale on toner and copier paper.",
+  "actionNeeded": null,
+  "dueDate": null,
+  "amountHkd": null,
+  "taxYear": null
+}

@@ -28,6 +28,16 @@
         "cd /private/tmp/claude-501/-Users-magnus-Documents-Projects-ledger/22708182-012c-48a9-b42a-0904172b2bc5/scratchpad && exec python3 -m http.server 8765"
       ],
       "port": 8765
+    },
+    {
+      "name": "mailroom",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "mailroom:dev"
+      ],
+      "port": 3100,
+      "autoPort": false
     }
   ]
 }

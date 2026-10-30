@@ -1,0 +1,52 @@
+{
+  "letters": [
+    {
+      "fromPage": 1,
+      "toPage": 2
+    },
+    {
+      "fromPage": 3,
+      "toPage": 5
+    },
+    {
+      "fromPage": 6,
+      "toPage": 6
+    },
+    {
+      "fromPage": 7,
+      "toPage": 7
+    },
+    {
+      "fromPage": 8,
+      "toPage": 9
+    },
+    {
+      "fromPage": 10,
+      "toPage": 10
+    },
+    {
+      "fromPage": 11,
+      "toPage": 11
+    },
+    {
+      "fromPage": 12,
+      "toPage": 13
+    },
+    {
+      "fromPage": 14,
+      "toPage": 14
+    },
+    {
+      "fromPage": 15,
+      "toPage": 15
+    },
+    {
+      "fromPage": 16,
+      "toPage": 16
+    },
+    {
+      "fromPage": 17,
+      "toPage": 17
+    }
+  ]
+}

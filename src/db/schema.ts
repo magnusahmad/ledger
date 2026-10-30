@@ -683,3 +683,55 @@ export const mailDelivery = pgTable("mail_delivery", {
   result: jsonb("result").$type<{ providerMessageId: string; providerThreadId?: string | null; rfcMessageId?: string | null }>(),
   error: text("error"), createdAt: createdAt(),
 }, t => [uniqueIndex("mail_delivery_source_uq").on(t.firmId, t.sourceKey)]);
+
+// ---------- Mail room (inbound post: scan, split, read, match, file, draft) ----------
+// The firm's own client index, imported from its spreadsheet. Matching uses the identifiers here.
+export const mailroomClient = pgTable("mailroom_client", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  name: text("name").notNull(), nameZh: text("name_zh"),
+  brNo: text("br_no"), irdFileNo: text("ird_file_no"), crNo: text("cr_no"), mpfNo: text("mpf_no"),
+  /** The client's folder name on the firm's server, under the rules' client folder. */
+  folder: text("folder").notNull(),
+  contactName: text("contact_name"), contactEmail: text("contact_email"),
+  language: text("language").$type<Lang>().notNull().default("en"),
+  createdAt: createdAt(),
+});
+
+export const mailroomBatch = pgTable("mailroom_batch", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  filename: text("filename").notNull(), sha256: text("sha256").notNull(), storageKey: text("storage_key").notNull(),
+  pages: integer("pages"),
+  status: text("status").$type<"new" | "reading" | "ready" | "failed">().notNull().default("new"),
+  error: text("error"),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull(),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("mailroom_batch_sha_uq").on(t.firmId, t.sha256)]);
+
+export type MailroomCorrection = { field: string; from: string | null; to: string | null; at: string; by: string };
+export type MailroomRead = {
+  type: string; sender: string; addressee: string;
+  identifiers: { irdFileNo: string | null; brNo: string | null; crNo: string | null; mpfNo: string | null };
+  summaryEn: string; actionNeeded: string | null; dueDate: string | null; amountHkd: number | null; taxYear: string | null;
+};
+
+export const mailroomLetter = pgTable("mailroom_letter", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  batchId: text("batch_id").notNull(), seq: integer("seq").notNull(),
+  pageFrom: integer("page_from").notNull(), pageTo: integer("page_to").notNull(),
+  storageKey: text("storage_key").notNull(), sha256: text("sha256").notNull(),
+  read: jsonb("read").$type<MailroomRead>(),
+  matchKind: text("match_kind").$type<"matched" | "ask" | "junk">(),
+  matchReason: text("match_reason"),
+  candidateIds: jsonb("candidate_ids").$type<string[]>().notNull().default([]),
+  clientId: text("client_id"),
+  folder: text("folder"), fileName: text("file_name"),
+  emailTo: text("email_to"), emailSubject: text("email_subject"), emailBody: text("email_body"), emailLang: text("email_lang").$type<Lang>(),
+  status: text("status").$type<"reading" | "proposed" | "filing" | "approved" | "failed">().notNull().default("reading"),
+  error: text("error"),
+  corrections: jsonb("corrections").$type<MailroomCorrection[]>().notNull().default([]),
+  openedAt: timestamp("opened_at", { withTimezone: true }),
+  reviewMs: integer("review_ms"),
+  approvedBy: text("approved_by"), approvedAt: timestamp("approved_at", { withTimezone: true }),
+  filedPath: text("filed_path"), draftRef: text("draft_ref"),
+  createdAt: createdAt(),
+}, (t) => [uniqueIndex("mailroom_letter_seq_uq").on(t.firmId, t.batchId, t.seq)]);

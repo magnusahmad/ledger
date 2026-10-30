@@ -1,0 +1,16 @@
+{
+  "type": "cr_other",
+  "sender": "Companies Registry",
+  "addressee": "Dragon Gate Holdings Limited",
+  "identifiers": {
+    "irdFileNo": null,
+    "brNo": null,
+    "crNo": "3456789",
+    "mpfNo": null
+  },
+  "summaryEn": "Confirmation from Companies Registry that the Notice of Change of Address of Registered Office (Form NR1) has been registered.",
+  "actionNeeded": null,
+  "dueDate": null,
+  "amountHkd": null,
+  "taxYear": null
+}

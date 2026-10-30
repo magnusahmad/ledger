@@ -1,0 +1,16 @@
+{
+  "type": "ird_employer_return",
+  "sender": "Inland Revenue Department",
+  "addressee": "Tai Hang Design Studio Limited",
+  "identifiers": {
+    "irdFileNo": "7P1-23456789",
+    "brNo": null,
+    "crNo": null,
+    "mpfNo": null
+  },
+  "summaryEn": "The Inland Revenue Department has issued an Employer's Return of Remuneration and Pensions (BIR56A) for the year ended 31 March 2026.",
+  "actionNeeded": "Complete and file the Employer's Return (BIR56A) and employee notifications (IR56B) by 21 November 2026.",
+  "dueDate": "2026-11-21",
+  "amountHkd": null,
+  "taxYear": "2025-26"
+}

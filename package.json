@@ -21,7 +21,11 @@
     "forms:check": "tsx --env-file-if-exists=.env scripts/forms-check.ts",
     "screening:update": "tsx --env-file-if-exists=.env scripts/screening-update.ts",
     "demo:pay": "tsx --env-file-if-exists=.env scripts/demo-pay.ts",
-    "demo:rehearse": "tsx --env-file-if-exists=.env scripts/rehearse.ts"
+    "demo:rehearse": "tsx --env-file-if-exists=.env scripts/rehearse.ts",
+    "mailroom:dev": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
+    "mailroom:reset": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake tsx --env-file-if-exists=.env scripts/mailroom-reset.ts",
+    "mailroom:pack": "tsx scripts/mailroom-pack.ts",
+    "mailroom:record": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake MAILROOM_RECORD=1 tsx --env-file-if-exists=.env scripts/mailroom-record.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.31.0",
@@ -35,6 +39,7 @@
     "next": "16.3.7",
     "nodemailer": "^10.0.12",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.7.284",
     "pg": "^8.23.0",
     "pg-boss": "^12.35.0",
     "react": "19.2.8",

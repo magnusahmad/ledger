@@ -1,0 +1,16 @@
+{
+  "type": "cr_annual_return",
+  "sender": "Companies Registry",
+  "addressee": "Lotus Garden Trading Limited",
+  "identifiers": {
+    "irdFileNo": null,
+    "brNo": null,
+    "crNo": "2987654",
+    "mpfNo": null
+  },
+  "summaryEn": "Notice from the Companies Registry demanding payment of a late registration fee balance for the 2026 annual return.",
+  "actionNeeded": "Pay the outstanding balance of HK$765 on or before 21 November 2026.",
+  "dueDate": "2026-11-21",
+  "amountHkd": 765,
+  "taxYear": null
+}
