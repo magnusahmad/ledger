@@ -18,7 +18,7 @@ export default async function BatchDone({ params }: { params: Promise<{ batch: s
   return (
     <div className="mr-narrow">
       <Link className="back" href="/mailroom">‹ Today</Link>
-      <h1>{left.length ? `${filed.length} of ${letters.length} letters filed` : `All ${letters.length} letters filed`}</h1>
+      <h1>{left.length ? `${filed.length} of ${letters.length} letters filed` : letters.length === 1 ? "The letter is filed" : `All ${letters.length} letters filed`}</h1>
       <p className="sub">{drafts} {drafts === 1 ? "email is" : "emails are"} waiting in your drafts. Nothing has been sent.</p>
       <div className="mr-stats">
         <div><div className="mr-big">{filed.length}</div><span className="small muted">filed</span></div>

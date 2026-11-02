@@ -1,11 +1,12 @@
 // The mail room's folders, rules and draft box for this installation (from the environment).
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Ctx } from "@/lib/ctx";
 import { STORAGE_ROOT } from "@/lib/runtime";
 import { EmlDraftBox, GmailDraftBox } from "./drafts";
 import type { FilingRules } from "./rules";
 import type { Mailroom } from "./service";
+import type { ClientSource } from "./client-sync";
 
 export const MAILROOM_ROOT = path.join(STORAGE_ROOT, "mailroom");
 
@@ -16,9 +17,14 @@ export function makeMailroom(ctx: Ctx): Mailroom {
   const drafts = c.MAILROOM_DRAFTS === "gmail" && mail.createDraft && mail.deleteDraft
     ? new GmailDraftBox({ createDraft: (m) => mail.createDraft!(m), deleteDraft: (id) => mail.deleteDraft!(id) })
     : new EmlDraftBox(path.resolve(c.MAILROOM_DRAFTS_DIR ?? path.join(MAILROOM_ROOT, "Outlook drafts")), c.MAILROOM_FROM);
+  const serverRoot = path.resolve(c.MAILROOM_SERVER_DIR ?? path.join(MAILROOM_ROOT, "Server"));
+  const sourcesFile = path.resolve(c.MAILROOM_CLIENT_SOURCES);
+  const clientSources = existsSync(sourcesFile)
+    ? (JSON.parse(readFileSync(sourcesFile, "utf8")) as ClientSource[]).map((s) => ({ ...s, path: s.path.replace("{server}", serverRoot) }))
+    : [];
   return {
-    drafts, rules, fromAddress: c.MAILROOM_FROM, firmName: c.MAILROOM_FIRM_NAME,
+    drafts, rules, clientSources, fromAddress: c.MAILROOM_FROM, firmName: c.MAILROOM_FIRM_NAME,
     scanDir: path.resolve(c.MAILROOM_SCAN_DIR ?? path.join(MAILROOM_ROOT, "Scans")),
-    serverRoot: path.resolve(c.MAILROOM_SERVER_DIR ?? path.join(MAILROOM_ROOT, "Server")),
+    serverRoot,
   };
 }

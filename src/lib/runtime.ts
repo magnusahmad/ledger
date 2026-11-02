@@ -39,7 +39,7 @@ export function makeRuntimeCtx(overrides: Partial<Config> = {}): Ctx {
   const storage = new DiskStorage(STORAGE_ROOT);
   const live = config.llmMode === "live" && config.or_api_key ? new OpenRouterLlm(config.or_api_key, config.LLM_MODEL, config.APP_URL, config.LLM_REASONING) : null;
   const base = config.llmMode === "e2e" ? new E2eLlm() : live ?? new ScriptedLlm();
-  const llm = new ReplayLlm(base, config.llmMode === "e2e" ? null : live, path.join(process.cwd(), "seed/mailroom/recordings"), config.MAILROOM_RECORD === "1");
+  const llm = new ReplayLlm(base, config.llmMode === "e2e" ? null : live, path.join(process.cwd(), "seed/mailroom/recordings"), { record: config.MAILROOM_RECORD === "1", replay: config.MAILROOM_REPLAY === "1" });
   return {
     db: getDb(config.DATABASE_URL),
     firmId: config.FIRM_ID,

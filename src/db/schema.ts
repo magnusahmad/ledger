@@ -696,8 +696,13 @@ export const mailroomClient = pgTable("mailroom_client", {
   folder: text("folder").notNull(),
   contactName: text("contact_name"), contactEmail: text("contact_email"),
   language: text("language").$type<Lang>().notNull().default("en"),
+  /** False once the client is in none of the firm's sources; kept so filed letters stay linked. */
+  active: boolean("active").notNull().default(true),
+  /** Which of the firm's sources list this client, and where they disagree (the master wins). */
+  sources: jsonb("sources").$type<string[]>().notNull().default([]),
+  conflicts: jsonb("conflicts").$type<{ field: string; values: { source: string; value: string }[] }[]>().notNull().default([]),
   createdAt: createdAt(),
-});
+}, (t) => [uniqueIndex("mailroom_client_code_uq").on(t.firmId, t.code)]);
 
 export const mailroomBatch = pgTable("mailroom_batch", {
   id: text("id").primaryKey(), firmId: firmId(),

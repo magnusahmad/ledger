@@ -38,6 +38,16 @@
       ],
       "port": 3100,
       "autoPort": false
+    },
+    {
+      "name": "mailroom-live",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "mailroom:live"
+      ],
+      "port": 3100,
+      "autoPort": false
     }
   ]
 }

@@ -7,66 +7,64 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { mailroomBatch, mailroomClient, mailroomLetter, type Lang, type MailroomCorrection } from "@/db/schema";
+import { mailroomBatch, mailroomClient, mailroomLetter, type MailroomCorrection } from "@/db/schema";
 import { audit } from "@/domain/audit";
 import type { DraftBox } from "./drafts";
 import { fileTarget, ruleFor, safeTarget, type FilingRules } from "./rules";
 import { matchLetter } from "./match";
 import { extractPages, imageToPdf, pdfPages, splitPlan, type PageRange } from "./split";
 import { draftClientEmail, readLetter, readSplit } from "./agents";
+import { applyClients, csvRows, CSV_COLUMNS, mergeSources, type ClientSource } from "./client-sync";
 
-export type Mailroom = { drafts: DraftBox; serverRoot: string; scanDir: string; rules: FilingRules; fromAddress: string; firmName: string };
+export type Mailroom = { drafts: DraftBox; serverRoot: string; scanDir: string; rules: FilingRules; fromAddress: string; firmName: string; clientSources?: ClientSource[] };
 export type MailroomClient = typeof mailroomClient.$inferSelect;
 export type Letter = typeof mailroomLetter.$inferSelect & { candidates: MailroomClient[]; client: MailroomClient | null };
 
 const sha = (b: Buffer) => createHash("sha256").update(b).digest("hex");
-const LANGS: Lang[] = ["en", "tc", "sc"];
 
 // ---------- Client index ----------
 
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [], cell = "", quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
-      else if (ch === '"') quoted = false;
-      else cell += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ",") { row.push(cell); cell = ""; }
-    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
-    else cell += ch;
+/** Loads the firm's client list exported as CSV: clients are updated in place by client code,
+ *  and any not in the file are switched off (kept, so filed letters stay linked). */
+export async function importClients(ctx: Ctx, csv: string, mr: Mailroom | null = null): Promise<number> {
+  const rows = csvRows(csv, CSV_COLUMNS);
+  if (csv.trim() && !rows.length) throw new Error("Every client row needs a name");
+  await applyClients(ctx, mr, mergeSources([{ source: "client list (CSV)", rows }]), { deactivateMissing: true });
+  return rows.length;
+}
+
+export async function clients(ctx: Ctx, o: { activeOnly?: boolean } = {}): Promise<MailroomClient[]> {
+  return ctx.db.select().from(mailroomClient)
+    .where(o.activeOnly ? and(eq(mailroomClient.firmId, ctx.firmId), eq(mailroomClient.active, true)) : eq(mailroomClient.firmId, ctx.firmId))
+    .orderBy(asc(mailroomClient.name));
+}
+
+/** After the client index changes: letters still asking "whose letter is this?" are matched
+ *  again; any that now point to exactly one client get its folder and a drafted email.
+ *  Letters staff have already decided are never touched. */
+export async function rematchWaiting(ctx: Ctx, mr: Mailroom): Promise<number> {
+  const waiting = await ctx.db.select().from(mailroomLetter)
+    .where(and(eq(mailroomLetter.firmId, ctx.firmId), eq(mailroomLetter.status, "proposed"), eq(mailroomLetter.matchKind, "ask")));
+  if (!waiting.length) return 0;
+  const dir = await clients(ctx, { activeOnly: true });
+  let n = 0;
+  for (const l of waiting) {
+    if (!l.read || l.corrections.some((c) => c.field === "client")) continue;
+    const m = matchLetter(l.read, dir);
+    if (m.kind !== "matched") {
+      if (m.kind === "ask") await ctx.db.update(mailroomLetter).set({ candidateIds: m.candidates, matchReason: m.reason }).where(eq(mailroomLetter.id, l.id));
+      continue;
+    }
+    const client = dir.find((c) => c.id === m.clientId)!;
+    const batch = (await ctx.db.select().from(mailroomBatch).where(eq(mailroomBatch.id, l.batchId)))[0];
+    const target = fileTarget(mr.rules, l.read, client, hkDate(batch.receivedAt));
+    const email = ruleFor(mr.rules, l.read.type).noEmail ? null : await draftFor(ctx, mr, l.read, client, batch.receivedAt);
+    await ctx.db.update(mailroomLetter).set({ clientId: client.id, matchKind: "matched", matchReason: m.reason, candidateIds: [], folder: target.folder, fileName: target.fileName, ...emailFields(email, client) })
+      .where(and(eq(mailroomLetter.id, l.id), eq(mailroomLetter.status, "proposed")));
+    await audit(ctx, "mailroom.rematch", "mailroom_letter", l.id, { clientId: client.id, reason: m.reason });
+    n++;
   }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  return rows.filter((r) => r.some((c) => c.trim()));
-}
-
-/** Replaces the firm's client index with the rows of its spreadsheet (exported as CSV). */
-export async function importClients(ctx: Ctx, csv: string): Promise<number> {
-  const [head, ...rows] = parseCsv(csv.replace(/^﻿/, ""));
-  const col = (r: string[], name: string) => { const i = head.indexOf(name); return i >= 0 ? r[i]?.trim() || null : null; };
-  const values = rows.map((r) => {
-    const name = col(r, "name");
-    if (!name) throw new Error("Every client row needs a name");
-    const lang = (col(r, "language") ?? "en") as Lang;
-    return {
-      id: ctx.ids.next("mrc"), firmId: ctx.firmId, name, nameZh: col(r, "name_zh"),
-      brNo: col(r, "br_no"), irdFileNo: col(r, "ird_file_no"), crNo: col(r, "cr_no"), mpfNo: col(r, "mpf_no"),
-      code: col(r, "client_code"),
-      folder: col(r, "folder") ?? (col(r, "client_code") ? `${col(r, "client_code")}-${name}` : name), contactName: col(r, "contact_name"), contactEmail: col(r, "contact_email"),
-      language: LANGS.includes(lang) ? lang : "en",
-    };
-  });
-  await ctx.db.transaction(async (db) => {
-    await db.delete(mailroomClient).where(eq(mailroomClient.firmId, ctx.firmId));
-    if (values.length) await db.insert(mailroomClient).values(values);
-  });
-  return values.length;
-}
-
-export async function clients(ctx: Ctx): Promise<MailroomClient[]> {
-  return ctx.db.select().from(mailroomClient).where(eq(mailroomClient.firmId, ctx.firmId)).orderBy(asc(mailroomClient.name));
+  return n;
 }
 
 // ---------- Scans in ----------
@@ -142,7 +140,7 @@ async function readOne(ctx: Ctx, mr: Mailroom, letterId: string, receivedAt: Dat
   const l = await getLetter(ctx, letterId);
   try {
     const r = await readLetter(ctx, mr.rules, `letter-${l.seq}.pdf`, await ctx.storage.get(l.storageKey));
-    const dir = await clients(ctx);
+    const dir = await clients(ctx, { activeOnly: true });
     const m = matchLetter(r, dir);
     const client = m.kind === "matched" ? dir.find((c) => c.id === m.clientId)! : null;
     const target = fileTarget(mr.rules, r, client, hkDate(receivedAt));

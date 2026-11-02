@@ -21,16 +21,23 @@ export function recordingKey(req: LlmRequest): string {
 
 export class ReplayLlm implements LlmProvider {
   readonly name: string;
-  /** inner answers every other agent; live (if connected) answers mail room scans not recorded. */
-  constructor(private inner: LlmProvider, private live: LlmProvider | null, private dir: string, private record: boolean) { this.name = `${inner.name}+recordings`; }
+  private record: boolean;
+  private replay: boolean;
+  /** inner answers every other agent; live (if connected) answers mail room scans not recorded.
+   *  record: save live answers. replay off: never answer from a recording (a live demo). */
+  constructor(private inner: LlmProvider, private live: LlmProvider | null, private dir: string, opts: { record: boolean; replay: boolean }) {
+    this.name = `${inner.name}+recordings`;
+    this.record = opts.record;
+    this.replay = opts.replay;
+  }
   async complete(req: LlmRequest): Promise<LlmResponse> {
     if (!MAILROOM.has(req.agent)) return this.inner.complete(req);
     const file = path.join(this.dir, `${recordingKey(req)}.json`);
-    if (!this.record && existsSync(file)) {
+    if (this.replay && !this.record && existsSync(file)) {
       const json = JSON.parse(readFileSync(file, "utf8"));
       return { json, raw: JSON.stringify(json), model: "recorded" };
     }
-    if (!this.live) throw new Error("This scan isn't one of the recorded demo letters, and no live model is connected.");
+    if (!this.live) throw new Error(this.replay ? "This scan isn't one of the recorded demo letters, and no live model is connected." : "Live mode needs the live model: set or_api_key.");
     const res = await this.live.complete(req);
     if (this.record) { mkdirSync(this.dir, { recursive: true }); writeFileSync(file, JSON.stringify(res.json, null, 2) + "\n"); }
     return res;

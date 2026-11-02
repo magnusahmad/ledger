@@ -11,9 +11,11 @@ async function main() {
   const ctx = makeRuntimeCtx();
   if (ctx.config.llmMode !== "live") throw new Error("Recording needs the live model (or_api_key)");
   const mr = makeMailroom(ctx);
-  const content = readFileSync(path.join(process.cwd(), "demos/cwccpa/letter-pack.pdf"));
+  // Default: the 12-letter pack. Pass another fictional scan (e.g. the specimen) to record that.
+  const file = process.argv[2] ?? "demos/cwccpa/letter-pack.pdf";
+  const content = readFileSync(path.join(process.cwd(), file));
   // Run after mailroom:reset: the exact pack bytes are the recording key.
-  const b = await ingestScan(ctx, mr, { filename: "letter-pack.pdf", content });
+  const b = await ingestScan(ctx, mr, { filename: path.basename(file), content });
   if (!b) throw new Error("The pack is already in the mail room. Run npm run mailroom:reset first.");
   await processBatch(ctx, mr, b.id);
   // Also record the email for each client staff might pick on an unclear letter. Run mailroom:reset afterwards.

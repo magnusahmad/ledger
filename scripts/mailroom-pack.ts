@@ -1,10 +1,13 @@
 // Builds the fictional demo letter pack for the CWCCPA mail room demo (client codes follow
 // CWCCPA's format, e.g. FL1401A1; every code here is invented):
 //   demos/cwccpa/letter-pack.pdf     print this, feed it through the firm's copier (or drop it in)
+//   demos/cwccpa/specimen-abc-ird-demand.pdf   one letter, for the live demo
 //   seed/mailroom/cwccpa-demo-clients.csv   the firm's client index for the demo
+//   seed/mailroom/cwccpa-demo-clients.xlsx  the same, as the firm's Excel client list
 // Every company, person and number here is invented. Each page is marked SPECIMEN.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import ExcelJS from "exceljs";
 import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 type Letter = {
@@ -164,6 +167,18 @@ async function main() {
   const out = path.join(process.cwd(), "demos/cwccpa");
   mkdirSync(out, { recursive: true });
   writeFileSync(path.join(out, "letter-pack.pdf"), await doc.save());
+  // The live demo's single letter: ABC Trading's IRD demand note on its own (2 pages).
+  const one = await PDFDocument.create();
+  one.setCreationDate(fixed); one.setModificationDate(fixed);
+  one.setTitle("Specimen: IRD demand note for ABC Trading Limited (fictional)");
+  await drawLetter(one, LETTERS[0], await one.embedFont(StandardFonts.Helvetica), await one.embedFont(StandardFonts.HelveticaBold));
+  writeFileSync(path.join(out, "specimen-abc-ird-demand.pdf"), await one.save());
+  // The same clients as the firm's Excel list would hold them, with its own column headings.
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Clients");
+  ws.addRow(["Client Code", "Company Name", "Chinese Name", "BR No.", "IRD File No.", "CR No.", "MPF ER No.", "Contact", "Email", "Language"]);
+  for (const [name, zh, br, ird, cr, mpf, code, contact, email, lang] of CLIENTS.slice(1)) ws.addRow([code, name, zh, br, ird, cr, mpf, contact, email, lang.toUpperCase()]);
+  writeFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.xlsx"), Buffer.from(await wb.xlsx.writeBuffer()));
   const csv = CLIENTS.map((r) => r.map((c) => (/[",]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(",")).join("\n") + "\n";
   writeFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.csv"), csv);
   console.log(`${LETTERS.length} letters, ${doc.getPageCount()} pages -> demos/cwccpa/letter-pack.pdf`);

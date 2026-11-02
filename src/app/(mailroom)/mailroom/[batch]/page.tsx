@@ -35,7 +35,7 @@ export default async function ReviewLetter({ params, searchParams }: { params: P
   }
   if (letter.status === "proposed") await openLetter(ctx, letter.id);
   const done = letters.filter((l) => l.status === "approved").length;
-  const all = await clients(ctx);
+  const all = await clients(ctx, { activeOnly: true });
   const rule = letter.read ? ruleFor(mr.rules, letter.read.type) : null;
   const today = ctx.clock.today();
   const i = letters.indexOf(letter);
