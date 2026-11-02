@@ -9,13 +9,14 @@ import os from "node:os";
 import path from "node:path";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
-import { firm } from "@/db/schema";
+import { firm, mailroomBatch, mailroomLetter } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import type { LlmRequest } from "@/integrations/types";
 import { splitPlan } from "@/mailroom/split";
 import { matchLetter, normaliseId, type DirectoryClient } from "@/mailroom/match";
 import { fileTarget, safeTarget, type FilingRules } from "@/mailroom/rules";
 import { MemoryDraftBox, EmlDraftBox } from "@/mailroom/drafts";
-import { batches, clients, importClients, ingestScan, processBatch, approveLetter, undoLetter, chooseClient, notForAClient, editLetter, openLetter, getLetter, lettersFor, type Mailroom } from "@/mailroom/service";
+import { batches, clients, processWaiting, importClients, ingestScan, processBatch, approveLetter, undoLetter, chooseClient, notForAClient, editLetter, openLetter, getLetter, lettersFor, type Mailroom } from "@/mailroom/service";
 
 const RULES: FilingRules = {
   clientFolder: "Clients/{client}",
@@ -109,6 +110,34 @@ describe("Splitting a batch scan into letters", () => {
     await processBatch(ctx, mr, b!.id);
     const list = await batches(ctx);
     expect(list.map((x) => [x.filename, x.letters, x.toReview])).toEqual(expect.arrayContaining([["scan-0930.pdf", 1, 0], ["second.pdf", 2, 2]]));
+  });
+
+  it("a batch left half-read by a restart is finished on the next run, keeping letters already read", async () => {
+    ctx.llm.set("mailroom_split", { letters: [{ fromPage: 1, toPage: 1 }, { fromPage: 2, toPage: 2 }] });
+    ctx.llm.set("mailroom_read", read());
+    ctx.llm.set("mailroom_email", email());
+    const b = await ingestScan(ctx, mr, { filename: "scan.pdf", content: await pdf(["a", "b"]) });
+    await processBatch(ctx, mr, b!.id);
+    const [first, second] = await lettersFor(ctx, b!.id);
+    // Simulate the worker dying after reading letter 1: letter 2 and the batch are still "reading".
+    await ctx.db.update(mailroomLetter).set({ status: "reading" }).where(eq(mailroomLetter.id, second.id));
+    await ctx.db.update(mailroomBatch).set({ status: "reading" }).where(eq(mailroomBatch.id, b!.id));
+    const readsBefore = ctx.llm.callsFor("mailroom_read").length;
+    await processWaiting(ctx, mr);
+    const after = await lettersFor(ctx, b!.id);
+    expect(after.map((l) => [l.id, l.status])).toEqual([[first.id, "proposed"], [second.id, "proposed"]]);
+    expect(ctx.llm.callsFor("mailroom_read").length - readsBefore).toBe(1);
+    expect((await batches(ctx)).find((x) => x.id === b!.id)!.status).toBe("ready");
+  });
+
+  it("a batch interrupted before any letters were saved is read again from the start", async () => {
+    ctx.llm.set("mailroom_split", { letters: [{ fromPage: 1, toPage: 2 }] });
+    ctx.llm.set("mailroom_read", read());
+    ctx.llm.set("mailroom_email", email());
+    const b = await ingestScan(ctx, mr, { filename: "scan.pdf", content: await pdf(["a", "b"]) });
+    await ctx.db.update(mailroomBatch).set({ status: "reading" }).where(eq(mailroomBatch.id, b!.id));
+    await processWaiting(ctx, mr);
+    expect((await lettersFor(ctx, b!.id)).map((l) => l.status)).toEqual(["proposed"]);
   });
 
   it("the same scan dropped twice is processed once", async () => {

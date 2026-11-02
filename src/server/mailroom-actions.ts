@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { refresh } from "next/cache";
 import { getMailroom } from "./mailroom";
+import { withLease } from "@/domain/kv";
 import type { ActionResult } from "./actions";
 import { approveLetter, chooseClient, editLetter, getLetter, ingestScan, lettersFor, notForAClient, processWaiting, undoLetter } from "@/mailroom/service";
 
@@ -15,7 +16,8 @@ export async function uploadScanAction(_prev: ActionResult | null, form: FormDat
     const { ctx, mr } = getMailroom();
     let added = 0;
     for (const f of files) if (await ingestScan(ctx, mr, { filename: f.name, content: Buffer.from(await f.arrayBuffer()) })) added++;
-    after(() => processWaiting(ctx, mr));
+    // Under the same lease as the worker, so the two never read the same batch at once.
+    after(() => withLease(ctx, "mailroom", 60, () => processWaiting(ctx, mr)));
     refresh();
     return { ok: true, message: added ? "Reading the scan…" : "That scan is already here." };
   } catch (e) { return fail(e); }

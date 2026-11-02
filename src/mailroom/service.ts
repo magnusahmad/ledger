@@ -100,9 +100,19 @@ export async function pollScanFolder(ctx: Ctx, mr: Mailroom): Promise<number> {
 
 /** Splits, reads, matches and drafts every waiting batch. */
 export async function processWaiting(ctx: Ctx, mr: Mailroom): Promise<number> {
+  // Callers hold the mail room lease, so a batch still "reading" here was left by a worker that
+  // stopped (a restart, a crash, a power cut). Finish it: keep letters already read, read the
+  // rest; a batch stopped before its letters were saved starts again.
+  const stuck = await ctx.db.select({ id: mailroomBatch.id, receivedAt: mailroomBatch.receivedAt }).from(mailroomBatch).where(and(eq(mailroomBatch.firmId, ctx.firmId), eq(mailroomBatch.status, "reading")));
+  for (const b of stuck) {
+    const letters = await ctx.db.select({ id: mailroomLetter.id, status: mailroomLetter.status }).from(mailroomLetter).where(eq(mailroomLetter.batchId, b.id));
+    if (!letters.length) { await ctx.db.update(mailroomBatch).set({ status: "new" }).where(eq(mailroomBatch.id, b.id)); continue; }
+    for (const l of letters) if (l.status === "reading") await readOne(ctx, mr, l.id, b.receivedAt);
+    await ctx.db.update(mailroomBatch).set({ status: "ready" }).where(eq(mailroomBatch.id, b.id));
+  }
   const waiting = await ctx.db.select({ id: mailroomBatch.id }).from(mailroomBatch).where(and(eq(mailroomBatch.firmId, ctx.firmId), eq(mailroomBatch.status, "new"))).orderBy(asc(mailroomBatch.receivedAt));
   for (const b of waiting) await processBatch(ctx, mr, b.id);
-  return waiting.length;
+  return waiting.length + stuck.length;
 }
 
 export async function processBatch(ctx: Ctx, mr: Mailroom, batchId: string): Promise<void> {
