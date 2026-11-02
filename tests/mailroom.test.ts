@@ -3,6 +3,7 @@
 // touches the firm's server folders or mailbox until a member of staff approves the letter.
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, readFile, readdir, writeFile, mkdir, rm } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -14,7 +15,7 @@ import { splitPlan } from "@/mailroom/split";
 import { matchLetter, normaliseId, type DirectoryClient } from "@/mailroom/match";
 import { fileTarget, safeTarget, type FilingRules } from "@/mailroom/rules";
 import { MemoryDraftBox, EmlDraftBox } from "@/mailroom/drafts";
-import { batches, importClients, ingestScan, processBatch, approveLetter, undoLetter, chooseClient, notForAClient, editLetter, openLetter, getLetter, lettersFor, type Mailroom } from "@/mailroom/service";
+import { batches, clients, importClients, ingestScan, processBatch, approveLetter, undoLetter, chooseClient, notForAClient, editLetter, openLetter, getLetter, lettersFor, type Mailroom } from "@/mailroom/service";
 
 const RULES: FilingRules = {
   clientFolder: "Clients/{client}",
@@ -160,6 +161,30 @@ describe("Matching a letter to a client (in code, never the model's guess)", () 
 
   it("junk mail is never matched to a client", () => {
     expect(matchLetter(read({ type: "junk" }), dir)).toEqual({ kind: "junk" });
+  });
+});
+
+describe("CWCCPA's server layout (seed/mailroom/rules.json, from the folder example the firm shared)", () => {
+  const cwc = JSON.parse(readFileSync(path.join(process.cwd(), "seed/mailroom/rules.json"), "utf8")) as FilingRules;
+  const client = { folder: "FL1401A1-ABC Trading Limited", code: "FL1401A1" };
+
+  it("a tax letter goes in the client's tax folder: CWCHK Client Folder/<code>-<name>/<code>-Tax Folder", () => {
+    expect(fileTarget(cwc, read(), client, "2026-10-30").folder).toBe("CWCHK Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder");
+  });
+
+  it("a letter that isn't about tax goes in the client's own folder, not a subfolder we made up", () => {
+    expect(fileTarget(cwc, read({ type: "cr_annual_return" }), client, "2026-10-30").folder).toBe("CWCHK Client Folder/FL1401A1-ABC Trading Limited");
+  });
+
+  it("junk and letters for non-clients stay out of the client folders", () => {
+    expect(fileTarget(cwc, read({ type: "junk", sender: "Pacific Office Supplies" }), null, "2026-10-30").folder.startsWith("CWCHK Client Folder/FL")).toBe(false);
+  });
+
+  it("importing the client index with client codes names each folder <code>-<name>, as the firm does", async () => {
+    await importClients(ctx, "name,client_code,ird_file_no,contact_email,language\nABC Trading Limited,FL1401A1,61/12345678,a@abc.example,en\nNo Code Limited,,,b@nc.example,en");
+    const cs = await clients(ctx);
+    expect(cs.find((c) => c.name === "ABC Trading Limited")).toMatchObject({ code: "FL1401A1", folder: "FL1401A1-ABC Trading Limited" });
+    expect(cs.find((c) => c.name === "No Code Limited")).toMatchObject({ code: null, folder: "No Code Limited" });
   });
 });
 

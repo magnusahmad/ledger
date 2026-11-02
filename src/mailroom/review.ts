@@ -9,7 +9,9 @@ export function keyAction(e: { key: string; typing: boolean; modifier: boolean }
   return KEYS[e.key.toLowerCase()] ?? null;
 }
 
-export function filingLine(folder: string | null, file: string | null): { path: string; file: string | null } {
+/** Where the letter goes, as staff read it: " › " crumbs, or their own drive and separator. */
+export function filingLine(folder: string | null, file: string | null, display?: { root: string; separator: string }): { path: string; file: string | null } {
   const parts = (folder ?? "").split("/").filter(Boolean);
-  return { path: parts.length ? parts.join(" › ") : "Not decided yet", file };
+  if (!parts.length) return { path: "Not decided yet", file };
+  return { path: display ? display.root + parts.join(display.separator) : parts.join(" › "), file };
 }

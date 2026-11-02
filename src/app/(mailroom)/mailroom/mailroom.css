@@ -90,7 +90,8 @@
 .mr-bar-dock { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); width: min(960px, calc(100vw - 48px)); box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(22,24,29,.12); padding: 14px 14px 14px 22px; display: flex; align-items: center; gap: 16px; z-index: 5; }
 .mr-bar-main { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0; }
 .mr-bar-main b { font-size: 18px; font-weight: 600; letter-spacing: -.015em; }
-.mr-bar-path, .mr-bar-main .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
+.mr-bar-main .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
+.mr-bar-path { font-size: 13.5px; overflow-wrap: anywhere; }
 .mr-bar-dock form .row { margin: 0; }
 @media (max-width: 900px) {
   .mr-shell, .mr-shell.list-open { grid-template-columns: minmax(0, 1fr); }

@@ -1,0 +1,1 @@
+ALTER TABLE "mailroom_client" ADD COLUMN "code" text;

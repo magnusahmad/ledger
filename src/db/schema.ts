@@ -689,6 +689,8 @@ export const mailDelivery = pgTable("mail_delivery", {
 export const mailroomClient = pgTable("mailroom_client", {
   id: text("id").primaryKey(), firmId: firmId(),
   name: text("name").notNull(), nameZh: text("name_zh"),
+  /** The firm's own client code (CWCCPA: e.g. FL1401A1), part of each client's folder name. */
+  code: text("code"),
   brNo: text("br_no"), irdFileNo: text("ird_file_no"), crNo: text("cr_no"), mpfNo: text("mpf_no"),
   /** The client's folder name on the firm's server, under the rules' client folder. */
   folder: text("folder").notNull(),

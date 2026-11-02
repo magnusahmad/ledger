@@ -53,7 +53,8 @@ export async function importClients(ctx: Ctx, csv: string): Promise<number> {
     return {
       id: ctx.ids.next("mrc"), firmId: ctx.firmId, name, nameZh: col(r, "name_zh"),
       brNo: col(r, "br_no"), irdFileNo: col(r, "ird_file_no"), crNo: col(r, "cr_no"), mpfNo: col(r, "mpf_no"),
-      folder: col(r, "folder") ?? name, contactName: col(r, "contact_name"), contactEmail: col(r, "contact_email"),
+      code: col(r, "client_code"),
+      folder: col(r, "folder") ?? (col(r, "client_code") ? `${col(r, "client_code")}-${name}` : name), contactName: col(r, "contact_name"), contactEmail: col(r, "contact_email"),
       language: LANGS.includes(lang) ? lang : "en",
     };
   });

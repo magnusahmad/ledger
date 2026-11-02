@@ -11,29 +11,31 @@ const ROOT = path.resolve("storage/cwccpa/mailroom");
 const SERVER = path.join(ROOT, "Server");
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-/** A Finder-like view of the firm's server: each client folder, and any letters filed today. */
+/** An Explorer-like view of the firm's X: drive: each client folder, and any letters filed today. */
 function finderStage(title: string, today: string) {
-  const clients = readdirSync(path.join(SERVER, "Clients")).filter((f) => !f.startsWith(".")).sort();
+  const top = path.join(SERVER, "CWCHK Client Folder");
+  const clients = readdirSync(top).filter((f) => !f.startsWith(".")).sort();
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = path.join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
+  const rel = (from: string, f: string) => path.relative(from, path.dirname(f)).split(path.sep).filter(Boolean).map((x) => `${esc(x)}\\`).join("");
   const rows = clients.map((c) => {
-    const filed = walk(path.join(SERVER, "Clients", c)).filter((f) => path.basename(f).startsWith(today));
-    const files = filed.map((f) => `<div class="f new"><span class="ic">▤</span>${esc(path.relative(path.join(SERVER, "Clients", c), path.dirname(f)).split(path.sep).join(" › "))} › <b>${esc(path.basename(f))}</b></div>`).join("");
+    const filed = walk(path.join(top, c)).filter((f) => path.basename(f).startsWith(today));
+    const files = filed.map((f) => `<div class="f new"><span class="ic">▤</span>${rel(path.join(top, c), f)}<b>${esc(path.basename(f))}</b></div>`).join("");
     return `<div class="d"><span class="ic">▸</span>${esc(c)}</div>${files}`;
   }).join("");
-  const unsorted = existsSync(path.join(SERVER, "_Unsorted")) ? walk(path.join(SERVER, "_Unsorted")).map((f) => `<div class="f new"><span class="ic">▤</span>${esc(path.relative(path.join(SERVER, "_Unsorted"), path.dirname(f)))} › <b>${esc(path.basename(f))}</b></div>`).join("") : "";
+  const un = path.join(SERVER, "_Mail room unsorted");
+  const unsorted = existsSync(un) ? walk(un).map((f) => `<div class="f new"><span class="ic">▤</span>${rel(un, f)}<b>${esc(path.basename(f))}</b></div>`).join("") : "";
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;height:100%;background:#e9eaed;font-family:-apple-system,"PingFang HK","IBM Plex Sans",system-ui,sans-serif}
-  .win{position:absolute;left:40px;top:28px;width:820px;bottom:28px;background:#fff;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column}
-  .bar{height:46px;background:#f3f3f5;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 16px;gap:8px;font-size:13px;color:#333}
-  .dot{width:12px;height:12px;border-radius:50%;background:#ddd}
-  .bar b{margin-left:14px;font-weight:600}
-  .list{padding:10px 0;overflow:auto;font-size:13.5px}
-  .d{padding:5px 18px;color:#222}.d .ic{color:#8a8f98;margin-right:8px;font-size:11px}
+  html,body{margin:0;height:100%;background:#e9eaed;font-family:"Segoe UI",-apple-system,"PingFang HK","IBM Plex Sans",system-ui,sans-serif}
+  .win{position:absolute;left:40px;top:28px;width:820px;bottom:28px;background:#fff;border-radius:8px;box-shadow:0 14px 40px rgba(0,0,0,.18);overflow:hidden;display:flex;flex-direction:column}
+  .bar{height:44px;background:#f3f3f3;border-bottom:1px solid #ddd;display:flex;align-items:center;padding:0 14px;font-size:13px;color:#333}
+  .addr{flex:1;background:#fff;border:1px solid #d6d6d6;border-radius:4px;padding:5px 10px;font-size:13px}
+  .list{padding:8px 0;overflow:auto;font-size:13.5px}
+  .d{padding:5px 18px;color:#222}.d .ic{color:#c9a227;margin-right:8px;font-size:11px}
   .f{padding:4px 18px 4px 44px;color:#555}.f .ic{margin-right:8px;color:#8a8f98}
   .f.new{background:#eaf4ee;color:#1f4d33}.f.new b{font-weight:500}
   .h{padding:12px 18px 4px;font-size:12px;color:#888}
-  </style></head><body><div class="win"><div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><b>${esc(title)}</b></div>
-  <div class="list"><div class="h">Clients</div>${rows}${unsorted ? `<div class="h">_Unsorted</div>${unsorted}` : ""}</div></div></body></html>`;
+  </style></head><body><div class="win"><div class="bar"><span class="addr">${esc(title)}</span></div>
+  <div class="list">${rows}${unsorted ? `<div class="h">X:\\_Mail room unsorted</div>${unsorted}` : ""}</div></div></body></html>`;
 }
 
 /** An Outlook-like draft window for one saved .eml draft. */
@@ -66,10 +68,10 @@ const ON_SCAN = { x: 310, y: 470, w: 430 };    // the empty lower half of the le
 const SIDE = { x: 24, y: 150, w: 270 };        // left of the centred letter, focus view
 
 // ---- Opening ----
-await r.goto(r.stage("server-before.html", finderStage("Server — Clients", today)));
+await r.goto(r.stage("server-before.html", finderStage("X:\\CWCHK Client Folder", today)));
 await r.title("CWCCPA · Mail room", "Post in, filed and drafted", "Scan the post as usual. Each letter is read, matched to its client, filed on your server and drafted to the client. Staff approve every one.");
 await r.hideTitle();
-await r.say("Your server, as it is", "Client folders stay where they are. Nothing is migrated.", RIGHT);
+await r.say("Your X: drive, as it is", "Each client keeps its folder, named with its client code. Nothing is migrated.", RIGHT);
 
 // ---- The scan arrives ----
 await r.goto("/mailroom");
@@ -95,7 +97,7 @@ await r.say("Matched, not guessed", "It found the IRD file number on the letter 
 await r.ring(panel.locator(".mr-action"));
 await r.say("What the client must do", "HK$48,200 by 28 November, read straight off the demand note.", ON_SCAN);
 await r.ring(panel.locator(".mr-files"));
-await r.say("Where it goes", "The client’s tax folder, named the way your team names files.", ON_SCAN);
+await r.say("Where it goes", "The client’s tax folder on X:, under its client code. Letters that aren’t about tax go in the client’s own folder.", ON_SCAN);
 await r.hideRing();
 await r.click(panel.locator("details summary"));
 await r.scrollTo(panel.locator(".mr-mail"));
@@ -168,8 +170,8 @@ await r.say("Done", "Twelve letters filed, ten client emails waiting in drafts. 
 await r.hideRing();
 
 // ---- The proof: server and Outlook ----
-await r.goto(r.stage("server-after.html", finderStage("Server — Clients", today)));
-await r.say("On your server", "Each letter in its client’s folder, under your naming. Undo takes back any filing.", RIGHT);
+await r.goto(r.stage("server-after.html", finderStage("X:\\CWCHK Client Folder", today)));
+await r.say("On your X: drive", "Each letter in its client’s folder: tax letters in the tax folder. Undo takes back any filing.", RIGHT);
 const drafts = readdirSync(path.join(ROOT, "Outlook drafts")).filter((f) => f.endsWith(".eml")).map((f) => path.join(ROOT, "Outlook drafts", f));
 const abc = drafts.find((f) => readFileSync(f, "utf8").includes("david.chan@")) ?? drafts[0];
 await r.goto(r.stage("draft.html", await draftStage(abc)));

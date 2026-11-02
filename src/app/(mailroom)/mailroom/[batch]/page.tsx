@@ -8,13 +8,13 @@ import { DeadlineStamp } from "@/components/ui";
 import { getMailroom } from "@/server/mailroom";
 import { approveAction, chooseClientAction, editAction, notForAClientAction, undoAction } from "@/server/mailroom-actions";
 import { clients, lettersFor, openLetter, type Letter, type MailroomClient } from "@/mailroom/service";
-import { ruleFor } from "@/mailroom/rules";
+import { ruleFor, type FilingRules } from "@/mailroom/rules";
 import { filingLine } from "@/mailroom/review";
 import { ReviewShell, ScanView } from "../ui";
 
 type Search = { l?: string; change?: string; edit?: string };
 
-const crumbs = (folder: string | null) => filingLine(folder, null).path;
+type Display = FilingRules["display"];
 
 export default async function ReviewLetter({ params, searchParams }: { params: Promise<{ batch: string }>; searchParams: Promise<Search> }) {
   const { batch } = await params;
@@ -46,14 +46,14 @@ export default async function ReviewLetter({ params, searchParams }: { params: P
   const plain = letter.status === "proposed" && letter.matchKind !== "ask" && !q.change && !q.edit;
   const panel = letter.status === "reading" ? <p className="sub">Reading this letter…</p>
     : letter.status === "failed" ? <Failed letter={letter} />
-    : letter.status === "approved" ? <Filed letter={letter} />
+    : letter.status === "approved" ? <Filed letter={letter} display={mr.rules.display} />
     : letter.matchKind === "ask" || q.change ? <WhoseLetter letter={letter} all={all} />
-    : <Proposal letter={letter} label={rule?.label ?? "Letter"} today={today} edit={!!q.edit} />;
+    : <Proposal letter={letter} label={rule?.label ?? "Letter"} today={today} edit={!!q.edit} display={mr.rules.display} />;
   return (
     <ReviewShell prevHref={href(letters[i - 1])} nextHref={href(letters[i + 1])} changeHref={plain ? `${base}&edit=1` : null} hasBar={plain}
       list={<LetterList letters={letters} current={letter.id} done={done} today={today} />}
       scan={<ScanView key={letter.id} src={`/api/mailroom/letters/${letter.id}`} />}
-      bar={plain ? <Bar letter={letter} label={rule?.label ?? "Letter"} today={today} /> : null}
+      bar={plain ? <Bar letter={letter} label={rule?.label ?? "Letter"} today={today} display={mr.rules.display} /> : null}
       panel={<>
         <LiveRefresh src="/api/mailroom/live" intervalMs={3000} />
         <div className="mr-count"><Link href="/mailroom">‹ Today</Link><span>Letter {letter.seq} of {letters.length}</span></div>
@@ -84,16 +84,16 @@ function LetterList({ letters, current, done, today }: { letters: Letter[]; curr
   );
 }
 
-function Bar({ letter, label, today }: { letter: Letter; label: string; today: string }) {
+function Bar({ letter, label, today, display }: { letter: Letter; label: string; today: string; display?: Display }) {
   const r = letter.read!;
   const junk = letter.matchKind === "junk";
   const notClient = letter.matchReason === "not a client";
-  const where = filingLine(letter.folder, letter.fileName);
+  const where = filingLine(letter.folder, letter.fileName, display);
   return (
     <div className="mr-bar-dock">
       <div className="mr-bar-main">
         <b>{notClient ? "Not for any client" : junk ? "Advertising or junk mail" : letter.client?.name}</b>
-        <span className="mr-bar-path">{where.path} › <span className="muted">{where.file}</span></span>
+        <span className="mr-bar-path">{where.path}{display?.separator ?? " › "}<span className="muted">{where.file}</span></span>
         <span className="small muted">{[label, r.actionNeeded, letter.emailTo && `email to ${letter.client?.contactName ?? letter.emailTo}`].filter(Boolean).join(" · ")}</span>
       </div>
       {!junk && <DeadlineStamp dueDate={r.dueDate} today={today} nearOnly />}
@@ -103,12 +103,12 @@ function Bar({ letter, label, today }: { letter: Letter; label: string; today: s
   );
 }
 
-function Proposal({ letter, label, today, edit }: { letter: Letter; label: string; today: string; edit: boolean }) {
+function Proposal({ letter, label, today, edit, display }: { letter: Letter; label: string; today: string; edit: boolean; display?: Display }) {
   const r = letter.read!;
   const junk = letter.matchKind === "junk";
   const notClient = letter.matchReason === "not a client";
   const base = `/mailroom/${letter.batchId}?l=${letter.id}`;
-  const where = filingLine(letter.folder, letter.fileName);
+  const where = filingLine(letter.folder, letter.fileName, display);
   return (
     <>
       <h1>{notClient ? "Not for any client" : junk ? "Advertising or junk mail" : letter.client?.name}</h1>
@@ -184,11 +184,11 @@ function WhoseLetter({ letter, all }: { letter: Letter; all: MailroomClient[] })
   );
 }
 
-function Filed({ letter }: { letter: Letter }) {
+function Filed({ letter, display }: { letter: Letter; display?: Display }) {
   return (
     <>
       <h1>{letter.client?.name ?? "Filed"}</h1>
-      <p className="mr-what">Saved to {crumbs(letter.folder)}{letter.draftRef ? ". The email is in your drafts." : "."}</p>
+      <p className="mr-what">Saved to {filingLine(letter.folder, null, display).path}{letter.draftRef ? ". The email is in your drafts." : "."}</p>
       <div className="mr-actions">
         <Link className="btn" href={`/mailroom/${letter.batchId}`}>Next letter</Link>
         <ActionForm action={undoAction} submit="Undo" tone="secondary"><input type="hidden" name="letterId" value={letter.id} /></ActionForm>

@@ -11,7 +11,7 @@ import { closePools } from "@/db/client";
 import { firm, mailroomBatch, mailroomLetter } from "@/db/schema";
 import { makeRuntimeCtx } from "@/lib/runtime";
 import { makeMailroom, MAILROOM_ROOT } from "@/mailroom/runtime";
-import { importClients } from "@/mailroom/service";
+import { clients, importClients } from "@/mailroom/service";
 
 async function main() {
   const url = new URL(process.env.DATABASE_URL ?? "");
@@ -34,12 +34,14 @@ async function main() {
   const mr = makeMailroom(ctx);
   await rm(MAILROOM_ROOT, { recursive: true, force: true });
   for (const d of [mr.scanDir, mr.serverRoot]) await mkdir(d, { recursive: true });
-  // A server that looks lived in: each client's usual folders and a few of last year's letters.
-  const rows = csv.trim().split("\n").slice(1).map((l) => l.split(",")[6]);
-  for (const folder of rows) for (const sub of ["Tax/2024-25", "Tax/2025-26", "Company secretarial", "Bank", "Correspondence"]) await mkdir(path.join(mr.serverRoot, "Clients", folder, sub), { recursive: true });
-  await mkdir(path.join(mr.serverRoot, "_Unsorted"), { recursive: true });
-  const old = path.join(mr.serverRoot, "Clients", "ABC Trading Limited", "Tax", "2024-25", "2025-10-28 IRD demand note 2024-25.pdf");
-  if (!existsSync(old)) await writeFile(old, readFileSync(path.join(process.cwd(), "demos/cwccpa/letter-pack.pdf")));
+  // A server laid out like CWCCPA's X: drive: X:\CWCHK Client Folder\<code>-<name>\<code>-Tax Folder,
+  // with one of last year's letters already filed so it looks lived in.
+  const base = path.join(mr.serverRoot, "CWCHK Client Folder");
+  for (const c of await clients(ctx)) await mkdir(path.join(base, c.folder, c.code ? `${c.code}-Tax Folder` : "Tax Folder"), { recursive: true });
+  await mkdir(path.join(mr.serverRoot, mr.rules.unsortedFolder), { recursive: true });
+  const abc = (await clients(ctx)).find((c) => c.name === "ABC Trading Limited");
+  const old = abc && path.join(base, abc.folder, `${abc.code}-Tax Folder`, "2025-10-28 IRD demand note 2024-25.pdf");
+  if (old && !existsSync(old)) await writeFile(old, readFileSync(path.join(process.cwd(), "demos/cwccpa/letter-pack.pdf")));
   console.log(`Mail room demo reset: ${n} clients. Scans: ${mr.scanDir}  Server: ${mr.serverRoot}`);
   await closePools();
 }

@@ -36,6 +36,11 @@ describe("Where the letter goes, as shown to staff", () => {
       .toEqual({ path: "Clients › ABC Trading Limited › Tax › 2025-26", file: "2026-10-30 IRD demand note 2025-26.pdf" });
   });
 
+  it("at a firm on a Windows share, the path reads the way staff know it, from the drive letter", () => {
+    expect(filingLine("CWCHK Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder", "x.pdf", { root: "X:\\", separator: "\\" }))
+      .toEqual({ path: "X:\\CWCHK Client Folder\\FL1401A1-ABC Trading Limited\\FL1401A1-Tax Folder", file: "x.pdf" });
+  });
+
   it("a letter with no folder yet says so instead of showing an empty path", () => {
     expect(filingLine(null, "x.pdf")).toEqual({ path: "Not decided yet", file: "x.pdf" });
   });

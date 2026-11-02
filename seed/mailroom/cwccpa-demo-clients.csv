@@ -1,15 +1,15 @@
-name,name_zh,br_no,ird_file_no,cr_no,mpf_no,folder,contact_name,contact_email,language
-ABC Trading Limited,ABC貿易有限公司,12345678,61/12345678,1234567,,ABC Trading Limited,陳大文先生,david.chan@abctrading.example,tc
-Mingtai Supply Chain Limited,明泰供应链有限公司,71234567,61/71234567,2234567,,Mingtai Supply Chain Limited,王建国先生,wang.jg@mingtai.example,sc
-Harbour Light Limited,海光有限公司,33300011,61/33300011,3300011,,Harbour Light Limited,Ms Ann Ho,ann.ho@harbourlight.example,en
-Harbour Light (Asia) Limited,,33300022,61/33300022,3300022,,Harbour Light (Asia) Limited,Mr Ben Ho,ben.ho@hlasia.example,en
-Kowloon Bay Dental Limited,九龍灣牙科有限公司,52345678,61/52345678,2345123,ER-0045821,Kowloon Bay Dental Limited,Dr Leung Ka Yan,kyleung@kbdental.example,en
-Sunrise Florist Limited,旭日花店有限公司,65432198,61/65432198,2765432,,Sunrise Florist Limited,黃美玲女士,may@sunriseflorist.example,tc
-Golden Crane Catering Limited,金鶴餐飲有限公司,40123456,61/40123456,2123456,,Golden Crane Catering Limited,李志強先生,chikeung.li@goldencrane.example,tc
-Eastpoint Logistics Limited,东点物流有限公司,28765432,61/22446688,2654321,,Eastpoint Logistics Limited,刘洋先生,liuyang@eastpoint.example,sc
-Lotus Garden Trading Limited,蓮園貿易有限公司,61234598,61/61234598,2987654,,Lotus Garden Trading Limited,Ms Karen Tsang,karen@lotusgarden.example,en
-Tai Hang Design Studio Limited,大坑設計工作室有限公司,37654321,61/37654321,3123987,,Tai Hang Design Studio Limited,Mr Jason Lam,jason@taihangdesign.example,en
-Cheung Brothers Trading Limited,張氏兄弟貿易有限公司,55667788,61/55667788,2456789,,Cheung Brothers Trading Limited,張偉明先生,wm.cheung@cheungbros.example,tc
-Northpoint Property Management Limited,北角物業管理有限公司,47788990,61/47788990,2876543,,Northpoint Property Management Limited,Ms Grace Wong,grace@northpointpm.example,en
-Silver Bay Seafood Limited,银湾海鲜有限公司,39887766,61/39887766,3012345,,Silver Bay Seafood Limited,陈明先生,chenming@silverbay.example,sc
-Tin Hau Tutoring Centre Limited,天后補習中心有限公司,58899001,61/58899001,3234567,,Tin Hau Tutoring Centre Limited,Miss Yeung,yeung@tinhaututor.example,tc
+name,name_zh,br_no,ird_file_no,cr_no,mpf_no,client_code,contact_name,contact_email,language
+ABC Trading Limited,ABC貿易有限公司,12345678,61/12345678,1234567,,AL1203A1,陳大文先生,david.chan@abctrading.example,tc
+Mingtai Supply Chain Limited,明泰供应链有限公司,71234567,61/71234567,2234567,,ML0871A1,王建国先生,wang.jg@mingtai.example,sc
+Harbour Light Limited,海光有限公司,33300011,61/33300011,3300011,,HL1155A1,Ms Ann Ho,ann.ho@harbourlight.example,en
+Harbour Light (Asia) Limited,,33300022,61/33300022,3300022,,HL1156A1,Mr Ben Ho,ben.ho@hlasia.example,en
+Kowloon Bay Dental Limited,九龍灣牙科有限公司,52345678,61/52345678,2345123,ER-0045821,KL0932A1,Dr Leung Ka Yan,kyleung@kbdental.example,en
+Sunrise Florist Limited,旭日花店有限公司,65432198,61/65432198,2765432,,SL1018A1,黃美玲女士,may@sunriseflorist.example,tc
+Golden Crane Catering Limited,金鶴餐飲有限公司,40123456,61/40123456,2123456,,GL0764A1,李志強先生,chikeung.li@goldencrane.example,tc
+Eastpoint Logistics Limited,东点物流有限公司,28765432,61/22446688,2654321,,EL1322A1,刘洋先生,liuyang@eastpoint.example,sc
+Lotus Garden Trading Limited,蓮園貿易有限公司,61234598,61/61234598,2987654,,LL0457A1,Ms Karen Tsang,karen@lotusgarden.example,en
+Tai Hang Design Studio Limited,大坑設計工作室有限公司,37654321,61/37654321,3123987,,TL1290A1,Mr Jason Lam,jason@taihangdesign.example,en
+Cheung Brothers Trading Limited,張氏兄弟貿易有限公司,55667788,61/55667788,2456789,,CL0615A1,張偉明先生,wm.cheung@cheungbros.example,tc
+Northpoint Property Management Limited,北角物業管理有限公司,47788990,61/47788990,2876543,,NL1407A1,Ms Grace Wong,grace@northpointpm.example,en
+Silver Bay Seafood Limited,银湾海鲜有限公司,39887766,61/39887766,3012345,,SL1188A1,陈明先生,chenming@silverbay.example,sc
+Tin Hau Tutoring Centre Limited,天后補習中心有限公司,58899001,61/58899001,3234567,,TL0349A1,Miss Yeung,yeung@tinhaututor.example,tc
