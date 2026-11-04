@@ -113,6 +113,13 @@
       "when": 1793780828901,
       "tag": "0015_annual_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793781021345,
+      "tag": "0016_csa_snapshot",
+      "breakpoints": true
     }
   ]
 }

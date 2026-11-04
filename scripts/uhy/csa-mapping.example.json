@@ -1,0 +1,8 @@
+{
+  "_note": "Written on site against the restored CSA_Copy (scripts/uhy/csa-schema.sql lists its tables). Each query must return exactly these column names; types are checked on import (src/integrations/csa/sql-source.ts). Table and column names below are placeholders, not CSA's.",
+  "companies": "SELECT c.ID AS csaId, c.ClientCode AS code, c.NameEng AS nameEn, c.NameChi AS nameZh, c.BRNo AS brNumber, c.CRNo AS companyNumber, c.IncorpDate AS incorporatedOn, MONTH(c.YearEnd) AS fyeMonth, DAY(c.YearEnd) AS fyeDay, c.RegOffice AS registeredOffice, 'private' AS companyType FROM Company c",
+  "officers": "SELECT o.ID AS csaId, o.CompanyID AS companyCsaId, 'director' AS role, 'individual' AS kind, o.NameEng AS nameEn, o.NameChi AS nameZh, o.Address AS correspondenceAddress, o.Email AS email, o.IDNo AS idNumber, NULL AS brNumber, o.AppointDate AS appointedOn, o.ResignDate AS ceasedOn FROM Officer o",
+  "members": "SELECT m.ID AS csaId, m.CompanyID AS companyCsaId, 'individual' AS kind, m.NameEng AS nameEn, m.NameChi AS nameZh, m.Address AS address, m.ShareClass AS className, m.Shares AS shares FROM Member m",
+  "shareClasses": "SELECT s.ID AS csaId, s.CompanyID AS companyCsaId, s.ClassName AS className, s.Currency AS currency, s.Issued AS issuedShares, s.Amount AS totalAmount, s.PaidUp AS paidUp FROM ShareCapital s",
+  "contacts": "SELECT k.ID AS csaId, k.CompanyID AS companyCsaId, k.Name AS name, k.Email AS email, k.Phone AS phone, 'en' AS language FROM Contact k"
+}

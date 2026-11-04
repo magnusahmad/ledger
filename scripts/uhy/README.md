@@ -17,3 +17,11 @@ Run on UHY's Windows Server over AnyDesk, as described in `docs/UHY_PILOT_PLAN.m
 | `new-app-cert.ps1` | 2 | Yes: creates a non-exportable certificate in the server's machine store for the Entra app. |
 | `mailbox-rbac.ps1` | 2 | Yes: Exchange Online service principal, management scope and role assignment limited to the team-mailbox group. |
 | `mailbox-smoke.ps1` | 2 | No. Lists folder names and counts only, and checks that an out-of-scope mailbox is refused. |
+
+## On the pilot machine (not UHY's server)
+
+| Script | Changes anything? |
+|---|---|
+| `csa-restore.ps1` | Yes, on the pilot machine only: copies the newest `.csa` backup from the share and restores it as the read-only `CSA_Copy`; swaps only after a successful restore; writes `restore-status.json`. Never touches the live CSA database. |
+| `register-csa-restore.ps1` | Yes: schedules the restore at 12:30 and 18:30 on weekdays under the service account. |
+| `csa-mapping.example.json` | Template for the installation's CSA mapping, filled in on site from the restored copy. |

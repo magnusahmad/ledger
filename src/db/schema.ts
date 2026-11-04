@@ -825,3 +825,21 @@ export const arMailScan = pgTable("ar_mail_scan", {
   scanned: integer("scanned").notNull().default(0), linked: integer("linked").notNull().default(0), ask: integer("ask").notNull().default(0),
   skipped: jsonb("skipped").$type<Record<string, number>>().notNull().default({}),
 }, (t) => [uniqueIndex("ar_mail_scan_uq").on(t.firmId, t.day, t.mailbox)]);
+
+// ---------- CSA snapshot (UHY pilot) ----------
+// A read-only copy of CSA's current records from its restored backup. Officers, members and shares
+// stay here rather than in the effective-dated registers: a snapshot of today's holdings is not a
+// history, and writing it as dated register entries would invent one.
+export const csaImport = pgTable("csa_import", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  backupTakenAt: timestamp("backup_taken_at", { withTimezone: true }).notNull(),
+  importedAt: timestamp("imported_at", { withTimezone: true }).notNull(),
+  counts: jsonb("counts").$type<Record<string, number>>().notNull().default({}),
+});
+
+export const csaRow = pgTable("csa_row", {
+  firmId: firmId(), importId: text("import_id").notNull(),
+  entity: text("entity").$type<"company" | "officer" | "member" | "share_class" | "contact">().notNull(),
+  csaId: text("csa_id").notNull(), companyCsaId: text("company_csa_id").notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+}, (t) => [uniqueIndex("csa_row_uq").on(t.firmId, t.importId, t.entity, t.csaId), index("csa_row_company_idx").on(t.firmId, t.companyCsaId)]);
