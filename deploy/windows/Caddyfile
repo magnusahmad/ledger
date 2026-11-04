@@ -1,0 +1,19 @@
+# HTTPS for the pilot on the office network, with the name-constrained pilot certificate.
+# The Windows firewall rule (install.ps1) admits port 443 from the office subnet only.
+{
+	auto_https off
+	admin off
+}
+
+https://harbourline.uhyask.local, https://harbourline {
+	tls C:\Harbourline\certs\server.crt C:\Harbourline\certs\server.key
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+	reverse_proxy 127.0.0.1:3000
+}

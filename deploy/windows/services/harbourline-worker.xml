@@ -1,0 +1,16 @@
+<!-- WinSW service definition. Copy WinSW-x64.exe next to this file as harbourline-worker.exe. -->
+<service>
+  <id>harbourline-worker</id>
+  <name>Harbourline worker</name>
+  <description>Harbourline annual-return pilot (worker)</description>
+  <executable>powershell.exe</executable>
+  <arguments>-NoProfile -ExecutionPolicy Bypass -File "C:\Harbourline\deploy\run-service.ps1" -Role worker</arguments>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>
+  <logpath>C:\ProgramData\Harbourline\logs</logpath>
+  <stoptimeout>30 sec</stoptimeout>
+</service>

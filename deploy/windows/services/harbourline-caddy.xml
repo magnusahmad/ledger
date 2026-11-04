@@ -1,0 +1,12 @@
+<!-- WinSW service definition for Caddy (HTTPS on the office network). Copy caddy.exe to C:\Harbourline\caddy. -->
+<service>
+  <id>harbourline-caddy</id>
+  <name>Harbourline HTTPS</name>
+  <description>HTTPS front door for the Harbourline pilot (office network only)</description>
+  <executable>C:\Harbourline\caddy\caddy.exe</executable>
+  <arguments>run --config "C:\Harbourline\deploy\Caddyfile" --adapter caddyfile</arguments>
+  <startmode>Automatic</startmode>
+  <onfailure action="restart" delay="30 sec"/>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>4</keepFiles></log>
+  <logpath>C:\ProgramData\Harbourline\logs</logpath>
+</service>

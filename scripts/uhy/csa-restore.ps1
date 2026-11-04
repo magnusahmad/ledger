@@ -8,7 +8,8 @@ param(
   [string] $Instance = '.\SQLEXPRESS',
   [string] $Database = 'CSA_Copy',
   [string] $DataDir = 'C:\ProgramData\Harbourline\csa',
-  [string] $ReaderAccount = '',          # e.g. UHYASK\svc-harbourline: gets db_datareader on the copy
+  [string] $ReaderAccount = '',          # optional Windows account given db_datareader on the copy
+  [string] $ReaderLogin = 'harbourline_reader',  # SQL login the app reads with; password from the DPAPI secret CSA_READER_PASSWORD
   [string] $StatusFile = 'C:\ProgramData\Harbourline\csa\restore-status.json'
 )
 $ErrorActionPreference = 'Stop'
@@ -52,6 +53,13 @@ try {
   # Swap only after a successful restore.
   Invoke-Sql "IF DB_ID(N'$Database') IS NOT NULL BEGIN ALTER DATABASE [$Database] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$Database]; END" | Out-Null
   Invoke-Sql "ALTER DATABASE [$staging] MODIFY NAME = [$Database]" | Out-Null
+  if ($ReaderLogin) {
+    . 'C:\Harbourline\deploy\secrets.ps1'
+    $pw = (Get-HarbourlineSecrets)['CSA_READER_PASSWORD']
+    if (-not $pw) { throw 'Set the CSA_READER_PASSWORD secret first (deploy/windows/secrets.ps1)' }
+    Invoke-Sql "IF SUSER_ID(N'$(& $q $ReaderLogin)') IS NULL CREATE LOGIN [$ReaderLogin] WITH PASSWORD = N'$(& $q $pw)', CHECK_POLICY = ON, DEFAULT_DATABASE = [$Database]" | Out-Null
+    Invoke-Sql "IF DATABASE_PRINCIPAL_ID(N'$(& $q $ReaderLogin)') IS NULL CREATE USER [$ReaderLogin] FOR LOGIN [$ReaderLogin]; ALTER ROLE db_datareader ADD MEMBER [$ReaderLogin]; ALTER ROLE db_denydatawriter ADD MEMBER [$ReaderLogin];" $Database | Out-Null
+  }
   if ($ReaderAccount) {
     Invoke-Sql "IF SUSER_ID(N'$(& $q $ReaderAccount)') IS NULL CREATE LOGIN [$ReaderAccount] FROM WINDOWS" | Out-Null
     Invoke-Sql "IF DATABASE_PRINCIPAL_ID(N'$(& $q $ReaderAccount)') IS NULL CREATE USER [$ReaderAccount] FOR LOGIN [$ReaderAccount]; ALTER ROLE db_datareader ADD MEMBER [$ReaderAccount];" $Database | Out-Null

@@ -15,8 +15,8 @@ const json = <T>(file: string): T => JSON.parse(readFileSync(path.resolve(file),
 
 export function graphFromConfig(c: Config): GraphMail | null {
   if (!c.GRAPH_TENANT_ID || !c.GRAPH_CLIENT_ID) return null;
-  if (c.GRAPH_PRIVATE_KEY_FILE && c.GRAPH_CERT_THUMBPRINT)
-    return new GraphMail({ tenantId: c.GRAPH_TENANT_ID, clientId: c.GRAPH_CLIENT_ID, privateKeyPem: readFileSync(c.GRAPH_PRIVATE_KEY_FILE, "utf8"), thumbprintHex: c.GRAPH_CERT_THUMBPRINT });
+  const pem = c.GRAPH_PRIVATE_KEY_PEM ?? (c.GRAPH_PRIVATE_KEY_FILE ? readFileSync(c.GRAPH_PRIVATE_KEY_FILE, "utf8") : null);
+  if (pem && c.GRAPH_CERT_THUMBPRINT) return new GraphMail({ tenantId: c.GRAPH_TENANT_ID, clientId: c.GRAPH_CLIENT_ID, privateKeyPem: pem, thumbprintHex: c.GRAPH_CERT_THUMBPRINT });
   if (c.GRAPH_CLIENT_SECRET) return new GraphMail({ tenantId: c.GRAPH_TENANT_ID, clientId: c.GRAPH_CLIENT_ID, clientSecret: c.GRAPH_CLIENT_SECRET });
   return null;
 }

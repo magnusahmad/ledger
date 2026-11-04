@@ -61,6 +61,8 @@ const Env = z.object({
   GRAPH_CLIENT_ID: z.string().optional(),
   GRAPH_CLIENT_SECRET: z.string().optional(),
   GRAPH_PRIVATE_KEY_FILE: z.string().optional(),
+  /** The same key as PEM text, set by deploy/windows/run-service.ps1 from the DPAPI-protected secrets. */
+  GRAPH_PRIVATE_KEY_PEM: z.string().optional(),
   GRAPH_CERT_THUMBPRINT: z.string().optional(),
   /** Read-only connection to the restored CSA copy, its mapping file and the restore status file. */
   CSA_SQL_CONNECTION: z.string().optional(),
