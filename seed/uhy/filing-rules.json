@@ -1,0 +1,6 @@
+{
+  "_note": "UHY's naming on F: (from its 2025 files). The client folder pattern is a placeholder until the F: layout is confirmed on site.",
+  "clientFolder": "{code}-{client}",
+  "annualReturn": "{code}-Annual Return-{madeUp}",
+  "agm": "{code}-AGM-{year}"
+}
