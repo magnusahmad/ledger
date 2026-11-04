@@ -21,10 +21,9 @@ export function graphFromConfig(c: Config): GraphMail | null {
   return null;
 }
 
-export function annualDeps(c: Config): AnnualDeps | null {
-  const mail = graphFromConfig(c);
-  if (!mail) return null;
-  return { mail, mailboxes: list(c.PILOT_MAILBOXES), filingRoot: c.FILING_ROOT ?? null, filingRules: json<UhyFilingRules>(c.FILING_RULES), template: json(c.DISPATCH_TEMPLATE) };
+/** Preparing papers needs only filing settings; drafting also needs Microsoft 365 (mail is null without it). */
+export function annualDeps(c: Config): AnnualDeps {
+  return { mail: graphFromConfig(c), mailboxes: list(c.PILOT_MAILBOXES), filingRoot: c.FILING_ROOT ?? null, filingRules: json<UhyFilingRules>(c.FILING_RULES), template: json(c.DISPATCH_TEMPLATE) };
 }
 
 export function cycleDeps(c: Config): CycleDeps {

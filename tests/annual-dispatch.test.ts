@@ -21,6 +21,22 @@ describe("annual-return dates", () => {
     expect(d.returnBy).toBe("2026-11-07");
   });
 
+  it("when 14 days before the deadline has already passed, the return-by date is a few days from today, not in the past", () => {
+    const d = annualReturnDates({ incorporatedOn: "2017-10-10", year: 2026, playbook: ar, today: "2026-11-15" });
+    expect(d.returnBy).toBe("2026-11-18");
+  });
+
+  it("an overdue return can still be sent, with a return-by date a week from today", () => {
+    const d = annualReturnDates({ incorporatedOn: "2017-10-10", year: 2026, playbook: ar, today: "2026-11-30" });
+    expect(d.returnBy).toBe("2026-12-07");
+    expect(checkReturnBy(d, "2026-12-07", "2026-11-30")).toBeNull();
+  });
+
+  it("a return-by date in the past is refused", () => {
+    const d = annualReturnDates({ incorporatedOn: "2017-10-10", year: 2026, playbook: ar, today: "2026-11-05" });
+    expect(checkReturnBy(d, "2026-11-01", "2026-11-05")).toMatch(/today or later/);
+  });
+
   it("the bank-statement date for the charges question is the last month end before the made-up date", () => {
     expect(annualReturnDates({ incorporatedOn: "2011-09-11", year: 2026, playbook: ar }).chargesStatementDate).toBe("2026-08-31");
   });

@@ -14,7 +14,7 @@ import { listCases } from "./cases";
 export type UhyFilingRules = { clientFolder: string; annualReturn: string; agm: string };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const compactDate = (d: string) => `${Number(d.slice(8, 10))}${MONTHS[Number(d.slice(5, 7)) - 1]}${d.slice(0, 4)}`;
+export const compactDate = (d: string) => `${Number(d.slice(8, 10))}${MONTHS[Number(d.slice(5, 7)) - 1]}${d.slice(0, 4)}`;
 const fill = (t: string, v: Record<string, string>) => cleanSegment(t.replace(/\{(\w+)\}/g, (_, k: string) => cleanSegment(v[k] ?? "")));
 
 /** Saves a generated paper in the client's folder; adds " (2)", " (3)"… rather than overwrite anything. */

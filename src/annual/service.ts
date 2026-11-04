@@ -10,11 +10,12 @@ import { fillForm, mapNAR1 } from "@/documents/cr-forms";
 import { nar1InputFromCsa, dispatchFactsFromCsa } from "@/integrations/csa/nar1";
 import { arPlaybook, markPrepared, recordDraft } from "./cases";
 import { annualReturnDates, buildDispatchEmail, checkReturnBy, maxRegistryFee, type DispatchTemplate } from "./dispatch";
-import { filePaper, type UhyFilingRules } from "./writeback";
+import { compactDate, filePaper, type UhyFilingRules } from "./writeback";
 import type { MailboxSource } from "./mail-sync";
 
 export type AnnualDeps = {
-  mail: MailboxSource; mailboxes: string[];
+  /** Null until Microsoft 365 is connected: papers can still be prepared, but not drafted. */
+  mail: MailboxSource | null; mailboxes: string[];
   /** UNC path of the F: share; null when filing to F: isn't configured. */
   filingRoot: string | null; filingRules: UhyFilingRules;
   template: DispatchTemplate | Record<string, unknown>;
@@ -33,9 +34,10 @@ export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o:
   const { c, cl } = await loadCase(ctx, caseId);
   if (c.kind !== "AR") return { ok: false, reason: "AGM papers are prepared by staff for now; mark them prepared when ready." };
   if (!cl.incorporatedOn) return { ok: false, reason: "The company has no incorporation date in CSA." };
-  const dates = annualReturnDates({ incorporatedOn: cl.incorporatedOn, year: c.periodYear, playbook: await arPlaybook(ctx) });
+  const today = ctx.clock.today();
+  const dates = annualReturnDates({ incorporatedOn: cl.incorporatedOn, year: c.periodYear, playbook: await arPlaybook(ctx), today });
   const returnBy = o.returnBy ?? c.returnBy ?? dates.returnBy;
-  const bad = checkReturnBy(dates, returnBy);
+  const bad = checkReturnBy(dates, returnBy, today);
   if (bad) return { ok: false, reason: bad };
   const f = (await ctx.db.query.firm.findFirst({ where: eq(firmT.id, ctx.firmId) }))!;
   const me = await ctx.db.query.appUser.findFirst({ where: and(eq(appUser.id, ctx.userId), eq(appUser.firmId, ctx.firmId)) });
@@ -48,7 +50,7 @@ export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o:
   const filedPath = deps.filingRoot
     ? await filePaper({ root: deps.filingRoot, rules: deps.filingRules, client: { code: cl.code, name: cl.nameEn }, kind: "annualReturn", madeUpDate: dates.madeUpDate, year: c.periodYear, content: pdf })
     : null;
-  const name = filedPath ? path.basename(filedPath) : `${cl.code ?? cl.id}-Annual Return-${dates.madeUpDate}.pdf`;
+  const name = filedPath ? path.basename(filedPath) : `${cl.code ?? cl.id}-Annual Return-${compactDate(dates.madeUpDate)}.pdf`;
   const key = `annual/${c.id}/${name}`;
   await ctx.storage.put(key, pdf);
   await markPrepared(ctx, c.id, { formSource: "generated", documentId: key, returnBy });
@@ -59,6 +61,7 @@ export async function draftDispatch(ctx: Ctx, deps: AnnualDeps, caseId: string, 
   const { c, cl } = await loadCase(ctx, caseId);
   if (c.stage !== "payment_confirmed") throw new Error("Confirm payment before drafting the email to the client");
   if (c.kind !== "AR") throw new Error("The dispatch email is drafted from the annual-return case");
+  if (!deps.mail) throw new Error("Microsoft 365 isn't connected for this installation yet, so drafts can't be created");
   const me = await ctx.db.query.appUser.findFirst({ where: and(eq(appUser.id, ctx.userId), eq(appUser.firmId, ctx.firmId)) });
   const mailbox = me?.email?.toLowerCase();
   if (!mailbox || !deps.mailboxes.map((m) => m.toLowerCase()).includes(mailbox)) throw new Error("Drafts go into your own mailbox, and yours isn't one of the team mailboxes");
@@ -68,11 +71,12 @@ export async function draftDispatch(ctx: Ctx, deps: AnnualDeps, caseId: string, 
   const facts = await dispatchFactsFromCsa(ctx, cl.id);
   if (!facts?.signer) throw new Error("CSA shows no director to sign");
   const pb = await arPlaybook(ctx);
-  const dates = annualReturnDates({ incorporatedOn: cl.incorporatedOn!, year: c.periodYear, playbook: pb });
+  const today = ctx.clock.today();
+  const dates = annualReturnDates({ incorporatedOn: cl.incorporatedOn!, year: c.periodYear, playbook: pb, today });
   const f = (await ctx.db.query.firm.findFirst({ where: eq(firmT.id, ctx.firmId) }))!;
   const lang = to.language as Lang;
   const email = buildDispatchEmail({
-    lang, template: deps.template, salutation: to.salutation?.[lang] ?? to.name, companyName: lang === "en" ? cl.nameEn : cl.nameTc ?? cl.nameEn, year: c.periodYear,
+    today, lang, template: deps.template, salutation: to.salutation?.[lang] ?? to.name, companyName: lang === "en" ? cl.nameEn : cl.nameTc ?? cl.nameEn, year: c.periodYear,
     dates, returnBy: o.returnBy ?? c.returnBy ?? dates.returnBy, signer: { name: facts.signer, page: 8 },
     standardFeeCents: pb.registryFeeBands![0].amountCents, maxFeeCents: maxRegistryFee(pb), firmAddress: f.address ?? "",
     agm: o.includeAgm ? { directors: facts.directors, members: facts.members, corporateMembers: facts.corporateMembers } : null,

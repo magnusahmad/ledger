@@ -7,6 +7,10 @@ import type { Lang } from "@/db/schema";
 import { addDays, addMonths, fmtDate } from "@/domain/dates";
 
 export const RETURN_BUFFER_DAYS = 14;
+/** When the buffer has already passed: give the client at least this long. */
+export const MIN_RETURN_DAYS = 3;
+/** After the deadline (late filing, higher fee): a week from today. */
+export const OVERDUE_RETURN_DAYS = 7;
 export const COMBINE_WINDOW_DAYS = 30;
 
 export type ArDates = { madeUpDate: string; deadline: string; returnBy: string; chargesStatementDate: string };
@@ -18,21 +22,25 @@ export function anniversary(incorporatedOn: string, year: number): string {
   return md === "02-29" && new Date(`${d}T00:00:00Z`).getUTCMonth() !== 1 ? `${year}-02-28` : d;
 }
 
-export function annualReturnDates(o: { incorporatedOn: string; year: number; playbook: PlaybookDef; returnBufferDays?: number }): ArDates {
+export function annualReturnDates(o: { incorporatedOn: string; year: number; playbook: PlaybookDef; returnBufferDays?: number; today?: string }): ArDates {
   const rule = o.playbook.deadline as { kind: string; days?: number };
   if (rule.kind !== "anniversary" || !rule.days) throw new Error("This playbook has no anniversary deadline");
   const madeUpDate = anniversary(o.incorporatedOn, o.year);
   const deadline = addDays(madeUpDate, rule.days);
-  const proposed = addDays(deadline, -(o.returnBufferDays ?? RETURN_BUFFER_DAYS));
-  const returnBy = proposed > madeUpDate ? proposed : addDays(madeUpDate, 1);
+  let returnBy = addDays(deadline, -(o.returnBufferDays ?? RETURN_BUFFER_DAYS));
+  if (o.today && deadline < o.today) returnBy = addDays(o.today, OVERDUE_RETURN_DAYS);
+  else if (o.today && returnBy < addDays(o.today, MIN_RETURN_DAYS)) returnBy = addDays(o.today, MIN_RETURN_DAYS) < deadline ? addDays(o.today, MIN_RETURN_DAYS) : deadline;
+  if (returnBy <= madeUpDate) returnBy = addDays(madeUpDate, 1);
   const chargesStatementDate = addDays(`${madeUpDate.slice(0, 8)}01`, -1);
   return { madeUpDate, deadline, returnBy, chargesStatementDate };
 }
 
-/** Why a return-by date can't be used, or null. Rule pending company-secretary verification. */
-export function checkReturnBy(d: ArDates, returnBy: string): string | null {
+/** Why a return-by date can't be used, or null. Rule pending company-secretary verification.
+ *  After the deadline the return can still go (with the higher fee), so only "today or later" applies. */
+export function checkReturnBy(d: ArDates, returnBy: string, today?: string): string | null {
   if (returnBy <= d.madeUpDate) return "The return-by date must be after the made-up date";
-  if (returnBy > d.deadline) return "The return-by date must be on or before the filing deadline";
+  if (today && returnBy < today) return "The return-by date must be today or later";
+  if (returnBy > d.deadline && !(today && d.deadline < today)) return "The return-by date must be on or before the filing deadline";
   return null;
 }
 
@@ -60,6 +68,8 @@ export function shouldCombine(o: { arDeadline: string; agmDeadline: string | nul
 
 export type DispatchTemplate = Record<Lang, Record<string, string>>;
 export type DispatchInput = {
+  /** Today in Hong Kong, for the return-by checks. */
+  today?: string;
   lang: Lang; template: DispatchTemplate | Record<string, unknown>; salutation: string; companyName: string; year: number;
   dates: ArDates; returnBy: string; signer: { name: string; page: number };
   standardFeeCents: number; maxFeeCents: number; firmAddress: string;
@@ -70,7 +80,7 @@ export type DispatchInput = {
 const money = (cents: number) => `HK$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export function buildDispatchEmail(i: DispatchInput): { subject: string; text: string } {
-  const problem = checkReturnBy(i.dates, i.returnBy);
+  const problem = checkReturnBy(i.dates, i.returnBy, i.today);
   if (problem) throw new Error(problem);
   const t = (i.template as DispatchTemplate)[i.lang];
   if (!t) throw new Error(`The email template has no ${i.lang} wording`);
