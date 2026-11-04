@@ -53,6 +53,26 @@ const Env = z.object({
   MODULES: z.string().optional(),
   /** Staff sign-in. Defaults on in production, off for the single-user development build. */
   AUTH: z.enum(["0", "1"]).optional(),
+  /** UHY pilot (annual module). Team mailboxes read through Microsoft Graph, comma-separated. */
+  PILOT_MAILBOXES: z.string().default(""),
+  FIRM_EMAIL_DOMAINS: z.string().default(""),
+  MAIL_LOOKBACK_DAYS: z.coerce.number().default(60),
+  GRAPH_TENANT_ID: z.string().optional(),
+  GRAPH_CLIENT_ID: z.string().optional(),
+  GRAPH_CLIENT_SECRET: z.string().optional(),
+  GRAPH_PRIVATE_KEY_FILE: z.string().optional(),
+  GRAPH_CERT_THUMBPRINT: z.string().optional(),
+  /** Read-only connection to the restored CSA copy, its mapping file and the restore status file. */
+  CSA_SQL_CONNECTION: z.string().optional(),
+  CSA_MAPPING_FILE: z.string().optional(),
+  CSA_RESTORE_STATUS_FILE: z.string().optional(),
+  /** UNC path of the share mapped as F:, and the share folder for the status workbook and log. */
+  FILING_ROOT: z.string().optional(),
+  FILING_RULES: z.string().default("seed/uhy/filing-rules.json"),
+  STATUS_DIR: z.string().optional(),
+  DISPATCH_TEMPLATE: z.string().default("seed/uhy/dispatch-template.json"),
+  ANNUAL_WINDOW_DAYS: z.coerce.number().default(60),
+  ANNUAL_POLL_MS: z.coerce.number().default(300_000),
 });
 
 export type Config = z.infer<typeof Env> & {
