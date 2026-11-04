@@ -2,7 +2,7 @@
 
 Owner: Magnus Ahmad
 Last reviewed: 2026-11-04
-Status: gap spec. The pilot machine (UHY's spare ASUS ExpertCenter D7, Windows 11 Pro) is ready by 5 November.
+Status: gaps 1–7 built against fictional data on 4 November (decision #59); Windows steps untested until the first install. What remains needs the pilot machine: see "Still to do on the machine" at the end.
 Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does, acceptance tests), [Implementation plan](UHY_PILOT_PLAN.md), [Decisions](DECISIONS.md) #53–58.
 
 ## Where we stand
@@ -119,3 +119,26 @@ Scanned post via the mail room, CDD switch-on, Xero payment status, the shadow-m
 5. **Days 6–8:** Gap 6 (annual-return case flow and dispatch), then install, staff PCs and the first live company.
 
 That puts first live use about **8 working days** from tomorrow's session (mid-November), assuming no major surprise in CSA's tables or Graph access. Annual returns for the five that fall due before then are done by hand and serve as the baseline; the pilot picks up the rest at their current stage.
+
+## Built on 4 November (branch `uhy-cdd-pilot`)
+
+| Gap | Where | Tests |
+|---|---|---|
+| 1 Running on Windows | `deploy/windows/` (install, services, secrets, Caddy, backups, guide), `src/worker/annual.ts`, `/api/health` | `annual-cycle` (4); Windows scripts untested |
+| 2 Sign-in, users, HTTPS | `src/lib/auth.ts`, `/login`, `deploy/windows/pilot-ca.sh` | `pilot-auth` (8); CA script checked on macOS |
+| 3 Reading CSA | `scripts/uhy/csa-restore.ps1`, `src/integrations/csa/` | `csa-import` (9) |
+| 4 Microsoft 365 mail | `src/integrations/mail/graph.ts` | `graph-mail` (9) |
+| 5 Relevance gate | `src/annual/mail-gate.ts`, `src/annual/mail-sync.ts` | `annual-mail-gate` (12), `annual-mail-sync` (9) |
+| 6 Case flow | `src/annual/` (cases, dispatch, service, writeback, next-step), `/annual` screens | `annual-cases` (9), `annual-dispatch` (18), `annual-service` (5), `annual-writeback` (4), `annual-next-step` (4) |
+| 7 Module switches | `src/lib/modules.ts`, `src/proxy.ts` | `pilot-modules` (13) |
+
+Screens checked in the browser at 375, 768 and 1440 px with fictional data (`annual-demo` launch config).
+
+## Still to do on the machine
+
+1. Prerequisites and secrets (`deploy/windows/README.md` sections 2–3), then `install.ps1`.
+2. First CSA restore, then write `csa-mapping.json` against the real tables and run an import.
+3. Graph app registration, `new-app-cert.ps1`, `scripts/uhy/mailbox-rbac.ps1` with the three addresses, `mailbox-smoke.ps1`.
+4. The F: share path and status folder in `.env.production`; confirm the client-folder pattern in `seed/uhy/filing-rules.json`.
+5. Staff accounts, the CA certificate on staff PCs, and a first case end to end with Ruby.
+6. Run the AI-free pilot first: nothing in this build calls the model yet. Reading client replies into proposed changes, AGM papers and CDD follow, in shadow mode (#56).
