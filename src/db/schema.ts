@@ -795,3 +795,33 @@ export const arCaseEvent = pgTable("ar_case_event", {
   kind: text("kind").notNull(),
   detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
 }, (t) => [index("ar_case_event_case_idx").on(t.caseId)]);
+
+/** Mail the relevance gate kept (src/annual/mail-gate.ts). Skipped mail is never stored, only counted. */
+export const arMail = pgTable("ar_mail", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  caseId: text("case_id"),
+  status: text("status").$type<"linked" | "ask" | "dismissed">().notNull(),
+  candidateCaseIds: jsonb("candidate_case_ids").$type<string[]>().notNull().default([]),
+  via: text("via").$type<"thread" | "contact" | "manual">(),
+  mailbox: text("mailbox").notNull(), graphId: text("graph_id").notNull(),
+  folder: text("folder").notNull(), direction: text("direction").$type<"in" | "out">().notNull(),
+  conversationId: text("conversation_id"), internetMessageId: text("internet_message_id"),
+  fromAddr: text("from_addr").notNull(), fromName: text("from_name"),
+  toAddrs: jsonb("to_addrs").$type<string[]>().notNull().default([]), ccAddrs: jsonb("cc_addrs").$type<string[]>().notNull().default([]),
+  subject: text("subject").notNull(), text: text("text").notNull(),
+  attachments: jsonb("attachments").$type<{ filename: string; mime: string; storageKey: string; bytes: number }[]>().notNull().default([]),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull(),
+  linkedBy: text("linked_by"),
+  createdAt: createdAt(),
+}, (t) => [
+  uniqueIndex("ar_mail_graph_uq").on(t.firmId, t.mailbox, t.graphId),
+  uniqueIndex("ar_mail_rfc_uq").on(t.firmId, t.internetMessageId),
+  index("ar_mail_case_idx").on(t.caseId),
+]);
+
+/** Per day and mailbox: how much mail was scanned and why it was skipped. Counts only, no content. */
+export const arMailScan = pgTable("ar_mail_scan", {
+  firmId: firmId(), day: date("day").notNull(), mailbox: text("mailbox").notNull(),
+  scanned: integer("scanned").notNull().default(0), linked: integer("linked").notNull().default(0), ask: integer("ask").notNull().default(0),
+  skipped: jsonb("skipped").$type<Record<string, number>>().notNull().default({}),
+}, (t) => [uniqueIndex("ar_mail_scan_uq").on(t.firmId, t.day, t.mailbox)]);

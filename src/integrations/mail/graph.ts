@@ -15,7 +15,7 @@ export type GraphMessageMeta = {
   from: string; fromName: string | null; to: string[]; cc: string[]; receivedAt: string; isMeetingMessage: boolean;
 };
 
-export type GraphFullMessage = { headers: Record<string, string>; text: string; inReplyTo: string | null; references: string[]; attachments: MailAttachment[] };
+export type GraphFullMessage = { meta: GraphMessageMeta; headers: Record<string, string>; text: string; inReplyTo: string | null; references: string[]; attachments: MailAttachment[] };
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
 const SELECT = "id,conversationId,internetMessageId,subject,from,toRecipients,ccRecipients,receivedDateTime";
@@ -23,6 +23,16 @@ const SMALL_ATTACHMENT = 3 * 1024 * 1024;
 const CHUNK = 320 * 1024 * 4;
 
 const addr = (r?: { emailAddress?: { address?: string } }) => (r?.emailAddress?.address ?? "").trim().toLowerCase();
+
+function toMeta(m: Record<string, unknown>, folder: string): GraphMessageMeta {
+  const from = m.from as { emailAddress?: { address?: string; name?: string } } | undefined;
+  return {
+    id: String(m.id), folder, conversationId: (m.conversationId as string) ?? null, internetMessageId: (m.internetMessageId as string) ?? null,
+    subject: String(m.subject ?? ""), from: addr(from), fromName: from?.emailAddress?.name ?? null,
+    to: ((m.toRecipients as []) ?? []).map(addr).filter(Boolean), cc: ((m.ccRecipients as []) ?? []).map(addr).filter(Boolean),
+    receivedAt: String(m.receivedDateTime ?? ""), isMeetingMessage: String(m["@odata.type"] ?? "").includes("eventMessage"),
+  };
+}
 
 export class GraphMail {
   private token: { value: string; expires: number } | null = null;
@@ -84,13 +94,7 @@ export class GraphMail {
       const page = await this.call<{ value: Record<string, unknown>[]; "@odata.nextLink"?: string; "@odata.deltaLink"?: string }>("GET", url, undefined, { prefer: "odata.maxpagesize=50" });
       for (const m of page.value) {
         if (m["@removed"]) continue;
-        const from = m.from as { emailAddress?: { address?: string; name?: string } } | undefined;
-        messages.push({
-          id: String(m.id), folder, conversationId: (m.conversationId as string) ?? null, internetMessageId: (m.internetMessageId as string) ?? null,
-          subject: String(m.subject ?? ""), from: addr(from), fromName: from?.emailAddress?.name ?? null,
-          to: ((m.toRecipients as []) ?? []).map(addr).filter(Boolean), cc: ((m.ccRecipients as []) ?? []).map(addr).filter(Boolean),
-          receivedAt: String(m.receivedDateTime ?? ""), isMeetingMessage: String(m["@odata.type"] ?? "").includes("eventMessage"),
-        });
+        messages.push(toMeta(m, folder));
       }
       if (page["@odata.deltaLink"]) return { messages, cursor: page["@odata.deltaLink"] };
       if (!page["@odata.nextLink"]) throw new Error("Microsoft Graph returned neither a next link nor a delta link");
@@ -104,14 +108,14 @@ export class GraphMail {
     return Object.fromEntries((r.internetMessageHeaders ?? []).map((h) => [h.name.toLowerCase(), h.value]));
   }
 
-  /** Body as plain text and attachments, for a message the gate kept. */
-  async full(mailbox: string, id: string): Promise<GraphFullMessage> {
+  /** Body as plain text, headers and attachments, for a message the gate kept or staff linked. */
+  async full(mailbox: string, id: string, folder = "inbox"): Promise<GraphFullMessage> {
     const base = `${GRAPH}/users/${encodeURIComponent(mailbox)}/messages/${encodeURIComponent(id)}`;
-    const m = await this.call<{ body?: { content?: string }; internetMessageHeaders?: { name: string; value: string }[] }>("GET", `${base}?$select=body,internetMessageHeaders`, undefined, { prefer: 'outlook.body-content-type="text"' });
+    const m = await this.call<Record<string, unknown> & { body?: { content?: string }; internetMessageHeaders?: { name: string; value: string }[] }>("GET", `${base}?$select=${SELECT},body,internetMessageHeaders`, undefined, { prefer: 'outlook.body-content-type="text"' });
     const headers = Object.fromEntries((m.internetMessageHeaders ?? []).map((h) => [h.name.toLowerCase(), h.value]));
     const atts = await this.call<{ value: { "@odata.type": string; name: string; contentType: string; contentBytes?: string }[] }>("GET", `${base}/attachments`);
     return {
-      headers, text: m.body?.content ?? "",
+      meta: toMeta(m, folder), headers, text: m.body?.content ?? "",
       inReplyTo: headers["in-reply-to"] ?? null, references: (headers["references"] ?? "").split(/\s+/).filter(Boolean),
       attachments: atts.value.filter((a) => a["@odata.type"].endsWith("fileAttachment") && a.contentBytes).map((a) => ({ filename: a.name, mime: a.contentType, content: Buffer.from(a.contentBytes!, "base64") })),
     };
