@@ -757,3 +757,41 @@ export const mailroomLetter = pgTable("mailroom_letter", {
   filedPath: text("filed_path"), draftRef: text("draft_ref"),
   createdAt: createdAt(),
 }, (t) => [uniqueIndex("mailroom_letter_seq_uq").on(t.firmId, t.batchId, t.seq)]);
+
+// ---------- Annual returns and AGMs (UHY pilot, DECISIONS.md #55) ----------
+export const AR_STAGES = ["due", "prepared", "payment_confirmed", "draft_ready", "sent", "signed_received", "filed", "registered"] as const;
+export type ArStage = (typeof AR_STAGES)[number];
+
+/** One annual return or AGM for one company and period, from due to registered. */
+export const arCase = pgTable("ar_case", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  clientId: text("client_id").notNull(),
+  kind: text("kind").$type<"AR" | "AGM">().notNull(),
+  periodKey: text("period_key").notNull(), periodYear: integer("period_year").notNull(),
+  dueDate: date("due_date").notNull(),
+  stage: text("stage").$type<ArStage>().notNull().default("due"),
+  /** Set when staff joined the pilot part-way through: the stage the case was already at. */
+  startedAtStage: text("started_at_stage").$type<ArStage>(),
+  returnBy: date("return_by"),
+  registryCheck: jsonb("registry_check").$type<{ result: "no_changes" | "changes_found"; note?: string; by: string; at: string }>(),
+  formSource: text("form_source").$type<"generated" | "csa">(),
+  formDocumentId: text("form_document_id"),
+  formCompare: jsonb("form_compare").$type<{ same: boolean; notes?: string; by: string; at: string }>(),
+  paymentConfirmedBy: text("payment_confirmed_by"), paymentConfirmedAt: timestamp("payment_confirmed_at", { withTimezone: true }),
+  draft: jsonb("draft").$type<{ mailbox: string; draftId: string; conversationId: string | null; by: string; at: string }>(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  combinedWithCaseId: text("combined_with_case_id"),
+  cddOutstanding: boolean("cdd_outstanding").notNull().default(false),
+  filedOn: date("filed_on"), registeredOn: date("registered_on"),
+  createdAt: createdAt(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("ar_case_period_uq").on(t.firmId, t.clientId, t.periodKey)]);
+
+/** Who did what on a case, in order. */
+export const arCaseEvent = pgTable("ar_case_event", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  caseId: text("case_id").notNull(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default({}),
+}, (t) => [index("ar_case_event_case_idx").on(t.caseId)]);
