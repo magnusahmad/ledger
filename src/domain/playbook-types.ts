@@ -107,6 +107,8 @@ export type PlaybookDef = {
   registerEffects: RegisterEffect[];
   feeCents: number;
   statutoryFees?: { description: string; amountCents: number }[];
+  /** Registry fee by delivery time after the anniversary ("42d", "3m"; null = any later), in order. */
+  registryFeeBands?: { within: string | null; amountCents: number; description: string }[];
   complianceNotes: string[];
   /** Filing / period key template for deadline satisfaction, e.g. "NAR1:{year}". */
   periodKey?: string;

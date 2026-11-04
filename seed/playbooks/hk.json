@@ -995,7 +995,7 @@
   },
   {
     "id": "hk.annualReturn",
-    "version": 3,
+    "version": 4,
     "jurisdiction": "HK",
     "category": "Annual cycle",
     "name": {
@@ -1080,14 +1080,36 @@
       "Late filing attracts a higher registration fee that increases with delay, and can lead to prosecution.",
       "Any unreported changes found during confirmation should be opened as their own matters first."
     ],
-    "verifyNote": "Statutory rule summarised from Companies Registry guidance; verify with the firm's company secretary before relying on it.",
+    "verifyNote": "Statutory rule summarised from Companies Registry guidance; verify with the firm's company secretary before relying on it. Registry fee bands follow the Companies Registry fee schedule for private companies and must also be verified.",
     "statutoryFees": [
       {
         "description": "Annual registration fee (filed on time)",
         "amountCents": 10500
       }
     ],
-    "periodKey": "NAR1:{year}"
+    "periodKey": "NAR1:{year}",
+    "registryFeeBands": [
+      {
+        "within": "42d",
+        "amountCents": 10500,
+        "description": "Delivered within 42 days after the anniversary of incorporation"
+      },
+      {
+        "within": "3m",
+        "amountCents": 87000,
+        "description": "More than 42 days but within 3 months after the anniversary"
+      },
+      {
+        "within": "6m",
+        "amountCents": 174000,
+        "description": "More than 3 months but within 6 months after the anniversary"
+      },
+      {
+        "within": null,
+        "amountCents": 348000,
+        "description": "More than 6 months after the anniversary"
+      }
+    ]
   },
   {
     "id": "hk.agm",
