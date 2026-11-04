@@ -92,6 +92,13 @@
       "when": 1793607646471,
       "tag": "0012_mailroom_client_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793779825633,
+      "tag": "0013_pilot_auth",
+      "breakpoints": true
     }
   ]
 }

@@ -47,6 +47,12 @@ const Env = z.object({
   MAILROOM_RECORD: z.enum(["0", "1"]).default("0"),
   /** 0: never answer from recordings, so every scan goes to the live model (live demos). */
   MAILROOM_REPLAY: z.enum(["0", "1"]).default("1"),
+  /** "production" for a firm installation: refuses demo and fixture parts (DECISIONS.md #56). */
+  INSTALLATION: z.enum(["dev", "production"]).default("dev"),
+  /** Comma-separated modules this installation loads (src/lib/modules.ts); empty = all. */
+  MODULES: z.string().optional(),
+  /** Staff sign-in. Defaults on in production, off for the single-user development build. */
+  AUTH: z.enum(["0", "1"]).optional(),
 });
 
 export type Config = z.infer<typeof Env> & {
@@ -56,6 +62,7 @@ export type Config = z.infer<typeof Env> & {
   accountingProvider: "xero" | "fake";
   screeningProvider: "opensanctions-api" | "opensanctions-local" | "fake";
   demoTools: boolean;
+  authRequired: boolean;
 };
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -72,6 +79,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     accountingProvider:
       (e.XERO_CLIENT_ID && e.XERO_CLIENT_SECRET) || e.XERO_CLIENT_BEARER_TOKEN ? "xero" : "fake",
     screeningProvider: e.SCREENING_PROVIDER ?? (e.OPENSANCTIONS_API_KEY ? "opensanctions-api" : "opensanctions-local"),
-    demoTools: e.DEMO_TOOLS ? e.DEMO_TOOLS === "1" : env.NODE_ENV !== "production",
+    demoTools: e.DEMO_TOOLS ? e.DEMO_TOOLS === "1" : env.NODE_ENV !== "production" && e.INSTALLATION !== "production",
+    authRequired: e.AUTH ? e.AUTH === "1" : e.INSTALLATION === "production",
   };
 }

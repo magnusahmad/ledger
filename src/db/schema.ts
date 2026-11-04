@@ -38,7 +38,22 @@ export const appUser = pgTable("app_user", {
   title: text("title"),
   email: text("email"),
   isDemoUser: boolean("is_demo_user").notNull().default(false),
-});
+  /** Firm installations: staff sign-in (src/lib/auth.ts). Null for the single-user development build. */
+  passwordHash: text("password_hash"),
+  role: text("role").$type<"staff" | "approver" | "admin">().notNull().default("staff"),
+  disabled: boolean("disabled").notNull().default(false),
+  failedLogins: integer("failed_logins").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+}, (t) => [uniqueIndex("app_user_email_uq").on(t.firmId, t.email)]);
+
+/** A signed-in browser. Only the SHA-256 of the session token is stored. */
+export const appSession = pgTable("app_session", {
+  idHash: text("id_hash").primaryKey(),
+  firmId: firmId(),
+  userId: text("user_id").notNull(),
+  createdAt: createdAt(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (t) => [index("app_session_user_idx").on(t.userId)]);
 
 // ---------- Records ----------
 export const client = pgTable("client", {
