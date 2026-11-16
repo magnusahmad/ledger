@@ -8,7 +8,7 @@ import { PDFDocument, PDFCheckBox, PDFTextField, PDFDropdown, defaultTextFieldAp
 import { embedFonts } from "./fonts";
 
 export const FORMS_DIR = path.join(process.cwd(), "forms/hk-cr");
-const CONTINUATIONS = Symbol.for("harbourline.formContinuations");
+const CONTINUATIONS = Symbol.for("clerk.formContinuations");
 type Continuation = { page: number; values: FieldValues };
 export type FieldValues = Record<string, string | boolean | null | undefined> & { [CONTINUATIONS]?: Continuation[] };
 

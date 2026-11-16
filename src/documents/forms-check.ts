@@ -33,7 +33,7 @@ export async function checkForms(ctx: Ctx, fetcher: (url: string) => Promise<Buf
 }
 
 async function defaultFetch(url: string) {
-  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 Harbourline form check" } });
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 Clerk form check" } });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return Buffer.from(await r.arrayBuffer());
 }

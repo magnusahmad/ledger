@@ -1,0 +1,16 @@
+<!-- WinSW service definition. Copy WinSW-x64.exe next to this file as clerk-web.exe. -->
+<service>
+  <id>clerk-web</id>
+  <name>Clerk web</name>
+  <description>Clerk annual-return pilot (web)</description>
+  <executable>powershell.exe</executable>
+  <arguments>-NoProfile -ExecutionPolicy Bypass -File "C:\Clerk\deploy\run-service.ps1" -Role web</arguments>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>8</keepFiles></log>
+  <logpath>C:\ProgramData\Clerk\logs</logpath>
+  <stoptimeout>30 sec</stoptimeout>
+</service>

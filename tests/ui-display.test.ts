@@ -40,7 +40,7 @@ describe("Display labels", () => {
     expect(jurisdictionLabel("HK")).toBe("Hong Kong");
     expect(fyeLabel(31, 3)).toBe("31 March");
     expect(documentSourceLabel("seed")).toBe("On file");
-    expect(documentSourceLabel("generated")).toBe("Prepared by Harbourline");
+    expect(documentSourceLabel("generated")).toBe("Prepared by Clerk");
   });
 
   it("counts use the right plural instead of (s)", () => {

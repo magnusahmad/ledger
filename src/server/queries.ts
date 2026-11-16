@@ -106,7 +106,7 @@ export async function todayData(ctx: Ctx) {
     proposals,
     waitingClient: open.filter((t) => t.waitingOn === "client" || t.waitingOn === "signatures"),
     awaitingPayment: open.filter((t) => t.waitingOn === "payment"),
-    working: open.filter((t) => t.waitingOn === "harbourline" || t.waitingOn === "you"),
+    working: open.filter((t) => t.waitingOn === "clerk" || t.waitingOn === "you"),
     deadlines,
     dueNow,
     overdue: overdue.map(({ i, c }) => ({ ...i, clientName: c.nameEn })),

@@ -5,7 +5,7 @@ How to run the inbound-mail demo for CWCCPA. Product decision: [DECISIONS.md](DE
 ## Before the visit
 
 1. `npm run mailroom:pack` builds `demos/cwccpa/letter-pack.pdf` (12 fictional letters, 17 pages, marked SPECIMEN) and the client index `seed/mailroom/cwccpa-demo-clients.csv`. Print the pack.
-2. `npm run mailroom:reset` creates or empties the `harbourline_cwc` database, loads the client index and makes a mock server under `storage/cwccpa/mailroom/` (`Scans`, `Server`, `Outlook drafts`). `Server` stands for their X: drive: `CWCHK Client Folder\<code>-<name>\<code>-Tax Folder` for each client, with fictional client codes.
+2. `npm run mailroom:reset` creates or empties the `clerk_cwc` database, loads the client index and makes a mock server under `storage/cwccpa/mailroom/` (`Scans`, `Server`, `Outlook drafts`). `Server` stands for their X: drive: `CWCHK Client Folder\<code>-<name>\<code>-Tax Folder` for each client, with fictional client codes.
 3. `npm run mailroom:dev` starts the screen at http://localhost:3100/mailroom and the scan-folder worker.
 
 The recorded model answers in `seed/mailroom/recordings/` make the pack run without the internet. A different scan (for example, the pack scanned on their copier) needs the live model (`or_api_key` in `.env`). Regenerate the recordings only after changing the pack, the prompts or the client index: `npm run mailroom:reset && npm run mailroom:record && npm run mailroom:reset`.
@@ -28,7 +28,7 @@ Auto-filing, sending, and accuracy figures. Those come from the side-by-side wee
 
 ## The recorded walkthrough
 
-`demos/cwccpa/mailroom-demo.mp4` (about 2 minutes) uses the same recorder as the Harbourline demos: on-screen cursor, click ripples, keycaps for shortcuts, a highlight ring and captions placed clear of what matters. To re-record, with `npm run mailroom:dev` running:
+`demos/cwccpa/mailroom-demo.mp4` (about 2 minutes) uses the same recorder as the Clerk demos: on-screen cursor, click ripples, keycaps for shortcuts, a highlight ring and captions placed clear of what matters. To re-record, with `npm run mailroom:dev` running:
 
 ```bash
 npm run mailroom:reset && REC_BASE=http://localhost:3100 npx tsx scripts/record-demos/demo-mailroom.ts

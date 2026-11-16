@@ -1,5 +1,5 @@
 {
-  "name": "harbourline-desk",
+  "name": "ao1-clerk",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,11 +22,11 @@
     "screening:update": "tsx --env-file-if-exists=.env scripts/screening-update.ts",
     "demo:pay": "tsx --env-file-if-exists=.env scripts/demo-pay.ts",
     "demo:rehearse": "tsx --env-file-if-exists=.env scripts/rehearse.ts",
-    "mailroom:dev": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
-    "mailroom:reset": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake tsx --env-file-if-exists=.env scripts/mailroom-reset.ts",
+    "mailroom:dev": "DATABASE_URL=postgres://localhost/clerk_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
+    "mailroom:reset": "DATABASE_URL=postgres://localhost/clerk_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake tsx --env-file-if-exists=.env scripts/mailroom-reset.ts",
     "mailroom:pack": "tsx scripts/mailroom-pack.ts",
-    "mailroom:record": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake MAILROOM_RECORD=1 tsx --env-file-if-exists=.env scripts/mailroom-record.ts",
-    "mailroom:live": "DATABASE_URL=postgres://localhost/harbourline_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake LLM_MODE=live MAILROOM_REPLAY=0 NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
+    "mailroom:record": "DATABASE_URL=postgres://localhost/clerk_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake MAILROOM_RECORD=1 tsx --env-file-if-exists=.env scripts/mailroom-record.ts",
+    "mailroom:live": "DATABASE_URL=postgres://localhost/clerk_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake LLM_MODE=live MAILROOM_REPLAY=0 NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
     "worker:annual": "tsx --env-file-if-exists=.env src/worker/annual.ts",
     "user:add": "tsx --env-file-if-exists=.env scripts/user-add.ts",
     "firm:init": "tsx --env-file-if-exists=.env scripts/firm-init.ts"

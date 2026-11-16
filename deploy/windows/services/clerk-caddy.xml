@@ -1,0 +1,12 @@
+<!-- WinSW service definition for Caddy (HTTPS on the office network). Copy caddy.exe to C:\Clerk\caddy. -->
+<service>
+  <id>clerk-caddy</id>
+  <name>Clerk HTTPS</name>
+  <description>HTTPS front door for the Clerk pilot (office network only)</description>
+  <executable>C:\Clerk\caddy\caddy.exe</executable>
+  <arguments>run --config "C:\Clerk\deploy\Caddyfile" --adapter caddyfile</arguments>
+  <startmode>Automatic</startmode>
+  <onfailure action="restart" delay="30 sec"/>
+  <log mode="roll-by-size"><sizeThreshold>10240</sizeThreshold><keepFiles>4</keepFiles></log>
+  <logpath>C:\ProgramData\Clerk\logs</logpath>
+</service>

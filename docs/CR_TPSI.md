@@ -4,7 +4,7 @@ Status: scoping, 1 October 2026. Nothing is built. The TPSI specification itself
 
 ## Why
 
-After signing, staff key each form (ND2A, NR1 and the rest) into e-Registry by hand and type the submission reference back into Harbourline. CSA Expert users don't: CSA submits ND2A, NR1, NNC1, NNC2 and NSC1 electronically. That puts Harbourline behind CSA on filing (`TIME_SAVED_VS_CSA.md` §4, item 2): about 5 minutes per filing, roughly 12 hours per 100 clients a year. For a director appointment it's most of the staff time left after Harbourline.
+After signing, staff key each form (ND2A, NR1 and the rest) into e-Registry by hand and type the submission reference back into Clerk. CSA Expert users don't: CSA submits ND2A, NR1, NNC1, NNC2 and NSC1 electronically. That puts Clerk behind CSA on filing (`TIME_SAVED_VS_CSA.md` §4, item 2): about 5 minutes per filing, roughly 12 hours per 100 clients a year. For a director appointment it's most of the staff time left after Clerk.
 
 ## What TPSI is (from the Companies Registry's public pages)
 
@@ -16,13 +16,13 @@ After signing, staff key each form (ND2A, NR1 and the rest) into e-Registry by h
 
 Sources: [TPSI](https://www.cr.gov.hk/en/electronic/e-servicesportal/tpsi.htm), [TPSI FAQs](https://www.cr.gov.hk/en/electronic/e-servicesportal/faq/tpsi.htm), [TPSI specification page](https://www.cr.gov.hk/en/electronic/e-servicesportal/tpsi_spec.htm), [testing environment](https://www.cr.gov.hk/en/electronic/e-servicesportal/tpsi_testing_environment.htm), [CR presentation, January 2014](https://www.cr.gov.hk/en/publications/docs/speech20140114_5.pdf), [CSA Expert release history](http://www.plsoft.com/csa-expert-release-history/).
 
-## Fit with what Harbourline already has
+## Fit with what Clerk already has
 
-Harbourline already fills the official PDFs for NAR1, ND2A, ND2B, ND4, ND5, NDR1, NNC1, NNC2, NR1, NSC1 and NSC2 (`forms/hk-cr/`) from the registers and the task. TPSI would take the same data as XML instead of a PDF, so the data mapping mostly exists.
+Clerk already fills the official PDFs for NAR1, ND2A, ND2B, ND4, ND5, NDR1, NNC1, NNC2, NR1, NSC1 and NSC2 (`forms/hk-cr/`) from the registers and the task. TPSI would take the same data as XML instead of a PDF, so the data mapping mostly exists.
 
 ## Proposed design
 
-- **A `FilingProvider` interface** like the bank and mail adapters: a TPSI adapter, and a fake for tests and demos. Without TPSI credentials, Harbourline behaves as now (staff file on e-Registry and enter the reference).
+- **A `FilingProvider` interface** like the bank and mail adapters: a TPSI adapter, and a fake for tests and demos. Without TPSI credentials, Clerk behaves as now (staff file on e-Registry and enter the reference).
 - **Human approval stays.** The "File with the Companies Registry" card gets a "Submit to the Companies Registry" button next to "Record filing". Nothing is filed without that click (non-negotiable in `AGENTS.md`).
 - **The reference comes back automatically.** The submission number and acknowledgement are stored on the task and the filing record, and the task moves to the register step. A rejection comes back as a card with the Registry's reason.
 - **Credentials in the secrets vault** with access logging: the e-Filing account and whatever signing credential TPSI requires. Never in plain text or in the database.

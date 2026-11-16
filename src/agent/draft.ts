@@ -88,7 +88,7 @@ export async function draftEmail(ctx: Ctx, facts: ReplyFacts, opts: { messageId?
       const body = d.body.replaceAll("{{invoice}}", financeBlock(facts)).replaceAll("{{cancellations}}", cancellationBlock(facts)).replaceAll("{{quotes}}", quoteBlock(facts));
       const problems = draftProblems(facts, body, { claimBody: d.body });
       for (const [required, token] of [[facts.cancellations.length > 0, "{{cancellations}}"], [!!facts.quotes?.length, "{{quotes}}"]] as const) {
-        if (required && d.body.split(token).length !== 2) problems.push(`Insert ${token} exactly once; Harbourline renders this block from reviewed facts.`);
+        if (required && d.body.split(token).length !== 2) problems.push(`Insert ${token} exactly once; Clerk renders this block from reviewed facts.`);
       }
       const cancellationProse = d.body.replaceAll("{{cancellations}}", "").split("\n").filter(line => !/^(?:(?:Regarding|On) (?:the )?cancellation(?: request)?|(?:(?:此外|另外)[，,]\s*)?(?:關於|关于|有關|有关)取消(?:服務|服务)?(?:的)?(?:事項|事项|事宜|安排)?(?:如下)?)[：:]?\s*$/i.test(line.trim())).join("\n");
       if (facts.cancellations.length && /\bcancel(?:led|ed|lation|ling|ing)?\b|取消|撤銷|撤销/i.test(cancellationProse)) problems.push("Use only {{cancellations}} for cancellation wording, not a separate status claim.");

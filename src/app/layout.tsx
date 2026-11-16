@@ -6,7 +6,7 @@ import "./globals.css";
 // Windows) so the demo works without a network connection to font CDNs.
 const plex = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex", display: "swap" });
 
-export const metadata: Metadata = { title: "Harbourline Desk", description: "Company secretarial work, handled." };
+export const metadata: Metadata = { title: "ao1 Clerk", description: "Company secretarial work, handled." };
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 export const dynamic = "force-dynamic";
 

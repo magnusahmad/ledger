@@ -5,6 +5,8 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEq
 export class Crypto {
   private key: Buffer;
   constructor(secret: string) {
+    // The salt keeps the product's former name on purpose: changing it would make every stored
+    // ID number and integration secret unreadable (DECISIONS.md #60).
     this.key = createHash("sha256").update("harbourline:" + secret).digest();
   }
   encrypt(plain: string): string {

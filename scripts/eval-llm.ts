@@ -9,7 +9,7 @@ import { tasksForRequest } from "@/domain/engine";
 import { MemoryStorage } from "@/integrations/storage";
 import { SCENARIOS, type Scenario } from "../eval/scenarios";
 
-const URL = "postgres://localhost/harbourline_eval";
+const URL = "postgres://localhost/clerk_eval";
 const only = process.argv[2];
 
 async function fresh() {

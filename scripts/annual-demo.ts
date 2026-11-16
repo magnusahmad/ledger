@@ -1,7 +1,7 @@
 // Fictional data for the annual-return pilot screens (never real client data). Recreates the
 // database named in DATABASE_URL's path from scratch: firm, two staff, a CSA snapshot of four
 // fictional companies, and cases at different stages.
-//   DATABASE_URL=postgres://localhost/harbourline_annual_demo npx tsx scripts/annual-demo.ts
+//   DATABASE_URL=postgres://localhost/clerk_annual_demo npx tsx scripts/annual-demo.ts
 import { Client } from "pg";
 import { runMigrations } from "@/db/migrate";
 import { closePools } from "@/db/client";

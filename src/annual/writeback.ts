@@ -49,10 +49,10 @@ async function atomicWrite(file: string, data: Buffer | string) {
   await rename(tmp, file);
 }
 
-/** Regenerates "Harbourline annual returns.xlsx" and "Harbourline review log.csv" in `dir`. */
+/** Regenerates "Clerk annual returns.xlsx" and "Clerk review log.csv" in `dir`. */
 export async function writeStatusFiles(ctx: Ctx, dir: string, o: { userNames: Record<string, string> }) {
   await mkdir(dir, { recursive: true });
-  const who = (id: string | null | undefined) => (id ? o.userNames[id] ?? (id.startsWith("system:") ? "Harbourline" : id) : "");
+  const who = (id: string | null | undefined) => (id ? o.userNames[id] ?? (id.startsWith("system:") ? "Clerk" : id) : "");
   const cases = await listCases(ctx);
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Cases");
@@ -65,7 +65,7 @@ export async function writeStatusFiles(ctx: Ctx, dir: string, o: { userNames: Re
   ]);
   ws.getRow(1).font = { bold: true };
   ws.views = [{ state: "frozen", ySplit: 1 }];
-  await atomicWrite(path.join(dir, "Harbourline annual returns.xlsx"), Buffer.from(await wb.xlsx.writeBuffer()));
+  await atomicWrite(path.join(dir, "Clerk annual returns.xlsx"), Buffer.from(await wb.xlsx.writeBuffer()));
 
   const events = await ctx.db.select({ e: arCaseEvent, kind: arCase.kind, year: arCase.periodYear, code: clientT.code, name: clientT.nameEn }).from(arCaseEvent)
     .innerJoin(arCase, eq(arCase.id, arCaseEvent.caseId)).innerJoin(clientT, eq(clientT.id, arCase.clientId))
@@ -74,5 +74,5 @@ export async function writeStatusFiles(ctx: Ctx, dir: string, o: { userNames: Re
     r.e.at.toISOString(), who(r.e.userId), r.code ?? "", r.name, `${r.kind === "AR" ? "Annual return" : "AGM"} ${r.year}`, STEP_LABEL[r.e.kind] ?? r.e.kind,
     Object.entries(r.e.detail).filter(([, v]) => typeof v !== "object").map(([k, v]) => `${k}: ${v}`).join("; "),
   ].map(csv).join(","))];
-  await atomicWrite(path.join(dir, "Harbourline review log.csv"), "\uFEFF" + lines.join("\n") + "\n");
+  await atomicWrite(path.join(dir, "Clerk review log.csv"), "\uFEFF" + lines.join("\n") + "\n");
 }

@@ -28,4 +28,4 @@ Use the prototype (`prototype/harbourline-desk-demo.html`) and walkthrough video
 - Overdue invoice escalation policy.
 - Real fee schedule per playbook.
 - E-signature and KYC vendor preferences.
-- Whether the firm name/product name "Harbourline" (a placeholder) should change.
+- Whether the firm name/product name "Clerk" (a placeholder) should change.

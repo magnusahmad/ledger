@@ -13,7 +13,7 @@ import type { Ctx } from "../../src/lib/ctx";
 import { SeqIds } from "../../src/lib/ids";
 
 const url = process.env.DATABASE_URL!;
-if (!/^postgres:\/\/localhost\/(?:harbourline_test|harbourline_robust_(?:audit|fixes|verify))$/.test(url)) throw new Error("Crash fixture requires an explicitly allowed isolated local test database");
+if (!/^postgres:\/\/localhost\/(?:clerk_test|clerk_robust_(?:audit|fixes|verify))$/.test(url)) throw new Error("Crash fixture requires an explicitly allowed isolated local test database");
 const ctx = makeCtx();
 ctx.db = getDb(url);
 // A restarted process must not restart the parent's deterministic audit ID sequence.

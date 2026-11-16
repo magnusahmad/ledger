@@ -1,5 +1,5 @@
 // Start manually: staff open a request themselves after a meeting or call. They choose the
-// playbooks and enter what they already know; Harbourline builds the same tasks, invoice and
+// playbooks and enter what they already know; Clerk builds the same tasks, invoice and
 // confirmation as for an email, and nothing reaches the client without an approval.
 import { and, eq } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";

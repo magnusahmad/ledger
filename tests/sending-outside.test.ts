@@ -48,7 +48,7 @@ it.each([30, 0])("staff can mark a reply done after sending by any medium, marki
     expect((await taskEvents(ctx, t.id)).some(e => e.kind === "message.completed_outside" && e.summary.includes("WeChat"))).toBe(true);
   }
   expect((await getProposal(ctx, p.id)).status).toBe("approved");
-  expect(await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) })).toMatchObject({ status: "failed", error: "Completed by staff outside Harbourline" });
+  expect(await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) })).toMatchObject({ status: "failed", error: "Completed by staff outside Clerk" });
   expect(await ctx.db.select().from(job).where(eq(job.kind, "xero.sync_invoice"))).toHaveLength(1);
   await expect(approveProposal(ctx, p.id, { edits: { completedOutside: "on" } })).rejects.toThrow(/already approved/);
 });

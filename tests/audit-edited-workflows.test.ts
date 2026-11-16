@@ -41,7 +41,7 @@ async function saveOrExplicitlyRefuse(pb: PlaybookDef, explanation: RegExp) {
 }
 async function manualFiling() {
   const pb = await officeDef();
-  // Official form prepared outside Harbourline; every recording/update still has
+  // Official form prepared outside Clerk; every recording/update still has
   // its actual human card. No fake signed or filed state is seeded.
   pb.documents = []; pb.requirements = [{ key: "newAddr" }, { key: "effDate" }];
   pb.steps = [{ kind: "collect", label: "Confirm particulars" }, { kind: "file", label: "Record manually prepared NR1", human: true, authority: "Fictional Registry" }, { kind: "register", label: "Approve office update", human: true }, { kind: "task", label: "Archive original receipt", human: true }];

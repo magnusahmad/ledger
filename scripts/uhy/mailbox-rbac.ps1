@@ -29,7 +29,7 @@ $members = (Get-DistributionGroupMember -Identity $GroupName).PrimarySmtpAddress
 
 # 2. Exchange pointer to the Entra service principal.
 if (-not (Get-ServicePrincipal -Identity $ObjectId -ErrorAction SilentlyContinue)) {
-  New-ServicePrincipal -AppId $AppId -ObjectId $ObjectId -DisplayName 'UHY Harbourline pilot' | Out-Null
+  New-ServicePrincipal -AppId $AppId -ObjectId $ObjectId -DisplayName 'UHY Clerk pilot' | Out-Null
 }
 
 # 3. Management scope: only mailboxes that are direct members of the group.
@@ -52,5 +52,5 @@ foreach ($m in $TeamMailboxes) {
 "Out of scope (expect InScope = False):"
 Test-ServicePrincipalAuthorization -Identity $ObjectId -Resource $OutOfScopeMailbox | Select-Object RoleName, InScope | Format-Table -AutoSize
 
-"`nAlso confirm in Entra > Enterprise applications > UHY Harbourline pilot > Permissions that NO Microsoft Graph Mail permission is granted; a tenant-wide grant would override this scope."
+"`nAlso confirm in Entra > Enterprise applications > UHY Clerk pilot > Permissions that NO Microsoft Graph Mail permission is granted; a tenant-wide grant would override this scope."
 Disconnect-ExchangeOnline -Confirm:$false

@@ -1,13 +1,13 @@
 # Setting up the integrations
 
-Harbourline runs without any of these: each has a built-in demo adapter (demo mailbox, demo bank, demo ledger, local sanctions list). Add keys to `.env` when you have them, restart `npm run dev`, and check **Settings**, where each connection shows Connected or Off. Nothing here costs money. Every credential is stored in `.env` or, for OAuth tokens, encrypted in the database. None is ever shown in the app.
+Clerk runs without any of these: each has a built-in demo adapter (demo mailbox, demo bank, demo ledger, local sanctions list). Add keys to `.env` when you have them, restart `npm run dev`, and check **Settings**, where each connection shows Connected or Off. Nothing here costs money. Every credential is stored in `.env` or, for OAuth tokens, encrypted in the database. None is ever shown in the app.
 
 ## 1. Gmail (primary mailbox), about 10 minutes
 
 Use a dedicated demo address, e.g. `desk.caineroad.demo@gmail.com`, so investors email that address.
 
 1. Create the Gmail account, and sign in to <https://console.cloud.google.com> with it.
-2. Create a project (e.g. "Harbourline demo").
+2. Create a project (e.g. "Clerk demo").
 3. **APIs & Services → Library**: enable **Gmail API**.
 4. **APIs & Services → OAuth consent screen**: choose External and Testing mode. Add the Gmail address under **Test users**. The scopes are requested by the app, so you don't need to add them here.
 5. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
@@ -24,8 +24,8 @@ Use a dedicated demo address, e.g. `desk.caineroad.demo@gmail.com`, so investors
 
 Notes:
 - Testing-mode refresh tokens expire after 7 days. Reconnect from Settings the day before a meeting, or publish the consent screen.
-- On first connection Harbourline starts from "now" and doesn't import old mail.
-- Harbourline reads the inbox and the Sent folder. Replies staff type in Gmail itself are captured in the thread; they withdraw any Harbourline draft on that thread and may raise an "Update tasks to match the mailbox reply" card. No extra permission is needed.
+- On first connection Clerk starts from "now" and doesn't import old mail.
+- Clerk reads the inbox and the Sent folder. Replies staff type in Gmail itself are captured in the thread; they withdraw any Clerk draft on that thread and may raise an "Update tasks to match the mailbox reply" card. No extra permission is needed.
 
 ## 2. AgentMail (fallback mailbox), about 3 minutes
 
@@ -67,11 +67,11 @@ The free tier adds a "Sent via AgentMail" footer to outgoing mail.
    XERO_BANK_ACCOUNT_CODE=090    # bank account that receives Airwallex deposits
    ```
    Check the two account codes in the Demo Company's chart of accounts and adjust them.
-4. Harbourline starts `npx -y @xeroapi/xero-mcp-server@0.0.17` as an MCP client when it first needs Xero. When an invoice is sent, it creates the contact and invoice through the MCP server, then approves the invoice with one direct API call (the MCP server can't, see DECISIONS.md #32). When a payment is matched, it records the payment through the MCP server.
+4. Clerk starts `npx -y @xeroapi/xero-mcp-server@0.0.17` as an MCP client when it first needs Xero. When an invoice is sent, it creates the contact and invoice through the MCP server, then approves the invoice with one direct API call (the MCP server can't, see DECISIONS.md #32). When a payment is matched, it records the payment through the MCP server.
 
 ## 5. OpenSanctions (screening)
 
-- Without a key, Harbourline uses the free consolidated sanctions list (`npm run screening:update` downloads about 74 MB to `storage/opensanctions`; the bulk data licence is non-commercial).
+- Without a key, Clerk uses the free consolidated sanctions list (`npm run screening:update` downloads about 74 MB to `storage/opensanctions`; the bulk data licence is non-commercial).
 - For PEPs as well as sanctions, get an API key at <https://www.opensanctions.org/api/> and set `OPENSANCTIONS_API_KEY=…`.
 
 ## 6. The existing-client test address

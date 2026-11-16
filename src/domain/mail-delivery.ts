@@ -61,7 +61,7 @@ export async function deliveryConfirmedUnsent(ctx: Ctx, row: typeof mailDelivery
 export async function prepareDelivery(ctx: Ctx, sourceKey: string, mail: OutboundMail, invoiceDates?: InvoiceDeliveryDates) {
   const existing = await ctx.db.query.mailDelivery.findFirst({ where: and(eq(mailDelivery.firmId, ctx.firmId), eq(mailDelivery.sourceKey, sourceKey)) });
   if (existing) return existing;
-  const correlationId = `<${randomUUID()}@harbourline.local>`;
+  const correlationId = `<${randomUUID()}@clerk.local>`;
   const plain = JSON.stringify({ ...mail, correlationId, reconciliationScope: ctx.mail.reconciliationScope, invoiceDates, attachments: mail.attachments?.map(a => ({ filename: a.filename, mime: a.mime, base64: a.content.toString("base64") })) });
   await ctx.db.insert(mailDelivery).values({ id: ctx.ids.next("mdl"), firmId: ctx.firmId, sourceKey, provider: ctx.mail.name, sender: ctx.mail.address, correlationId, payload: ctx.crypto.encrypt(plain), payloadHash: Crypto.sha256(plain) }).onConflictDoNothing();
   return (await ctx.db.query.mailDelivery.findFirst({ where: and(eq(mailDelivery.firmId, ctx.firmId), eq(mailDelivery.sourceKey, sourceKey)) }))!;

@@ -1,4 +1,4 @@
-# Harbourline Desk
+# ao1 Clerk
 
 The operating platform for Caine Road Ventures' company secretarial firms: an AI intake agent that reads client email, playbook-driven tasks, invoices with bank matching, official Companies Registry forms, e-signature, KYC screening and effective-dated statutory registers, for Hong Kong, Mainland China, Macau and Taiwan. Start with `AGENTS.md`, then `docs/BUILD_SPEC.md` and `docs/MILESTONES.md`.
 
@@ -7,7 +7,7 @@ The operating platform for Caine Road Ventures' company secretarial firms: an AI
 Requirements: Node 22, Postgres 17 (`brew install postgresql@17 && brew services start postgresql@17`).
 
 ```
-createdb harbourline && createdb harbourline_test
+createdb clerk && createdb clerk_test
 cp .env.example .env         # set or_api_key; everything else is optional
 npm install
 npm run db:seed              # migrates and loads the fictional demo firm and clients

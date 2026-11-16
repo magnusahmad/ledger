@@ -35,7 +35,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </section>
       <section className="sec"><div className="sec-h"><h2>Chasing</h2></div>
         <div className="card" style={{ maxWidth: 760 }}>
-          <p className="small muted" style={{ marginTop: 0 }}>When a client owes information or signatures, Harbourline drafts a reminder for you to approve. It escalates, and adds a call to the task, when the deadline is close or reminders go unanswered.</p>
+          <p className="small muted" style={{ marginTop: 0 }}>When a client owes information or signatures, Clerk drafts a reminder for you to approve. It escalates, and adds a call to the task, when the deadline is close or reminders go unanswered.</p>
           <ActionForm action={chaseRulesAction} submit="Save">
             <div className="grid2">
               <div><label className="f" htmlFor="cr1">First reminder after (days)</label><input id="cr1" type="number" name="firstAfterDays" min={1} max={365} defaultValue={rules.firstAfterDays} /></div>

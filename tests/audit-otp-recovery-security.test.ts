@@ -67,7 +67,7 @@ it("OTP delivery journals encrypt the code and public signing views expose no ch
 });
 
 it("killing OTP delivery after provider acceptance releases its session locks and preserves one usable delivered challenge", async () => {
-  const folder = await mkdtemp(join(tmpdir(), "harbourline-otp-crash-"));
+  const folder = await mkdtemp(join(tmpdir(), "clerk-otp-crash-"));
   try {
     const outbox = join(folder, "fictional-outbox.json");
     ctx.mail = new FakeMail(undefined, undefined, new FileList<StoredOutbound>(outbox));

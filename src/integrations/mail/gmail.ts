@@ -59,7 +59,7 @@ export class GmailMail implements MailProvider {
     const raw = await buildRaw(this.address, m);
     const r = await this.gmail.users.messages.send({ userId: "me", requestBody: { raw: raw.toString("base64url"), threadId: m.providerThreadId ?? undefined } });
     if (!r.data.id) throw new Error("Gmail did not return a send acknowledgement");
-    let rfc = m.correlationId ? (m.correlationId.startsWith("<") ? m.correlationId : `<${m.correlationId}@harbourline.local>`) : null;
+    let rfc = m.correlationId ? (m.correlationId.startsWith("<") ? m.correlationId : `<${m.correlationId}@clerk.local>`) : null;
     try {
       const sent = await this.gmail.users.messages.get({ userId: "me", id: r.data.id, format: "metadata", metadataHeaders: ["Message-ID"] });
       rfc = sent.data.payload?.headers?.find(h => h.name?.toLowerCase() === "message-id")?.value ?? rfc;

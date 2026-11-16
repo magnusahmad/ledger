@@ -24,7 +24,7 @@ import { simplePdf } from "@/documents/simple-pdf";
 import { requireRehearsalRequest, assertRehearsalComplete, runRehearsal, approveCurrentRehearsalProposal } from "./rehearsal-checks";
 
 async function rehearse() {
-const URL = "postgres://localhost/harbourline_eval";
+const URL = "postgres://localhost/clerk_eval";
 const t0 = Date.now();
 const log = (s: string) => console.log(`${((Date.now() - t0) / 1000).toFixed(1).padStart(6)}s  ${s}`);
 const c = new Client({ connectionString: URL }); await c.connect();

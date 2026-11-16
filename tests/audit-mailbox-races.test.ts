@@ -160,7 +160,7 @@ it("a stale mailbox withdrawal cannot overwrite an approved completed-outside de
   await reply;
   expect(ctx.mail.sent()).toHaveLength(0);
   expect(await getProposal(ctx, p.id)).toMatchObject({ status: "approved" });
-  expect(await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) })).toMatchObject({ status: "failed", error: "Completed by staff outside Harbourline" });
+  expect(await ctx.db.query.message.findFirst({ where: eq(message.id, p.payload.messageId as string) })).toMatchObject({ status: "failed", error: "Completed by staff outside Clerk" });
   expect(await pendingProposals(ctx, { kind: "send_message" })).toHaveLength(0);
   expect(await ctx.db.select().from(mailDelivery)).toHaveLength(0);
   await historyAndInvoice(req, tasks, true);

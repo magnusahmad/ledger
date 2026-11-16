@@ -2,7 +2,7 @@ import { Client } from "pg";
 import { runMigrations } from "../src/db/migrate";
 import { closePools } from "../src/db/client";
 
-const URL = "postgres://localhost/harbourline_test";
+const URL = "postgres://localhost/clerk_test";
 
 export default async function setup() {
   const c = new Client({ connectionString: URL });

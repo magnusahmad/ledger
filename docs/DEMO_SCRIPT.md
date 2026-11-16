@@ -1,6 +1,6 @@
 # Investor demo script
 
-Total time about 8 minutes. The founder drives Harbourline on the laptop, shared to the screen. The investor emails from their phone.
+Total time about 8 minutes. The founder drives Clerk on the laptop, shared to the screen. The investor emails from their phone.
 
 ## Before the meeting (T-1 day)
 
@@ -17,7 +17,7 @@ Total time about 8 minutes. The founder drives Harbourline on the laptop, shared
 **2. It arrives on its own (20 s).** Today shows "New email from … · Reading it now" and then a card: *Approve reply and invoice to …*. Point out that nobody pasted anything.
 
 **3. What it understood (1 min).** Open the card:
-- Right column: the investor's words ("From the client"), what Harbourline understood, and who the client is. An unknown sender is a **new prospect**, and the onboarding (take-over) task was added automatically. From the test address it's the existing client with KYC **on file**, so it doesn't ask for those documents again.
+- Right column: the investor's words ("From the client"), what Clerk understood, and who the client is. An unknown sender is a **new prospect**, and the onboarding (take-over) task was added automatically. From the test address it's the existing client with KYC **on file**, so it doesn't ask for those documents again.
 - The checklist per task, with a one-line count: what's to request, what the email already gave, and what's on file.
 - The invoice: playbook fees plus Companies Registry disbursements. Click the number or a price to edit it.
 - The reply is drafted in the investor's language. Click 繁 or 简 to redraft it in Chinese.
@@ -26,11 +26,11 @@ Total time about 8 minutes. The founder drives Harbourline on the laptop, shared
 
 **5. Payment (30 s).** Demo panel → **Send deposit** (Airwallex sandbox, reference = invoice number). Back on Today, the task leaves *Awaiting payment*. On **Payments** the deposit shows as "matched" on invoice number and amount. In Xero, the payment is recorded.
 
-**6. The client answers (1–2 min).** Ask the investor to reply to the email with the new director's details (or open the upload link on their phone: every outstanding item is on one form with a single Send button; any photo will do as the ID copy). Harbourline files the details on the right task and drafts a reply listing only what's still missing. If they change their mind ("actually make it someone else"), show the checklist switching to the new person.
+**6. The client answers (1–2 min).** Ask the investor to reply to the email with the new director's details (or open the upload link on their phone: every outstanding item is on one form with a single Send button; any photo will do as the ID copy). Clerk files the details on the right task and drafts a reply listing only what's still missing. If they change their mind ("actually make it someone else"), show the checklist switching to the new person.
 
 **7. Documents and signing (1 min).** Once the details are in, screening runs (sanctions list, with the agent adjudicating any hits). Documents are generated: board resolution, consent to act, and the **official ND2A filled in** (Specification No. 1/2023, with the PI-ND2A protected-information page). Open them from the task page. Approve **Send for signature**; the investor signs on their phone with an emailed 6-digit code.
 
-**8. File, register, confirm (1 min).** Record the e-Registry reference. Harbourline doesn't submit to the Companies Registry directly yet, so staff file on e-Registry; the Registry's Third Party Software Interface (TPSI) would allow it (`docs/CR_TPSI.md`). Approve the register update and show **Officers and controllers**, which is effective-dated: set "Register as at" to the day before the effective date to show the register reproduced as at any date. Approve the completion email. The task is **done**.
+**8. File, register, confirm (1 min).** Record the e-Registry reference. Clerk doesn't submit to the Companies Registry directly yet, so staff file on e-Registry; the Registry's Third Party Software Interface (TPSI) would allow it (`docs/CR_TPSI.md`). Approve the register update and show **Officers and controllers**, which is effective-dated: set "Register as at" to the day before the effective date to show the register reproduced as at any date. Approve the completion email. The task is **done**.
 
 **9. Close (30 s).** Open **Settings → Reports → Time saved** and **Playbooks**: 46 configured playbooks across Hong Kong, Mainland China, Macau and Taiwan; supported official CR forms mapped and version-checked; batch start for the annual cycle. Approval timing is partial. Explain the modelled coordination saving and supported workflow limits in `REVIEW_LOG.md`; do not present it as measured whole-task productivity or verified execution of every playbook.
 

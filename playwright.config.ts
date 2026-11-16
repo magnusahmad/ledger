@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const env = {
-  DATABASE_URL: "postgres://localhost/harbourline_e2e",
+  DATABASE_URL: "postgres://localhost/clerk_e2e",
   LLM_MODE: "e2e", MAIL_PROVIDER: "fake", SCREENING_PROVIDER: "fake",
   STORAGE_DIR: "storage/e2e", APP_URL: "http://localhost:3100", NEXT_DIST_DIR: ".next-e2e",
   AIRWALLEX_CLIENT_ID: "", AIRWALLEX_API_KEY: "", XERO_CLIENT_ID: "", XERO_CLIENT_SECRET: "", XERO_CLIENT_BEARER_TOKEN: "",

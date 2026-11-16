@@ -29,7 +29,7 @@ async function inspect(name: string, bytes: Buffer) {
   const result = await pdfTextRuns(bytes);
   if (process.env.AUDIT_OUTPUT_DIR) {
     const dir = process.env.AUDIT_OUTPUT_DIR;
-    if (!path.resolve(dir).startsWith("/private/tmp/harbourline-")) throw new Error("Audit artifacts require the isolated temporary audit directory");
+    if (!path.resolve(dir).startsWith("/private/tmp/clerk-")) throw new Error("Audit artifacts require the isolated temporary audit directory");
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, `${name}.pdf`), bytes);
     await writeFile(path.join(dir, `${name}.json`), JSON.stringify({ sha256: Crypto.sha256(bytes), pages: result.pdf.getPageCount(), runs: result.runs }, null, 2));
@@ -60,7 +60,7 @@ async function officeResolution(lang: "en" | "tc" | "sc", names: { en?: string; 
   const docs = await generateForTask(ctx, t.id);
   if (process.env.AUDIT_OUTPUT_DIR) {
     const dir = path.resolve(process.env.AUDIT_OUTPUT_DIR);
-    if (!dir.startsWith("/private/tmp/harbourline-")) throw new Error("Use isolated temporary artifacts");
+    if (!dir.startsWith("/private/tmp/clerk-")) throw new Error("Use isolated temporary artifacts");
     const pack = [];
     for (const d of docs) {
       const row = (await ctx.db.query.document.findFirst({ where: eq(document.id, d.id) }))!;
@@ -214,7 +214,7 @@ describe("Area 8 saved generated packs", () => {
       expect(saved.sha256).toBe(Crypto.sha256(bytes));
       if (process.env.AUDIT_OUTPUT_DIR) {
         const dir = path.resolve(process.env.AUDIT_OUTPUT_DIR);
-        if (!dir.startsWith("/private/tmp/harbourline-")) throw new Error("Use isolated temporary artifacts");
+        if (!dir.startsWith("/private/tmp/clerk-")) throw new Error("Use isolated temporary artifacts");
         await mkdir(dir, { recursive: true }); await writeFile(path.join(dir, `pack${kind === "company" ? "14" : "15"}-nr1-${kind}.pdf`), bytes);
       }
       // Poppler respects the saved widget's clipping rectangle: unlike AcroForm

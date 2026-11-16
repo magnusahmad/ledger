@@ -56,7 +56,7 @@ async function preparedPack(rotate = false) {
 const ordinary = { kind: "typed" as const, data: "Fictional Signer", ip: "203.0.113.8", userAgent: "fictional-output-audit" };
 async function saved(name: string, bytes: Buffer) {
   if (process.env.AUDIT_OUTPUT_DIR) {
-    if (!path.resolve(process.env.AUDIT_OUTPUT_DIR).startsWith("/private/tmp/harbourline-")) throw new Error("Use isolated temporary artifacts");
+    if (!path.resolve(process.env.AUDIT_OUTPUT_DIR).startsWith("/private/tmp/clerk-")) throw new Error("Use isolated temporary artifacts");
     await mkdir(process.env.AUDIT_OUTPUT_DIR, { recursive: true });
     await writeFile(path.join(process.env.AUDIT_OUTPUT_DIR, `${name}.pdf`), bytes);
   }

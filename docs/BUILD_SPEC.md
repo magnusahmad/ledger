@@ -1,17 +1,17 @@
-# Build spec: Harbourline Desk, end-to-end demo and CSA parity
+# Build spec: ao1 Clerk, end-to-end demo and CSA parity
 
 Status: 29 September 2026. Owner: Magnus. Companion file: `docs/MILESTONES.md` (the ordered build plan with acceptance tests). This spec narrows `PRODUCT_SPEC.md` for the first real build and records the decisions taken in the requirements session of 29 September 2026 (`DECISIONS.md` #21–#31).
 
 ## 1. Goals
 
-**Goal 1, the investor demo.** At an investor meeting the founder says: "Send this address an email with anything you'd ask your co-sec to do." With Harbourline on screen:
+**Goal 1, the investor demo.** At an investor meeting the founder says: "Send this address an email with anything you'd ask your co-sec to do." With Clerk on screen:
 
-1. The email arrives on its own (no paste). Harbourline shows who it is from: either a **new prospect** (unknown sender) or, when sent from the configured test address, an **existing client** with records, documents on file, past invoices and history.
-2. An LLM agent reads it, works out the request(s), and Harbourline opens the right task(s) from playbooks. It checks what is already on file, drafts the reply in the sender's language asking only for what is missing, creates the invoice and puts everything in the founder's intray.
+1. The email arrives on its own (no paste). Clerk shows who it is from: either a **new prospect** (unknown sender) or, when sent from the configured test address, an **existing client** with records, documents on file, past invoices and history.
+2. An LLM agent reads it, works out the request(s), and Clerk opens the right task(s) from playbooks. It checks what is already on file, drafts the reply in the sender's language asking only for what is missing, creates the invoice and puts everything in the founder's intray.
 3. The founder reviews, edits if needed, and clicks **Approve and send**. The email goes out from the connected mailbox in the same thread, with the invoice PDF, payment instructions and a secure upload link. The invoice is created in Xero.
-4. The founder triggers a sandbox deposit into the Airwallex Global Account quoting the invoice number. Harbourline matches it, records the payment in Xero and moves every linked task through the payment gate.
-5. The investor (or the founder playing the client) replies with details and attachments, or uses the upload link. Harbourline attaches them to the task, extracts the fields, re-checks what is still needed, screens the new person against sanctions and PEP lists, generates the resolution and the **official Companies Registry form filled in**, and sends an e-signature request (after approval).
-6. After signing, the founder files on e-Registry and records the filing reference. (The Companies Registry does offer a filing interface for software, TPSI, which CSA Expert uses; Harbourline doesn't use it yet. See `docs/CR_TPSI.md`.) Harbourline updates the statutory registers as at the effective date, drafts the completion email, and the founder approves it. The task is done.
+4. The founder triggers a sandbox deposit into the Airwallex Global Account quoting the invoice number. Clerk matches it, records the payment in Xero and moves every linked task through the payment gate.
+5. The investor (or the founder playing the client) replies with details and attachments, or uses the upload link. Clerk attaches them to the task, extracts the fields, re-checks what is still needed, screens the new person against sanctions and PEP lists, generates the resolution and the **official Companies Registry form filled in**, and sends an e-signature request (after approval).
+6. After signing, the founder files on e-Registry and records the filing reference. (The Companies Registry does offer a filing interface for software, TPSI, which CSA Expert uses; Clerk doesn't use it yet. See `docs/CR_TPSI.md`.) Clerk updates the statutory registers as at the effective date, drafts the completion email, and the founder approves it. The task is done.
 
 Every step is visible on the task timeline. Every client-facing send, register change and filing record needs one click from a human.
 
@@ -50,12 +50,12 @@ src/
 ```
 
 - **Postgres 17** (Homebrew), **Drizzle ORM**, **pg-boss** for jobs (Postgres-backed, no Redis).
-- **Vitest** for unit and integration tests against a real `harbourline_test` database; **Playwright** for the end-to-end demo run with fakes.
+- **Vitest** for unit and integration tests against a real `clerk_test` database; **Playwright** for the end-to-end demo run with fakes.
 - **pdf-lib** for filling official PDF forms and generating PDFs; **@pdf-lib/fontkit** with Noto Sans TC/SC for Chinese text.
 - **Clock, ID generator, LLM, mail, bank, accounting, screening and storage** are injected interfaces. Tests use deterministic fakes.
 - **Files** go to local disk under `storage/` (gitignored) behind a storage interface.
 
-## 4. The agent layer (how Harbourline understands clients)
+## 4. The agent layer (how Clerk understands clients)
 
 Rule from the owner: **intent is never understood by keyword rules or classic NLP.** Every "what does the client mean" decision is an LLM call. The playbook engine that runs afterwards can be rule-based.
 
@@ -86,7 +86,7 @@ Clients change their minds and send information out of order. The design does no
 ### 4.3 Reliability
 
 - Structured output through JSON-schema response format, validated with zod. One automatic repair retry on schema failure, then a triage card.
-- Every LLM call is logged (`llm_call`: agent, model, prompt hash, input and output, latency, tokens, cost) and shown on the task timeline as "Harbourline suggested…".
+- Every LLM call is logged (`llm_call`: agent, model, prompt hash, input and output, latency, tokens, cost) and shown on the task timeline as "Clerk suggested…".
 - Tests use recorded fixtures. A live evaluation suite (`npm run eval:llm`, needs `or_api_key`) runs about 25 realistic multilingual scenarios (Cantonese-flavoured written Chinese, mixed English/Chinese, a change of mind, cancellation, information for the wrong task, a status question, unsupported requests) and reports accuracy. It is not part of `npm test`.
 - Drafts are checked deterministically after generation: the invoice number, amount, upload link and every requested item must appear. If not, one regeneration, then a template fallback.
 
@@ -129,7 +129,7 @@ Playbooks stay data (`seed/playbooks/*.json`, loaded into the `playbook` table, 
 - **Invoice PDF** on the firm's letterhead, bilingual headings, with payment instructions: Airwallex Global Account details (account name, number, bank, FPS if available) and "please quote the invoice number".
 - **Airwallex adapter**: login with client id and API key, then a token; `listDeposits(since)` (Global Account deposits or financial transactions); `simulateDeposit` (sandbox only; used by the demo panel and `npm run demo:pay <invoice>`).
 - **Matching**: exact invoice number found in the reference and amount equal → auto-match. Invoice number found but amount different → partial or overpayment, flagged for review. No number but amount and payer name fit a single open invoice → proposed match needing approval. Otherwise the deposit sits in the unmatched queue. Deterministic, not LLM. Matching advances every task linked to the invoice.
-- **Xero via MCP**: Harbourline runs `@xeroapi/xero-mcp-server` over stdio as an MCP client (`@modelcontextprotocol/sdk`). On invoice approval: `list-contacts`/`create-contact`, then `create-invoice` (ACCREC, AUTHORISED, line items with account code from settings). On payment match: `create-payment` against the Airwallex bank account in Xero. Xero ids are stored on the invoice and payment. Failures are retried by the job queue and shown on the invoice. The LLM never decides accounting writes.
+- **Xero via MCP**: Clerk runs `@xeroapi/xero-mcp-server` over stdio as an MCP client (`@modelcontextprotocol/sdk`). On invoice approval: `list-contacts`/`create-contact`, then `create-invoice` (ACCREC, AUTHORISED, line items with account code from settings). On payment match: `create-payment` against the Airwallex bank account in Xero. Xero ids are stored on the invoice and payment. Failures are retried by the job queue and shown on the invoice. The LLM never decides accounting writes.
 - **Reminders**: overdue invoices get a drafted reminder to the billing contact in their language (approval to send). Escalation policy is configurable (default reminders at +7 and +14 days, partner flag at +30).
 
 ## 8. Documents and forms

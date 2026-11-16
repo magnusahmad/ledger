@@ -391,7 +391,7 @@ export const taskParty = pgTable("task_party", {
   createdAt: createdAt(),
 }, (t) => [uniqueIndex("task_party_uq").on(t.taskId, t.partyId)]);
 
-/** Work done outside Harbourline for a task (Stamp Office, notary, bank, court...), with proof when done. */
+/** Work done outside Clerk for a task (Stamp Office, notary, bank, court...), with proof when done. */
 export const taskAction = pgTable("task_action", {
   id: text("id").primaryKey(),
   firmId: firmId(),
@@ -486,7 +486,7 @@ export const message = pgTable("message", {
   processedAt: timestamp("processed_at", { withTimezone: true }),
   intake: jsonb("intake").$type<Record<string, unknown>>(),
   error: text("error"),
-  /** Sent by staff straight from the shared mailbox (e.g. Gmail), not through Harbourline. */
+  /** Sent by staff straight from the shared mailbox (e.g. Gmail), not through Clerk. */
   viaMailbox: boolean("via_mailbox").notNull().default(false),
 }, (t) => [uniqueIndex("message_provider_uq").on(t.firmId, t.provider, t.providerMessageId)]);
 

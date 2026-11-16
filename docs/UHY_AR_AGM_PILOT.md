@@ -3,18 +3,18 @@
 Owner: Magnus Ahmad
 Last reviewed: 2026-10-23
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
-Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Harbourline module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
+Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Clerk module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Implementation plan](UHY_PILOT_PLAN.md), [Gap to deployment](UHY_DEPLOY_GAP.md), [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
 
 ## Why annual returns and AGMs first
 
 The pilot started as CTC/CDD (6 October). On 7 October Allan said UHY is refreshing all CDD by hand and expects it finished before the pilot runs, which removes the backlog the CDD pilot was meant to clear. He sees CDD as mainly an engagement-time task and annual returns, AGMs and Registry filings as the routine work, with Registry work the most valuable long term. Annual returns and AGMs are UHY's most frequent and time-consuming activities (5 October), spread through the year by incorporation date and year end. Magnus switched the pilot on 7 October (#55).
 
-CDD stays a first-class Harbourline module (#54). It runs inside the annual-return cycle: the annual return is when staff contact every client anyway, so outstanding CDD is collected in the same request (see "CDD inside the annual cycle").
+CDD stays a first-class Clerk module (#54). It runs inside the annual-return cycle: the annual return is when staff contact every client anyway, so outstanding CDD is collected in the same request (see "CDD inside the annual cycle").
 
 ## Outcome and scope
 
-For each client company coming up for its annual return or AGM, Harbourline:
+For each client company coming up for its annual return or AGM, Clerk:
 
 1. shows what is due and when;
 2. prepares the NAR1 and the AGM written resolutions a month ahead;
@@ -82,8 +82,8 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
 **Annual returns**
 - The PDFs on file are **scans of the filed copy** (from the office Apeos C3570), image only with no text layer, 9–11 pages each. Reading them needs OCR or a vision model.
 - Each scan includes the Registry's payment receipt (submission date and time, form type, fee, payment method). That is evidence of filing and of the fee actually paid, so a scan can propose "filed" with its date and fee for staff to confirm.
-- The forms come from CSA (footer "CSA by P & L Associates") and match the current Registry specification, which is the same one Harbourline's NAR1 template uses (No. 2/2025).
-- **One of the five is a registered non-Hong Kong company,** which files **Form NN3** on the anniversary of its registration, not NAR1. Harbourline has no NN3 template, so that company falls back to CSA's form unless NN3 is added.
+- The forms come from CSA (footer "CSA by P & L Associates") and match the current Registry specification, which is the same one Clerk's NAR1 template uses (No. 2/2025).
+- **One of the five is a registered non-Hong Kong company,** which files **Form NN3** on the anniversary of its registration, not NAR1. Clerk has no NN3 template, so that company falls back to CSA's form unless NN3 is added.
 - The presenter is UHY's secretarial company. The presenter's reference combines staff initials, the client code and the filing due date.
 - File naming on F:: `<client code>-Annual Return-<made-up date, e.g. 17Oct2025>.pdf` and `<client code>-AGM-<year>.pdf`.
 
@@ -110,7 +110,7 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
 - **Light footprint.** No separate database service, job queue, installer framework or self-managed backup system. Source files are referenced by path and fingerprint, not copied. CRV maintains the installation remotely through UHY's IT company.
 - **The AI suggests; staff approve.** Proposed changes to particulars, generated forms, AGM drafts, filing of scanned post, CDD completion and every outbound message need a staff click. Nothing is sent automatically.
 - **Records stay on the firm's server; processing can happen anywhere.** UHY's requirement is that the client-records database lives on their server. Sending documents and email content to the product model (currently Gemini via OpenRouter, #22) is acceptable (Magnus, 6 October).
-- **Only the pilot's modules are switched on.** Harbourline is one codebase and one database schema; each installation lists the modules it runs. UHY runs the annual cycle, AGM papers and scanned post, with CDD added later. Everything else stays off: request intake, invoicing and bank matching, signing, the client portal, screening, WeChat and the other form playbooks. Off means not loaded: its pages return 404, its menu items are hidden and its background jobs never start. Switching a module on later is a setting plus its tests run against UHY's data, with no migration.
+- **Only the pilot's modules are switched on.** Clerk is one codebase and one database schema; each installation lists the modules it runs. UHY runs the annual cycle, AGM papers and scanned post, with CDD added later. Everything else stays off: request intake, invoicing and bank matching, signing, the client portal, screening, WeChat and the other form playbooks. Off means not loaded: its pages return 404, its menu items are hidden and its background jobs never start. Switching a module on later is a setting plus its tests run against UHY's data, with no migration.
 - **No silent fakes in an installation.** Today `src/lib/config.ts` falls back to a fake adapter when a key is missing, and turns on demo tools outside production builds. In an installation, a switched-on module with missing settings stops the app from starting; fake adapters exist only in tests; demo tools are always off.
 - **Model confidence is never relied on.** Our evaluations showed the model answers confidently even when it is wrong (`eval/results/emails-eval-4-gemini`: one consistently wrong classification at self-reported confidence 0.95). No routing, skipping of review, automatic action or warning depends on a model's own confidence, and confidence is not shown to staff. Oversight comes from people reviewing every AI output and from recorded defects (see "AI accuracy and oversight").
 - **Statutory rules come from playbook data.** Annual-return and AGM deadlines, forms and notes come from the existing `annualReturn` and `agm` playbooks (`seed/playbooks.json`), marked for company-secretary verification. No deadline is hard-coded in pilot code.
@@ -154,7 +154,7 @@ One gitignored installation config holds the approved share root (UNC path), CSA
    UHY's client team uses three personal mailboxes, one per staff member, and each can open the others' (Magnus, 20 October). The scope is a mail-enabled security group containing exactly those three, so adding or replacing a team member is a group change, not a script change. The pilot reads all three, because a client's history can sit in any of them. The same message appearing in several mailboxes (copies, forwards) is recorded once, matched on its Internet message ID. Clients have no assigned staff member; anyone in the team may contact any client. A draft therefore goes into the mailbox of the staff member who prepares it in the app (they are signed in), and the other two can see it through their existing access. Because these are personal mailboxes, the pilot reads only messages exchanged with known client contacts or addresses, not the rest of the mailbox, and Allan tells the three staff in advance that the pilot reads their client email.
 
    The pilot reads client replies (attachments included, across separate threads) and creates drafts in the mailbox staff send from. Record scan coverage and errors, persist checkpoints and deduplicate reruns.
-4. **Scanned post.** Ruby scans incoming post on the office Fujifilm Apeos C3570 into one scan inbox folder on the share (scan-to-folder settings to be set up with the IT company; PDF at 300 dpi). Harbourline watches that folder. For each scan it:
+4. **Scanned post.** Ruby scans incoming post on the office Fujifilm Apeos C3570 into one scan inbox folder on the share (scan-to-folder settings to be set up with the IT company; PDF at 300 dpi). Clerk watches that folder. For each scan it:
    - splits a batch into documents;
    - reads each with the model and identifies the document type (signed annual return, AGM papers, audit report, ID, address proof, Registry letter), the client company and, for CDD documents, the person;
    - works out the client folder on F: and a file name in the firm's convention;
@@ -170,11 +170,11 @@ One gitignored installation config holds the approved share root (UNC path), CSA
 
 **Calendar.** Compute each company's annual-return due date (private company: within 42 days after the anniversary of incorporation) and AGM due date (private company: within nine months after the end of the accounting reference period) from the `annualReturn` and `agm` playbook rules, using incorporation date and year end from CSA, cross-checked against DN's registration anniversary, year end and AGM month. Disagreements between CSA and DN are shown to staff, never silently resolved. Deadlines within 30 days get the red stamp.
 
-**Preparation, one month ahead.** For each company due, Harbourline assembles the particulars from CSA (directors, secretary, members, share capital, registered office), shows the assisted Registry check, and prepares the NAR1 and the AGM written resolutions (below). Staff review them.
+**Preparation, one month ahead.** For each company due, Clerk assembles the particulars from CSA (directors, secretary, members, share capital, registered office), shows the assisted Registry check, and prepares the NAR1 and the AGM written resolutions (below). Staff review them.
 
 **Payment gate.** Nothing goes to the client until payment is recorded as confirmed. In version 0 a staff member records "payment confirmed" after checking with accounting. Reading invoice status from Xero is a later improvement; it needs accounting's agreement and a Xero connection.
 
-**Dispatch email.** After payment, Harbourline drafts the email in the contact's language, following UHY's current wording. Every date and amount comes from one computed source:
+**Dispatch email.** After payment, Clerk drafts the email in the contact's language, following UHY's current wording. Every date and amount comes from one computed source:
 - made-up date;
 - return-by date, leaving time to deliver before the filing deadline;
 - the signing director's name and the page to sign, from CSA;
@@ -191,7 +191,7 @@ The NAR1 and resolutions are attached. Staff review and send it in Outlook. Prop
 
 Staff accept, edit or reject each one, and must open the source message before accepting; there is no "accept all". Staff also record anything the model missed. Every edit, rejection and addition is a defect (next section). A reply the model reads as "no changes" is reviewed like any other. A change to particulars means the NAR1 is regenerated and re-sent for signature. A change that needs its own filing (for example a director change) is flagged as a separate matter, as the `annualReturn` playbook notes. Staff update CSA themselves.
 
-**NAR1 (and NN3).** Registered non-Hong Kong companies file NN3, which Harbourline doesn't generate yet; for them the card says to use CSA's form. Generate the NAR1 from the confirmed particulars with Harbourline's existing generator (`src/documents/cr-forms.ts`). It handles further directors on continuation sheets and members' schedules. It refuses more than four share classes or mixed currencies, and has no page for corporate directors; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
+**NAR1 (and NN3).** Registered non-Hong Kong companies file NN3, which Clerk doesn't generate yet; for them the card says to use CSA's form. Generate the NAR1 from the confirmed particulars with Clerk's existing generator (`src/documents/cr-forms.ts`). It handles further directors on continuation sheets and members' schedules. It refuses more than four share classes or mixed currencies, and has no page for corporate directors; those companies fall back to CSA's form, and the card says so. For the first cycle, staff compare each generated NAR1 with CSA's output, and the pilot records differences: this measures whether it removes CSA's manual PDF fixes. The approved PDF is saved to the client folder for ink signing.
 
 **AGM documents: templates, not AI-edited Word files.** Most UHY clients use written resolutions in lieu of an AGM; a meeting (notice and minutes) is the alternative per client. The papers are generated from templates filled from data, not by having the model edit last year's document, which is harder to test and copies old errors forward (for example "ensuring year").
 - **Firm template, once.** UHY's wording from the 2025 papers becomes the firm's template set, extending the existing trilingual templates (`src/documents/templates.ts`): directors' written resolutions, members' written resolutions in lieu of an AGM, one authorisation letter per corporate member, the deferral wording for late accounts and the copy to the auditor. Template text is reviewed by Coe or Ruby and cleaned of carried-over errors.

@@ -88,7 +88,7 @@ Look only. No installs, no changes, and no client data leaves the server.
 **Magnus**
 - [ ] On the server, run `new-app-cert.ps1` (as administrator). It creates a non-exportable certificate and writes the public `.cer` file.
 - [ ] In Microsoft Entra (entra.microsoft.com), signed in with the account Topone provided:
-  - register an app named "UHY Harbourline pilot" (single tenant, no redirect URI);
+  - register an app named "UHY Clerk pilot" (single tenant, no redirect URI);
   - upload the `.cer` under Certificates & secrets;
   - **do not add or consent to any Microsoft Graph mail permission in Entra.** That would open every mailbox at UHY;
   - from **Enterprise applications** (not App registrations), copy the Application ID and Object ID.

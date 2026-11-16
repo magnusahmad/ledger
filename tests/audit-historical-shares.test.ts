@@ -50,7 +50,7 @@ async function readyApproval(clientId: string, movement: Movements["items"][numb
   const t = await startTask(ctx, { clientId, requestId: req.id, playbookId,
     extracted: { [detail]: { value: JSON.stringify(movement) }, effDate: { value: date } },
     params: { structured: { items: [movement] } } });
-  await completeSending(ctx, [t.id], req.id, "Staff checked and delivered supporting instructions outside Harbourline");
+  await completeSending(ctx, [t.id], req.id, "Staff checked and delivered supporting instructions outside Clerk");
   expect((await getTask(ctx, t.id))._steps[(await getTask(ctx, t.id)).stepIndex].kind).toBe("task");
   await completeManualStep(ctx, t.id, "Verified fictional supporting instruction and class rights");
   const card = (await pendingProposals(ctx, { taskId: t.id, kind: "register_change" }))[0];

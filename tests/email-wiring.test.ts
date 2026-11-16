@@ -25,7 +25,7 @@ async function appointment() {
   const p = await createPerson(ctx, { nameEn: "WONG Ka Man" });
   return startTask(ctx, { requestId: r.id, clientId: "cli_c1", playbookId: "hk.appointDirector", personId: p.id, extracted: { effDate: { value: "2026-10-15", source: "Prior instruction" } } });
 }
-describe("Email decisions cannot bypass Harbourline's business rules", () => {
+describe("Email decisions cannot bypass Clerk's business rules", () => {
   it("financial wording is rendered from localized facts rather than rewritten by the model", async () => {
     const facts = { ...emptyFacts("sc"), invoice: { number: "TEST-001", totalFormatted: "HK$800", lines: [{ description: "Proposed service", amount: "HK$800" }], terms: "30天内付款", paymentInstructions: "Account name: Fictional Firm\nBank code: 016" } };
     ctx.llm.set("draft", { subject: "报价", body: "您好\n\n{{invoice}}" });

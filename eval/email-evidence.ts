@@ -32,7 +32,7 @@ export function latencyStats(ms: number[]) {
   return { n, totalMs: xs.reduce((a, b) => a + b, 0), medianMs: n ? (xs[Math.floor((n - 1) / 2)] + xs[Math.floor(n / 2)]) / 2 : null, p95Ms: n ? xs[Math.ceil(n * .95) - 1] : null };
 }
 export function isolatedDatabase(url: string): string {
-  if (url !== "postgres://localhost/harbourline_emails_eval") throw new Error("Use the isolated localhost harbourline_emails_eval database");
+  if (url !== "postgres://localhost/clerk_emails_eval") throw new Error("Use the isolated localhost clerk_emails_eval database");
   return url;
 }
 class NeverSendMail extends FakeMail {

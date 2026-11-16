@@ -18,7 +18,7 @@ async function pollMailUnlocked(ctx: Ctx, lease: Lease): Promise<{ fetched: numb
   const errors: string[] = [];
   for (const m of messages) {
     await lease.assertCurrent();
-    // The firm's own mail (Harbourline's sends, or staff replying in Gmail) joins the thread; it isn't a client request.
+    // The firm's own mail (Clerk's sends, or staff replying in Gmail) joins the thread; it isn't a client request.
     if (m.sentByUs || m.from.email?.toLowerCase() === ctx.mail.address.toLowerCase()) {
       try { await recordMailboxReply(ctx, m); } catch (e) { errors.push(`${m.providerMessageId}: ${(e as Error).message}`); }
       continue;

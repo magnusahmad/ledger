@@ -54,7 +54,7 @@ describe("status workbook and review log on the share", () => {
     await writeStatusFiles(ctx, dir, { userNames: { user_ruby: "Ruby", user_coe: "Coe" } });
 
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.readFile(path.join(dir, "Harbourline annual returns.xlsx"));
+    await wb.xlsx.readFile(path.join(dir, "Clerk annual returns.xlsx"));
     const ws = wb.getWorksheet("Cases")!;
     const header = (ws.getRow(1).values as string[]).slice(1);
     const row = (ws.getRow(2).values as unknown[]).slice(1);
@@ -64,7 +64,7 @@ describe("status workbook and review log on the share", () => {
     expect(at("Payment confirmed by")).toBe("Coe");
     expect(at("Due")).toBe("2027-01-01");
 
-    const raw = await readFile(path.join(dir, "Harbourline review log.csv"), "utf8");
+    const raw = await readFile(path.join(dir, "Clerk review log.csv"), "utf8");
     expect(raw.charCodeAt(0)).toBe(0xfeff); // Excel needs the byte-order mark to read Chinese names
     const lines = raw.slice(1).trim().split("\n");
     expect(lines[0]).toBe("When,Who,Client code,Company,Case,Step,Detail");

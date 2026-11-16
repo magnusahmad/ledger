@@ -26,12 +26,12 @@ export function Shell({ counts, children }: { counts: Counts; children: ReactNod
     <div className="app">
       <header className="topbar">
         <button className="menu-btn" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)}>☰</button>
-        <Link href="/" className="brand" style={{ padding: 0 }}>Harbourline Desk</Link>
+        <Link href="/" className="brand" style={{ padding: 0 }}>ao1 Clerk</Link>
         {counts.pending > 0 ? <Link href="/" className="cnt hot" aria-label={`${counts.pending} items need you`}>{counts.pending}</Link> : <span />}
       </header>
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
       <nav className={`rail${open ? " open" : ""}`} aria-label="Main" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }}>
-        <Link href="/" className="brand">Harbourline Desk<small>Caine Road Corporate Services</small></Link>
+        <Link href="/" className="brand">ao1 Clerk<small>Caine Road Corporate Services</small></Link>
         <div className="nav">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="nb" aria-current={active(n.href) ? "page" : undefined}>

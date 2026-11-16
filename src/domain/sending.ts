@@ -38,7 +38,7 @@ export async function completeSending(ctx: Ctx, taskIds: string[], requestId: st
     const mark = p.payload.markStep as { taskId: string } | undefined;
     if (p.id !== approvingId && !(requestId && p.requestId === requestId && p.payload.purpose === "request") && !tasks.some(t => t.id === mark?.taskId)) continue;
     if (p.id !== approvingId) await ctx.db.update(proposal).set({ status: "superseded", decidedAt: ctx.clock.now() }).where(eq(proposal.id, p.id));
-    await ctx.db.update(message).set({ status: "failed", error: "Completed by staff outside Harbourline" }).where(and(eq(message.id, p.payload.messageId as string), eq(message.firmId, ctx.firmId)));
+    await ctx.db.update(message).set({ status: "failed", error: "Completed by staff outside Clerk" }).where(and(eq(message.id, p.payload.messageId as string), eq(message.firmId, ctx.firmId)));
   }
   for (const t of linked) {
     const kind = t._steps[t.stepIndex]?.kind;

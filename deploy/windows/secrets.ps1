@@ -1,11 +1,11 @@
-# Harbourline pilot: secrets protected with Windows DPAPI (machine scope) in a file readable only by
+# Clerk pilot: secrets protected with Windows DPAPI (machine scope) in a file readable only by
 # SYSTEM, Administrators and the service account. Never in the config file, logs or the repo.
-#   . .\secrets.ps1; Set-HarbourlineSecret -Name OR_API_KEY            (prompts, nothing echoed)
-#   . .\secrets.ps1; Set-HarbourlineSecret -Name GRAPH_PRIVATE_KEY_PEM -FromFile C:\path\graph-key.pem
+#   . .\secrets.ps1; Set-ClerkSecret -Name OR_API_KEY            (prompts, nothing echoed)
+#   . .\secrets.ps1; Set-ClerkSecret -Name GRAPH_PRIVATE_KEY_PEM -FromFile C:\path\graph-key.pem
 Add-Type -AssemblyName System.Security
-$script:SecretsFile = 'C:\ProgramData\Harbourline\secrets\secrets.json'
+$script:SecretsFile = 'C:\ProgramData\Clerk\secrets\secrets.json'
 
-function Get-HarbourlineSecrets {
+function Get-ClerkSecrets {
   if (-not (Test-Path $script:SecretsFile)) { return @{} }
   $raw = Get-Content $script:SecretsFile -Raw | ConvertFrom-Json
   $out = @{}
@@ -16,7 +16,7 @@ function Get-HarbourlineSecrets {
   return $out
 }
 
-function Set-HarbourlineSecret {
+function Set-ClerkSecret {
   param([Parameter(Mandatory=$true)][string] $Name, [string] $FromFile, [string] $ServiceAccount)
   $dir = Split-Path $script:SecretsFile
   if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
@@ -28,11 +28,11 @@ function Set-HarbourlineSecret {
   if (Test-Path $script:SecretsFile) { (Get-Content $script:SecretsFile -Raw | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $all[$_.Name] = $_.Value } }
   $all[$Name] = [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($value), $null, 'LocalMachine'))
   ($all | ConvertTo-Json) | Set-Content $script:SecretsFile -Encoding UTF8
-  if ($ServiceAccount) { Protect-HarbourlineSecretsFile -ServiceAccount $ServiceAccount }
+  if ($ServiceAccount) { Protect-ClerkSecretsFile -ServiceAccount $ServiceAccount }
   "Saved $Name."
 }
 
-function Protect-HarbourlineSecretsFile {
+function Protect-ClerkSecretsFile {
   param([Parameter(Mandatory=$true)][string] $ServiceAccount)
   $dir = Split-Path $script:SecretsFile
   icacls $dir /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F' "${ServiceAccount}:(OI)(CI)R" | Out-Null

@@ -67,7 +67,7 @@ export async function handleThirdPartyMail(ctx: Ctx, msg: typeof message.$inferS
 
 /**
  * "Not a client": the sender of this thread is a third party (or someone to ignore). If
- * Harbourline made a prospect from their email, that prospect is retired: its tasks cancelled,
+ * Clerk made a prospect from their email, that prospect is retired: its tasks cancelled,
  * draft invoices voided and pending drafts withdrawn. A real client's contact can't be tagged.
  */
 export async function markSenderNotClient(ctx: Ctx, conversationId: string, o: { as: "third_party" | "ignore"; name: string; organisation?: string | null; role?: PartyRole; taskId?: string | null }) {

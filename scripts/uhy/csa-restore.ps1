@@ -7,10 +7,10 @@ param(
   [string] $BackupShare = '\\RK-UHYASK\CSA Backup',
   [string] $Instance = '.\SQLEXPRESS',
   [string] $Database = 'CSA_Copy',
-  [string] $DataDir = 'C:\ProgramData\Harbourline\csa',
+  [string] $DataDir = 'C:\ProgramData\Clerk\csa',
   [string] $ReaderAccount = '',          # optional Windows account given db_datareader on the copy
-  [string] $ReaderLogin = 'harbourline_reader',  # SQL login the app reads with; password from the DPAPI secret CSA_READER_PASSWORD
-  [string] $StatusFile = 'C:\ProgramData\Harbourline\csa\restore-status.json'
+  [string] $ReaderLogin = 'clerk_reader',  # SQL login the app reads with; password from the DPAPI secret CSA_READER_PASSWORD
+  [string] $StatusFile = 'C:\ProgramData\Clerk\csa\restore-status.json'
 )
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path $DataDir)) { New-Item -ItemType Directory -Path $DataDir | Out-Null }
@@ -20,7 +20,7 @@ function Write-Status($ok, $info) {
   ($info | ConvertTo-Json -Compress) | Set-Content -Path $StatusFile -Encoding UTF8
 }
 function Invoke-Sql($sql, $db = 'master') {
-  $c = New-Object System.Data.SqlClient.SqlConnection "Server=$Instance;Database=$db;Integrated Security=True;TrustServerCertificate=True;Application Name=Harbourline CSA restore"
+  $c = New-Object System.Data.SqlClient.SqlConnection "Server=$Instance;Database=$db;Integrated Security=True;TrustServerCertificate=True;Application Name=Clerk CSA restore"
   $c.Open()
   try { $cmd = $c.CreateCommand(); $cmd.CommandText = $sql; $cmd.CommandTimeout = 1800
         $t = New-Object System.Data.DataTable; $t.Load($cmd.ExecuteReader()); return ,$t }
@@ -54,8 +54,8 @@ try {
   Invoke-Sql "IF DB_ID(N'$Database') IS NOT NULL BEGIN ALTER DATABASE [$Database] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [$Database]; END" | Out-Null
   Invoke-Sql "ALTER DATABASE [$staging] MODIFY NAME = [$Database]" | Out-Null
   if ($ReaderLogin) {
-    . 'C:\Harbourline\deploy\secrets.ps1'
-    $pw = (Get-HarbourlineSecrets)['CSA_READER_PASSWORD']
+    . 'C:\Clerk\deploy\secrets.ps1'
+    $pw = (Get-ClerkSecrets)['CSA_READER_PASSWORD']
     if (-not $pw) { throw 'Set the CSA_READER_PASSWORD secret first (deploy/windows/secrets.ps1)' }
     Invoke-Sql "IF SUSER_ID(N'$(& $q $ReaderLogin)') IS NULL CREATE LOGIN [$ReaderLogin] WITH PASSWORD = N'$(& $q $pw)', CHECK_POLICY = ON, DEFAULT_DATABASE = [$Database]" | Out-Null
     Invoke-Sql "IF DATABASE_PRINCIPAL_ID(N'$(& $q $ReaderLogin)') IS NULL CREATE USER [$ReaderLogin] FOR LOGIN [$ReaderLogin]; ALTER ROLE db_datareader ADD MEMBER [$ReaderLogin]; ALTER ROLE db_denydatawriter ADD MEMBER [$ReaderLogin];" $Database | Out-Null

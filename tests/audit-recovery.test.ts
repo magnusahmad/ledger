@@ -246,7 +246,7 @@ it("REC10 interrupted inbound attachment storage recovers both PDF files exactly
 }, 120_000);
 
 it("REC11 death after an accepted reply and invoice enqueue recovers local finalization without resending", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "harbourline-recovery-outbox-"));
+  const directory = await mkdtemp(join(tmpdir(), "clerk-recovery-outbox-"));
   const outbox = join(directory, "outbox.json");
   ctx.mail = new FakeMail(undefined, undefined, new FileList<StoredOutbound>(outbox));
   try {

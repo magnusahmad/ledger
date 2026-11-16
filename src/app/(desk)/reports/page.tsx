@@ -13,7 +13,7 @@ export default async function Reports() {
   const firm = await firmTimeSaved(ctx);
   return (
     <>
-      <div className="top"><div><Link href="/settings" className="back">← Settings</Link><h1>Time saved</h1><p className="sub">Estimated manual work Harbourline handled, set against the time staff spent on approvals.</p></div></div>
+      <div className="top"><div><Link href="/settings" className="back">← Settings</Link><h1>Time saved</h1><p className="sub">Estimated manual work Clerk handled, set against the time staff spent on approvals.</p></div></div>
       <div className="grid3">
         <div className="card stat"><b>{Math.round(base)} min</b><span>Estimated manual work</span></div>
         <div className="card stat"><b>{firm.approvals ? `${firm.staffMinutes} min` : "—"}</b><span>Recorded approval time</span></div>

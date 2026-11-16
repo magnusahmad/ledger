@@ -46,7 +46,7 @@ export function productionProblems(c: Config): string[] {
   if (c.demoTools) p.push("demo tools are switched on");
   if (c.APP_SECRET === DEFAULT_SECRET) p.push("APP_SECRET is the development default secret");
   if (!c.authRequired) p.push("staff sign-in is switched off");
-  if (c.DATABASE_URL === "postgres://localhost/harbourline") p.push("DATABASE_URL is the development database");
+  if (c.DATABASE_URL === "postgres://localhost/clerk") p.push("DATABASE_URL is the development database");
   try { enabledModules(c); } catch (e) { p.push((e as Error).message); }
   return p;
 }

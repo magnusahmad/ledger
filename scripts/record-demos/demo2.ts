@@ -1,5 +1,5 @@
 // Demo 2 · "The summons": a scanned court summons becomes tracked, invoiced work, including the
-// steps done outside Harbourline. Run scripts/record-demos/reset.sh first.
+// steps done outside Clerk. Run scripts/record-demos/reset.sh first.
 import { Recorder, BASE, until } from "./rec";
 
 const r = new Recorder("demo2");
@@ -23,7 +23,7 @@ await r.click(main.getByRole("button", { name: "Log letter" }));
 await r.cut(() => main.getByText(/Logged\./).waitFor({ timeout: 180_000 }));
 const row = main.locator("tr", { hasText: "Peak Harbour" }).first();
 await r.ring(row);
-await r.say("Read and matched", "Harbourline read the scan, matched it to the client and flagged it urgent.");
+await r.say("Read and matched", "Clerk read the scan, matched it to the client and flagged it urgent.");
 await r.hideRing();
 
 // ---- 2. Today: the enforcement card ----
@@ -81,7 +81,7 @@ await r.cut(async () => {
 });
 const esc = main.getByRole("link", { name: /^Escalate:/ }).first();
 await r.ring(item(esc));
-await r.say("Escalation", "The hearing is now 12 days away. Harbourline drafted a firmer chaser and flagged it as an escalation.");
+await r.say("Escalation", "The hearing is now 12 days away. Clerk drafted a firmer chaser and flagged it as an escalation.");
 await r.hideRing();
 await r.goto(taskUrl);
 const call = main.locator("li", { hasText: /^Call / }).first();
@@ -153,8 +153,8 @@ await p.waitForLoadState("networkidle");
 const outside = main.locator("section", { has: p.getByRole("heading", { name: "Outside the platform" }) });
 await r.scrollTo(outside);
 await r.ring(outside);
-await r.say("Outside the platform", "Today keeps a list of everything happening outside Harbourline: holds and off-platform steps, with their follow-up dates.");
+await r.say("Outside the platform", "Today keeps a list of everything happening outside Clerk: holds and off-platform steps, with their follow-up dates.");
 await r.hideRing();
 await r.hideCaption();
-await r.title("Harbourline Desk", "The summons", "From a photo of a letter to a tracked, invoiced response with a hard deadline, escalation, work done elsewhere, and later costs.");
+await r.title("ao1 Clerk", "The summons", "From a photo of a letter to a tracked, invoiced response with a hard deadline, escalation, work done elsewhere, and later costs.");
 await r.finish("demos/2-the-summons.mp4");

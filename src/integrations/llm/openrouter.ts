@@ -47,7 +47,7 @@ export class OpenRouterLlm implements LlmProvider {
             Authorization: `Bearer ${this.apiKey}`,
             "Content-Type": "application/json",
             "HTTP-Referer": this.appUrl,
-            "X-Title": "Harbourline Desk",
+            "X-Title": "ao1 Clerk",
           },
           body: JSON.stringify(body),
           signal: AbortSignal.timeout(90_000),

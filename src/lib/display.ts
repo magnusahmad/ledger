@@ -52,7 +52,7 @@ export const jurisdictionLabel = (j: string) => JUR[j] ?? j;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 export const fyeLabel = (day: number | null | undefined, month: number | null | undefined) => (day && month ? `${day} ${MONTHS[month - 1]}` : "—");
 
-const SOURCE: Record<string, string> = { generated: "Prepared by Harbourline", signed: "Signed copy", upload: "Uploaded by client", email: "From email", scan: "Scanned", seed: "On file" };
+const SOURCE: Record<string, string> = { generated: "Prepared by Clerk", signed: "Signed copy", upload: "Uploaded by client", email: "From email", scan: "Scanned", seed: "On file" };
 export const documentSourceLabel = (s: string) => SOURCE[s] ?? sentence(s);
 
 export function plural(n: number, noun: string, many = `${noun}s`) {

@@ -35,7 +35,7 @@ import { draftEmail } from "../src/agent/draft";
 import { DOCUMENT_LINES, EFFECTIVE, INJECTION, INTAKE_CASES, OFFICE, checkDraft, checkIntake, draftFacts } from "../eval/robust-model-cases";
 
 export function isolatedDatabase(url: string) {
-  if (!/^postgres:\/\/localhost\/harbourline_robust_(?:audit|fixes|verify)$/.test(url)) throw new Error("Evaluation requires an explicitly named isolated local robustness database");
+  if (!/^postgres:\/\/localhost\/clerk_robust_(?:audit|fixes|verify)$/.test(url)) throw new Error("Evaluation requires an explicitly named isolated local robustness database");
   return url;
 }
 export function safeCtx(url: string, llm: LlmProvider, model: string): Ctx {

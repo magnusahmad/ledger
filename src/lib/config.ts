@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 const Env = z.object({
-  DATABASE_URL: z.string().default("postgres://localhost/harbourline"),
+  DATABASE_URL: z.string().default("postgres://localhost/clerk"),
   APP_SECRET: z.string().min(32).default("dev-only-secret-change-me-dev-only-secret"),
   APP_URL: z.string().default("http://localhost:3000"),
   FIRM_ID: z.string().default("firm_crcs"),

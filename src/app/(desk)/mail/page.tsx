@@ -12,7 +12,7 @@ export default async function Mail({ searchParams }: { searchParams: Promise<{ q
   const data = await mailItemPage(ctx, where), rows = data.rows;
   return (
     <>
-      <div className="top"><div><h1>Registered office mail</h1><p className="sub">Upload a scanned letter. Harbourline matches it to the client and drafts a notice in their language. Late-filing notices, warning letters and summonses start the matching work instead.</p></div></div>
+      <div className="top"><div><h1>Registered office mail</h1><p className="sub">Upload a scanned letter. Clerk matches it to the client and drafts a notice in their language. Late-filing notices, warning letters and summonses start the matching work instead.</p></div></div>
       <div className="card" style={{ maxWidth: 640 }}>
         <ActionForm action={logMailAction} submit="Log letter" resetOnSuccess>
           <div className="grid2"><div className="fld"><label className="f" htmlFor="file">Scan (PDF or photo)</label><input id="file" type="file" name="file" accept="application/pdf,image/*" required /></div>

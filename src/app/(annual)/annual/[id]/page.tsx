@@ -23,7 +23,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   if (!c) notFound();
   const cl = (await ctx.db.query.client.findFirst({ where: eq(clientT.id, c.clientId) }))!;
   const [events, mail, users] = [await caseEvents(ctx, id), await caseMail(ctx, id), await ctx.db.select().from(appUser).where(eq(appUser.firmId, ctx.firmId))];
-  const who = (u: string) => users.find((x) => x.id === u)?.name ?? (u.startsWith("system:") ? "Harbourline" : u);
+  const who = (u: string) => users.find((x) => x.id === u)?.name ?? (u.startsWith("system:") ? "Clerk" : u);
   const n = nextStep(c);
   const today = ctx.clock.today();
   return (
@@ -48,7 +48,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </>}
         {n === "prepare" && <>
           <h2>Prepare the papers</h2>
-          <p>{c.kind === "AR" ? "Harbourline fills the annual return from CSA and saves it to the client folder. Some companies need CSA's own form." : "Prepare the AGM papers in Word as usual, then mark them ready."}</p>
+          <p>{c.kind === "AR" ? "Clerk fills the annual return from CSA and saves it to the client folder. Some companies need CSA's own form." : "Prepare the AGM papers in Word as usual, then mark them ready."}</p>
           {c.kind === "AR" && <ActionForm action={A.prepareAction.bind(null, id)} submit="Prepare the annual return">
             <label className="an-field">Return-by date for the client (optional)<input type="date" name="returnBy" defaultValue={c.returnBy ?? ""} /></label>
           </ActionForm>}
@@ -56,7 +56,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </>}
         {n === "compare" && <>
           <h2>Compare with CSA&apos;s form</h2>
-          <p>Print CSA&apos;s version and check it against <a className="lnk" href={`/api/annual/form/${id}`} target="_blank" rel="noreferrer">the one Harbourline prepared</a>. This tells us whether the generated form can replace CSA&apos;s.</p>
+          <p>Print CSA&apos;s version and check it against <a className="lnk" href={`/api/annual/form/${id}`} target="_blank" rel="noreferrer">the one Clerk prepared</a>. This tells us whether the generated form can replace CSA&apos;s.</p>
           <ActionForm action={A.compareAction.bind(null, id)} submit="Save">
             <label className="an-choice"><input type="radio" name="same" value="yes" /> They match</label>
             <label className="an-choice"><input type="radio" name="same" value="no" /> They differ</label>
@@ -78,7 +78,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </>}
         {n === "wait_sent" && <>
           <h2>Send the draft from Outlook</h2>
-          <p>It&apos;s in {c.draft?.mailbox}&apos;s Drafts folder. Harbourline notices when it&apos;s sent.</p>
+          <p>It&apos;s in {c.draft?.mailbox}&apos;s Drafts folder. Clerk notices when it&apos;s sent.</p>
           <ActionButton action={A.markSentAction.bind(null, id)}>I&apos;ve sent it</ActionButton>
         </>}
         {n === "signed_received" && <>

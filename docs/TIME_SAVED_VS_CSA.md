@@ -11,7 +11,7 @@ From P&L's site and CSA Expert release notes:
 - **Compliance data:** significant controllers; CDD inspection date and risk level.
 - **Separate P&L products:** sanctions, PEP and SFC searches (AML), and timesheet, billing, job assignment and CRM (CPA suite).
 
-CSA's gap is everything around a job: understanding what the client wants, asking for and chasing information, retyping it, invoicing, checking payment, and knowing what's waiting on whom. That's where Harbourline saves time.
+CSA's gap is everything around a job: understanding what the client wants, asking for and chasing information, retyping it, invoicing, checking payment, and knowing what's waiting on whom. That's where Clerk saves time.
 
 ## 2. Model assumptions (per 100 client companies a year)
 
@@ -27,7 +27,7 @@ CSA's gap is everything around a job: understanding what the client wants, askin
 
 ## 3. Stack rank
 
-| # | Capability | Today (CSA + WeChat + Word/Excel + bank portal) | With Harbourline | Est. hours saved / 100 clients / yr |
+| # | Capability | Today (CSA + WeChat + Word/Excel + bank portal) | With Clerk | Est. hours saved / 100 clients / yr |
 |---|---|---|---|---|
 | 1 | **Today and task tracking**: my work, deadlines with no task yet, waiting on client, awaiting payment, handover by assignee | Diary in CSA, memory, spreadsheets; "where is this?" lookups; daily triage | One queue in order of priority; status visible to everyone | **70–90** (≈6 min/task on status and handover + ≈10 min/day triage) |
 | 2 | **Invoice created with the request**: one invoice per request, lines per playbook, editable, terms per client | Separate invoice in accounting or CSA's CPA module, then attach to message | Invoice drafted with the reply; one click | **50–60** (≈7–8 min/task) |
@@ -88,18 +88,18 @@ Volumes per 100 clients a year:
 ### Where each saving comes from
 
 **Client communication (60–90 h).**
-- *Request messages* (430 × 4–6 min = 29–43 h). Today a staff member works out what's needed for this job and this client, and checks what's already on file. They write it, often translating into Traditional or Simplified Chinese, and add fee and deadline lines. Harbourline drafts it from the playbook, the client's language and what's on file. Staff check and copy.
+- *Request messages* (430 × 4–6 min = 29–43 h). Today a staff member works out what's needed for this job and this client, and checks what's already on file. They write it, often translating into Traditional or Simplified Chinese, and add fee and deadline lines. Clerk drafts it from the playbook, the client's language and what's on file. Staff check and copy.
 - *Confirmations* (430 × 2–3 min = 14–21 h). A completion message is drafted in the client's language from the task.
 - *Status questions* (≈300 × 2–3 min = 10–15 h). Staff still answer them, but from one task page instead of checking CSA, the chat, email and the bank.
 - *Voice notes* (80 × ≈3 min = ≈4 h). Transcription instead of replaying and noting down. Small, because staff still have to get the audio or WeChat's text version into the tool.
 
 **Billing, payment checking, collections (65–85 h).**
-- *Invoice with the request* (430 × 5–7 min = 36–50 h). Today the invoice is made in a separate accounting system or CSA's CPA module, re-keying the client, service and amount, then attached to the message. Harbourline creates it from the playbook fee as part of the request.
+- *Invoice with the request* (430 × 5–7 min = 36–50 h). Today the invoice is made in a separate accounting system or CSA's CPA module, re-keying the client, service and amount, then attached to the message. Clerk creates it from the playbook fee as part of the request.
 - *Payment checking* (430 × 2–3 min = 14–21 h). Instead of logging in to the bank, matching deposits by eye and marking invoices paid, the bank feed matches on invoice number and amount. Staff handle only the exceptions.
 - *Reminders* (≈86 overdue × 3 × ≈3 min = ≈13 h). Drafted to the billing contact in their language, logged on the invoice.
 
 **Status tracking and handover (60–80 h).**
-- *"Where is this?"* (430 × ≈5 min = ≈36 h). CSA records jobs, not the work around them: waiting on client, waiting on payment, who has it. Today that lives in memory, chat and spreadsheets. In Harbourline every task has a current step and an assignee.
+- *"Where is this?"* (430 × ≈5 min = ≈36 h). CSA records jobs, not the work around them: waiting on client, waiting on payment, who has it. Today that lives in memory, chat and spreadsheets. In Clerk every task has a current step and an assignee.
 - *Daily triage* (≈230 days × 6–10 min = 23–38 h). Today shows my next actions, deadlines with no task yet and overdue invoices, instead of assembling a to-do list each morning.
 
 **Collecting information and chasing (45–60 h).**
@@ -108,7 +108,7 @@ Volumes per 100 clients a year:
 - *Details in chat* (80 × ≈5 min = ≈7 h). The client's typed reply is pasted and extracted into fields.
 
 **KYC/CDD (35–55 h).**
-- *Periodic reviews* (50 × 15–25 min = 13–21 h). Harbourline knows what's on file and when it expires. It requests only what's missing, documents arrive by link, and the review record is filed on the person.
+- *Periodic reviews* (50 × 15–25 min = 13–21 h). Clerk knows what's on file and when it expires. It requests only what's missing, documents arrive by link, and the review record is filed on the person.
 - *Reuse across companies* (≈20 × ≈15 min = ≈5 h). A director of several clients isn't asked for the same documents again.
 - *Screening* (≈65 × ≈10 min = ≈11 h). Sanctions/PEP checks run from the task, with results filed. **If the firm already uses P&L's AML module, this part is parity.**
 - *Onboarding* (≈15 × 20–30 min = 5–8 h). Checklist and upload link instead of collecting by chat.
@@ -128,7 +128,7 @@ Volumes per 100 clients a year:
 - *Batch start* (100 × ≈10 min = ≈17 h). One action starts a year's AGM/written-resolution tasks, each with its message and invoice. CSA's Mass Production covers the documents but not the client messages, invoices and tracking.
 - *Tracking* (100 × 5–10 min = 8–17 h). Accounts and auditor status tracked per client.
 
-**Signatures (10–30 h).** E-signature exists in both, so signing itself is parity. Harbourline saves on:
+**Signatures (10–30 h).** E-signature exists in both, so signing itself is parity. Clerk saves on:
 - the signing pack built from the task with the right signers (≈250 × 2–3 min);
 - signature status in the same queue as everything else;
 - signed copies filed back to the task automatically.
@@ -177,7 +177,7 @@ It also shrinks the downside. If clients ignore the upload link, the loss drops 
 
 ## 3c. Bookkeeping (for clients who buy it)
 
-Neither CSA nor Harbourline's current spec covers bookkeeping. P&L's separate CPA suite has an accounting module, and many firms use Xero, QuickBooks or MYOB. **Harbourline shouldn't build a ledger.** It should run bookkeeping as playbooks: monthly or quarterly collection, period close, audit support, and tax deadlines. It should push extracted documents into the firm's accounting software through an integration.
+Neither CSA nor Clerk's current spec covers bookkeeping. P&L's separate CPA suite has an accounting module, and many firms use Xero, QuickBooks or MYOB. **Clerk shouldn't build a ledger.** It should run bookkeeping as playbooks: monthly or quarterly collection, period close, audit support, and tax deadlines. It should push extracted documents into the firm's accounting software through an integration.
 
 Assumed year for one small-SME bookkeeping client (≈30 h):
 
@@ -195,13 +195,13 @@ For example, 30 bookkeeping clients per 100 clients ≈ 900 h of bookkeeping wor
 
 Open questions: does the design partner do bookkeeping, for how many clients, in which software, and do they already use a receipt-capture tool?
 
-## 4. Where Harbourline is currently *behind* CSA (time lost if not fixed)
+## 4. Where Clerk is currently *behind* CSA (time lost if not fixed)
 
 1. **Job coverage.** 12 playbooks vs CSA's much larger job library (share allotments and transfers, share certificates, SCR updates, deregistration, auditor changes, capital reduction...). Anything uncovered means running CSA alongside, which wipes out savings. **Biggest risk.**
-2. **E-filing output.** CSA submits ND2A, NR1, NNC1, NNC2 and NSC1 electronically, through the Companies Registry's Third Party Software Interface (TPSI). Harbourline now fills the official forms as PDFs, but staff still key them into e-Registry. That's a loss of maybe 5 min per filing (~150 filings, ≈12 h). Submitting through TPSI closes it: see `docs/CR_TPSI.md`.
-3. **Jurisdictions.** CSA covers BVI, Cayman, PRC, Macau, Taiwan and others. Harbourline is Hong Kong only.
-4. **Batch operations.** CSA's Mass Production and batch filing. The annual cycle for hundreds of clients needs a batch start (messages and invoices) in Harbourline.
-5. **AML screening.** P&L has sanctions/PEP/SFC search. Harbourline defers screening to a vendor in phase 3.
+2. **E-filing output.** CSA submits ND2A, NR1, NNC1, NNC2 and NSC1 electronically, through the Companies Registry's Third Party Software Interface (TPSI). Clerk now fills the official forms as PDFs, but staff still key them into e-Registry. That's a loss of maybe 5 min per filing (~150 filings, ≈12 h). Submitting through TPSI closes it: see `docs/CR_TPSI.md`.
+3. **Jurisdictions.** CSA covers BVI, Cayman, PRC, Macau, Taiwan and others. Clerk is Hong Kong only.
+4. **Batch operations.** CSA's Mass Production and batch filing. The annual cycle for hundreds of clients needs a batch start (messages and invoices) in Clerk.
+5. **AML screening.** P&L has sanctions/PEP/SFC search. Clerk defers screening to a vendor in phase 3.
 
 ## 5. What this means for the roadmap
 

@@ -9,7 +9,7 @@ const main = p.locator("main");
 const item = (l: ReturnType<typeof main.locator>) => l.locator("xpath=ancestor::*[contains(concat(' ',@class,' '),' item ')][1]");
 
 await r.goto("/");
-await r.title("Part 3 of 3", "Work doesn’t only happen in the app", "Staff reply from their phones, strangers email about clients, and instructions are agreed over lunch. Harbourline keeps up.");
+await r.title("Part 3 of 3", "Work doesn’t only happen in the app", "Staff reply from their phones, strangers email about clients, and instructions are agreed over lunch. Clerk keeps up.");
 await r.hideTitle();
 
 // ---- 1. A client emails; the draft waits on Today ----
@@ -53,13 +53,13 @@ await r.cut(async () => {
 });
 
 // ---- 3. The draft is withdrawn; what's still owed ----
-await r.say("Picked up from the Sent folder", "Harbourline read Karen’s reply from the mailbox. The draft is withdrawn, so Ms Ho isn’t answered twice.");
+await r.say("Picked up from the Sent folder", "Clerk read Karen’s reply from the mailbox. The draft is withdrawn, so Ms Ho isn’t answered twice.");
 const still = main.getByRole("link", { name: /^Still to send/ }).first();
 await r.ring(item(still));
 await r.say("Still to send", "Karen’s reply didn’t include the invoice or the upload link, so a card keeps them from being forgotten.");
 const upd = main.getByRole("link", { name: /^Update tasks to match/ }).first();
 await r.ring(item(upd));
-await r.say("Update the tasks", "Her reply also changed the work: the tenancy agreement isn’t needed. Harbourline suggests updating the task to match.");
+await r.say("Update the tasks", "Her reply also changed the work: the tenancy agreement isn’t needed. Clerk suggests updating the task to match.");
 await r.hideRing();
 await r.click(upd);
 await p.waitForLoadState("networkidle");
@@ -84,7 +84,7 @@ await r.cut(() => deliverEmail(r.bg, {
 }).then(() => r.goto("/")));
 const prospect = main.locator(".item", { hasText: /new prospect/ }).first();
 await r.ring(prospect);
-await r.say("A new prospect?", "An unknown sender asking for work looks like a new client, so Harbourline drafted a reply and made a prospect.");
+await r.say("A new prospect?", "An unknown sender asking for work looks like a new client, so Clerk drafted a reply and made a prospect.");
 await r.hideRing();
 await r.click(prospect.getByRole("link").first());
 await p.waitForLoadState("networkidle");
@@ -139,7 +139,7 @@ if (await details.isVisible()) {
 }
 await r.type(main.locator("#notes"), "Agreed with Ms Ho over lunch on 30 September.", 30);
 await r.ring(main.locator("label", { hasText: "Draft a confirmation" }));
-await r.say("Start manually", "Karen picks the playbook, notes what was agreed, and Harbourline drafts the confirmation and invoice for her to approve.");
+await r.say("Start manually", "Karen picks the playbook, notes what was agreed, and Clerk drafts the confirmation and invoice for her to approve.");
 await r.hideRing();
 await r.click(main.getByRole("button", { name: "Start", exact: true }));
 await r.cut(async () => { await p.waitForURL((u) => !u.search.includes("mode=manual"), { timeout: 180_000 }); await p.waitForLoadState("networkidle"); });
@@ -150,5 +150,5 @@ await r.ring(conf);
 await r.say("Confirmation drafted", "A confirmation that thanks her for meeting, with the invoice, ready for approval. Nothing is sent until Karen clicks.");
 await r.hideRing();
 await r.hideCaption();
-await r.title("Harbourline Desk", "Work doesn’t only happen in the app", "Replies from Gmail, third parties, and instructions taken in person all land on the same tasks, with nothing sent twice or forgotten.");
+await r.title("ao1 Clerk", "Work doesn’t only happen in the app", "Replies from Gmail, third parties, and instructions taken in person all land on the same tasks, with nothing sent twice or forgotten.");
 await r.finish("demos/3-work-outside-the-app.mp4");

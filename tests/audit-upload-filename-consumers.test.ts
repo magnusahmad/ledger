@@ -22,7 +22,7 @@ function assertActionable(error: unknown) {
   expect.soft(text).not.toMatch(/ENAMETOOLONG/);
 }
 it("staff scanned mail with an ordinary 255-byte filename preserves evidence and a human-gated notice or rejects actionably without stranded work", async () => {
-  const root = await mkdtemp(join(tmpdir(), "harbourline-mail-filename-"));
+  const root = await mkdtemp(join(tmpdir(), "clerk-mail-filename-"));
   const storage = new DiskStorage(root);
   const filename = `香港身份證-${"x".repeat(235)}.jpg`;
   const content = await readFile("tests/fixtures/upload-corpus/readable-scan.jpg");
@@ -51,7 +51,7 @@ it("staff scanned mail with an ordinary 255-byte filename preserves evidence and
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 it("an overlong declared email attachment filename is safely stored or actionably rejected atomically without stranding a partial incoming message", async () => {
-  const root = await mkdtemp(join(tmpdir(), "harbourline-inbound-filename-"));
+  const root = await mkdtemp(join(tmpdir(), "clerk-inbound-filename-"));
   const storage = new DiskStorage(root);
   const content = await readFile("tests/fixtures/upload-corpus/readable-scan.jpg");
   const filename = `${"附件繁體简体-".repeat(40)}.jpg`;

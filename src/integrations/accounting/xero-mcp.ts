@@ -1,4 +1,4 @@
-// Xero via the official Xero MCP server (DECISIONS.md #28). Harbourline is the MCP client.
+// Xero via the official Xero MCP server (DECISIONS.md #28). Clerk is the MCP client.
 // The MCP server creates invoices as DRAFT and has no tool to approve them, while Xero only
 // accepts payments on AUTHORISED invoices, so approval uses one direct Xero API call
 // (DECISIONS.md #32).
@@ -39,7 +39,7 @@ export class XeroMcpAccounting implements AccountingProvider {
     if (this.o.callTool) return this.o.callTool(name, args);
     if (!this.client) {
       const transport = new StdioClientTransport({ command: "npx", args: ["-y", XERO_MCP_PACKAGE], env: { ...process.env as Record<string, string>, ...this.o.env } });
-      const c = new Client({ name: "harbourline-desk", version: "1.0.0" });
+      const c = new Client({ name: "ao1-clerk", version: "1.0.0" });
       await c.connect(transport);
       this.client = c;
     }

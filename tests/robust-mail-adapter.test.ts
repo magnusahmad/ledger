@@ -55,8 +55,8 @@ it("Gmail reconciliation accepts one correlated Sent result and uses the canonic
   const { mail, send } = stubGmail(async () => ({ data: {} }));
   const list = vi.fn(async () => ({ data: { messages: [{ id: "accepted-reconciled", threadId: "accepted-thread" }] } }));
   Object.assign(mail, { gmail: { users: { messages: { list, send } } } });
-  await expect(mail.reconcileDelivery("<stable-fixture@harbourline.local>")).resolves.toEqual({ status: "accepted", sent: { providerMessageId: "accepted-reconciled", providerThreadId: "accepted-thread", rfcMessageId: "<stable-fixture@harbourline.local>" } });
-  expect(list).toHaveBeenCalledWith({ userId: "me", q: "in:sent rfc822msgid:stable-fixture@harbourline.local", maxResults: 2 });
+  await expect(mail.reconcileDelivery("<stable-fixture@clerk.local>")).resolves.toEqual({ status: "accepted", sent: { providerMessageId: "accepted-reconciled", providerThreadId: "accepted-thread", rfcMessageId: "<stable-fixture@clerk.local>" } });
+  expect(list).toHaveBeenCalledWith({ userId: "me", q: "in:sent rfc822msgid:stable-fixture@clerk.local", maxResults: 2 });
   expect(send).not.toHaveBeenCalled();
 });
 
@@ -64,7 +64,7 @@ it.each([{ messages: [] }, { messages: [{ id: "one" }, { id: "two" }] }, { messa
   const { mail, send } = stubGmail(async () => ({ data: {} }));
   const list = vi.fn(async () => ({ data: { messages } }));
   Object.assign(mail, { gmail: { users: { messages: { list, send } } } });
-  await expect(mail.reconcileDelivery("<stable-fixture@harbourline.local>")).resolves.toEqual({ status: "unknown" });
+  await expect(mail.reconcileDelivery("<stable-fixture@clerk.local>")).resolves.toEqual({ status: "unknown" });
   expect(send).not.toHaveBeenCalled();
 });
 

@@ -1,4 +1,4 @@
-# Ledger: company secretarial platform (product working name: Harbourline Desk)
+# Ledger: company secretarial platform (product name: Clerk, "ao1 Clerk" in full; formerly Harbourline Desk)
 
 Read this first, then `docs/PRODUCT_SPEC.md`. Everything under `docs/`, `seed/` and `prototype/` comes from a design and prototyping phase done in claude.ai; this repo is where the real build starts.
 
@@ -71,7 +71,7 @@ Neutral light theme, low clutter, clear visual precedence. IBM Plex Sans with No
 - `seed/requirement-items.json`: 35 reusable requirement items with trilingual labels and extraction hints.
 - `seed/message-templates.json`: trilingual message building blocks (request, chase, confirmation, invoice lines, payment reminder). Stored as JS function source from the prototype; port to a proper template format (never `eval` it).
 - `seed/demo-clients.json`: five fictional client companies, people and three staff users for dev and demos. Uses the prototype's short keys (`cr`, `inc`, `fye`, `sc`, `dr`...); map them to the target data model in `PRODUCT_SPEC.md` §5 when loading.
-- `prototype/harbourline-desk-demo.html`: the single-file clickable prototype. **Reference only, not a starting codebase.** Use it for UX, copy and behaviour. It is desktop-only; don't copy its narrow-width layout.
+- `prototype/harbourline-desk-demo.html`: the single-file clickable prototype. It predates the rename and shows the old name Harbourline Desk. **Reference only, not a starting codebase.** Use it for UX, copy and behaviour. It is desktop-only; don't copy its narrow-width layout.
 - `prototype/harbourline-desk-walkthrough.mp4`: 3-minute walkthrough of the prototype.
 
 ## CRV knowledge base

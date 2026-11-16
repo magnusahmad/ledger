@@ -1,6 +1,6 @@
-// Replies staff send straight from the shared mailbox (Gmail), not through Harbourline.
+// Replies staff send straight from the shared mailbox (Gmail), not through Clerk.
 // They join the thread so later reading has the full history, and they withdraw any draft
-// Harbourline was holding for that thread so the client isn't answered twice.
+// Clerk was holding for that thread so the client isn't answered twice.
 import { and, eq, inArray } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import type { InboundMail } from "@/integrations/types";
@@ -81,7 +81,7 @@ async function recordMailboxReplyAtomic(ctx: Ctx, m: InboundMail) {
   const reqs = await ctx.db.select({ id: requestT.id }).from(requestT).where(and(eq(requestT.firmId, ctx.firmId), eq(requestT.conversationId, row.conversationId)));
   const tasks = reqs.length ? await ctx.db.select().from(taskT).where(and(eq(taskT.firmId, ctx.firmId), inArray(taskT.requestId, reqs.map((r) => r.id)), eq(taskT.status, "open"))) : [];
   for (const t of tasks) {
-    await logEvent(ctx, t.id, "message.mailbox_reply", `Reply sent from the mailbox: ${m.subject}${withdrawn.length ? " (Harbourline’s draft withdrawn)" : ""}`, { messageId: row.id }, "mailbox", m.receivedAt);
+    await logEvent(ctx, t.id, "message.mailbox_reply", `Reply sent from the mailbox: ${m.subject}${withdrawn.length ? " (Clerk’s draft withdrawn)" : ""}`, { messageId: row.id }, "mailbox", m.receivedAt);
   }
   const suggestion = await suggestTaskUpdates(ctx, row.id).catch((e) => { if (e instanceof AgentError) return null; throw e; });
   return { messageId: row.id, recorded: true, withdrawn, proposalId: suggestion };

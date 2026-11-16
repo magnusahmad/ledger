@@ -41,7 +41,7 @@ So the remaining work is the shell around the existing engine: running on Window
 
 - **On the machine:** SQL Server 2022 Express. A scheduled task copies the newest `.csa` file from the "CSA Backup" share, restores it as `CSA_Copy` (`WITH MOVE, REPLACE`), sets it read-only, and records the backup time. If a restore fails, the last good copy stays in use and the health page says so.
 - **Table mapping** on the restored copy during the first session (queries to write): companies, directors and secretaries, members and shareholdings, share capital, registered office, incorporation date, year end, presenter details.
-- **Connector:** the `mssql` package, read-only login to `CSA_Copy`. It imports particulars into Harbourline's register tables marked as coming from CSA, with the backup time (#56). Re-runs are idempotent. Every screen using CSA data shows its age.
+- **Connector:** the `mssql` package, read-only login to `CSA_Copy`. It imports particulars into Clerk's register tables marked as coming from CSA, with the backup time (#56). Re-runs are idempotent. Every screen using CSA data shows its age.
 
 ## Gap 4: Microsoft 365 mail (Graph)
 

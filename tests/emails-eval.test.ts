@@ -21,14 +21,14 @@ describe("Email evaluation protects the meaning of the measured business results
     expect(latencyStats([])).toEqual({ n: 0, totalMs: 0, medianMs: null, p95Ms: null });
   });
   it("evaluation refuses the working and test databases and uses only fake business integrations", () => {
-    expect(isolatedDatabase("postgres://localhost/harbourline_emails_eval")).toBe("postgres://localhost/harbourline_emails_eval");
-    for (const url of ["postgres://localhost/harbourline", "postgres://localhost/harbourline_test", "postgres://remote/harbourline_emails_eval"]) expect(() => isolatedDatabase(url)).toThrow("isolated");
-    const ctx = safeEvalCtx("postgres://localhost/harbourline_emails_eval", new ScriptedLlm());
+    expect(isolatedDatabase("postgres://localhost/clerk_emails_eval")).toBe("postgres://localhost/clerk_emails_eval");
+    for (const url of ["postgres://localhost/clerk", "postgres://localhost/clerk_test", "postgres://remote/clerk_emails_eval"]) expect(() => isolatedDatabase(url)).toThrow("isolated");
+    const ctx = safeEvalCtx("postgres://localhost/clerk_emails_eval", new ScriptedLlm());
     expect([ctx.mail.name, ctx.bank.name, ctx.accounting.name, ctx.screening.name]).toEqual(["fake", "fake", "fake", "fake"]);
     expect(ctx.config.or_api_key).toBeUndefined();
   });
   it("even an accidental evaluation send is rejected before any delivery", async () => {
-    const ctx = safeEvalCtx("postgres://localhost/harbourline_emails_eval", new ScriptedLlm());
+    const ctx = safeEvalCtx("postgres://localhost/clerk_emails_eval", new ScriptedLlm());
     await expect(ctx.mail.send({ to: ["fictional@example.test"], subject: "Must not send", text: "Test" })).rejects.toThrow("cannot send mail");
     expect(ctx.mail.sent()).toHaveLength(0);
   });

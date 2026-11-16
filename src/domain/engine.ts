@@ -336,7 +336,7 @@ export async function assertTaskReady(ctx: Ctx, taskId: string, kind: StepKind) 
 export function waitingOnFor(t: Pick<Task, "status" | "holdReason">, step: StepDef | null | undefined) {
   if (t.status !== "open") return null;
   if (t.holdReason) return "hold";
-  return step?.kind === "pay" ? "payment" : step?.kind === "collect" ? "client" : step?.kind === "sign" ? "signatures" : step?.human ? "you" : "harbourline";
+  return step?.kind === "pay" ? "payment" : step?.kind === "collect" ? "client" : step?.kind === "sign" ? "signatures" : step?.human ? "you" : "clerk";
 }
 
 /** Moves the task forward through every step whose completion condition holds. */

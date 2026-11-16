@@ -69,7 +69,7 @@ describe("request gate", () => {
 });
 
 describe("production guard", () => {
-  const base = { INSTALLATION: "production", MODULES: "annual", AUTH: "1", APP_SECRET: "s".repeat(48), or_api_key: "k", LLM_MODE: "live", DATABASE_URL: "postgres://pilot@localhost/harbourline_uhy", DEMO_TOOLS: "0" };
+  const base = { INSTALLATION: "production", MODULES: "annual", AUTH: "1", APP_SECRET: "s".repeat(48), or_api_key: "k", LLM_MODE: "live", DATABASE_URL: "postgres://pilot@localhost/clerk_uhy", DEMO_TOOLS: "0" };
 
   it("a correctly configured production installation has no problems", () => {
     expect(productionProblems(loadConfig(base))).toEqual([]);

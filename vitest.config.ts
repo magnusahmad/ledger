@@ -9,6 +9,6 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 60_000,
-    env: { DATABASE_URL: "postgres://localhost/harbourline_test", LLM_MODE: "fixture" },
+    env: { DATABASE_URL: "postgres://localhost/clerk_test", LLM_MODE: "fixture" },
   },
 });

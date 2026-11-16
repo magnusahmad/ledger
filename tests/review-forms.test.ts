@@ -51,7 +51,7 @@ describe("Reviewed statutory form safeguards", () => {
     const pdf = await PDFDocument.load(await fillForm("NAR1", values));
     expect(pdf.getPageCount()).toBe(31); // original 27, two Sheet C and two additional Schedule 1
     expect(values).toMatchObject({ "fill_6_P.8": "2", "fill_9_P.8": "3", "fill_29_P.9": "1" });
-    const extra = (values as unknown as Record<symbol, { page: number; values: Record<string, string> }[]>)[Symbol.for("harbourline.formContinuations")];
+    const extra = (values as unknown as Record<symbol, { page: number; values: Record<string, string> }[]>)[Symbol.for("clerk.formContinuations")];
     expect(extra.filter(p => p.page === 13).map(p => p.values["fill_7_P.13"])).toEqual(["LEE", "WONG"]);
     expect(extra.filter(p => p.page === 9).map(p => [p.values["fill_5_P.9"], p.values["fill_8_P.9"]])).toEqual([["Ordinary", "WONG"], ["Preference", "CHAN"]]);
   });

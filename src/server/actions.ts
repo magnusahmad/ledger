@@ -100,7 +100,7 @@ export async function pasteRequestAction(_prev: ActionResult | null, form: FormD
     const m = await ingestMessage(ctx, { channel: "paste", provider: "paste", providerMessageId: `paste-${Date.now()}`, from, to: [], cc: [], subject: String(form.get("subject") ?? "Pasted message"), text, receivedAt: ctx.clock.now(), attachments: [], clientId });
     await processInbound(ctx, m.id);
     revalidatePath("/", "layout");
-    return { ok: true, message: "Harbourline has read the message; the draft is in your intray." };
+    return { ok: true, message: "Clerk has read the message; the draft is in your intray." };
   } catch (e) { return fail(e); }
 }
 

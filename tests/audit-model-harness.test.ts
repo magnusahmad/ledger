@@ -9,13 +9,13 @@ import { checkDraft, checkIntake, draftFacts, EFFECTIVE, OFFICE } from "../eval/
 import type { Intake } from "@/agent/schemas";
 
 it("a bounded live evaluation cannot silently activate a live non-model integration", () => {
-  const ctx = safeCtx("postgres://localhost/harbourline_robust_audit", new ScriptedLlm(), "fictional/model");
+  const ctx = safeCtx("postgres://localhost/clerk_robust_audit", new ScriptedLlm(), "fictional/model");
   expect([ctx.mail.name, ctx.bank.name, ctx.accounting.name, ctx.screening.name]).toEqual(["fake", "fake", "fake", "fake"]);
   expect(ctx.config.or_api_key).toBeUndefined();
   expect(ctx.storage.constructor.name).toBe("MemoryStorage");
   expect(ctx.clock.today()).toBe("2026-10-03");
-  expect(() => isolatedDatabase("postgres://localhost/harbourline")).toThrow(/isolated/);
-  expect(() => isolatedDatabase("postgres://remote/harbourline_robust_audit")).toThrow(/isolated/);
+  expect(() => isolatedDatabase("postgres://localhost/clerk")).toThrow(/isolated/);
+  expect(() => isolatedDatabase("postgres://remote/clerk_robust_audit")).toThrow(/isolated/);
 });
 it("the model network fence denies every other provider and prevents retries exceeding the explicit budget", async () => {
   let actualCalls = 0;
@@ -27,7 +27,7 @@ it("the model network fence denies every other provider and prevents retries exc
   expect(actualCalls).toBe(2); expect(bound.attempts()).toBe(2);
 });
 it("the fictional readable and rotated PDF plus poor raster fixtures contain real valid document bytes", async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), "harbourline-eval-fixture-test-"));
+  const dir = await mkdtemp(path.join(tmpdir(), "clerk-eval-fixture-test-"));
   try {
     const fixtures = await documents(dir);
     expect((await PDFDocument.load(fixtures.readable)).getPageCount()).toBe(1);

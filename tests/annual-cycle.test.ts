@@ -39,7 +39,7 @@ describe("pilot background cycle", () => {
     const d = await deps();
     await runAnnualCycle(ctx, d);
     expect((await listCases(ctx)).map((c) => c.clientCode)).toEqual(["A001"]);
-    expect((await readdir(d.statusDir!)).sort()).toEqual(["Harbourline annual returns.xlsx", "Harbourline review log.csv"]);
+    expect((await readdir(d.statusDir!)).sort()).toEqual(["Clerk annual returns.xlsx", "Clerk review log.csv"]);
     const h = await readHealth(ctx);
     expect(h).toMatchObject({ csaBackupTakenAt: "2026-11-05T02:13:00.000Z", errors: {} });
     expect(h?.lastCycleAt).toBe("2026-11-05T05:00:00.000Z");

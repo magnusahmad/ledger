@@ -5,8 +5,8 @@
 	admin off
 }
 
-https://harbourline.uhyask.local, https://harbourline {
-	tls C:\Harbourline\certs\server.crt C:\Harbourline\certs\server.key
+https://clerk.uhyask.local, https://clerk {
+	tls C:\Clerk\certs\server.crt C:\Clerk\certs\server.key
 	encode gzip
 	header {
 		Strict-Transport-Security "max-age=31536000"

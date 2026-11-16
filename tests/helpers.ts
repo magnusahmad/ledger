@@ -13,7 +13,7 @@ import { ScriptedLlm } from "@/integrations/llm/scripted";
 import { MemoryStorage } from "@/integrations/storage";
 import * as schema from "@/db/schema";
 
-export const TEST_DB = "postgres://localhost/harbourline_test";
+export const TEST_DB = "postgres://localhost/clerk_test";
 
 export type TestCtx = Ctx & {
   clock: FixedClock; llm: ScriptedLlm; mail: FakeMail; bank: FakeBank; accounting: FakeAccounting;

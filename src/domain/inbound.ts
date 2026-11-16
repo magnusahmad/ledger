@@ -50,7 +50,7 @@ async function ingestMessageAtomic(ctx: Ctx, m: Parameters<typeof ingestMessage>
     const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.provider, m.provider), eq(message.providerMessageId, m.providerMessageId)) });
     if (dup) return { ...dup, duplicate: true as const };
   }
-  // Mail Harbourline sent reappears in the mailbox's Sent folder; match it by Message-ID too.
+  // Mail Clerk sent reappears in the mailbox's Sent folder; match it by Message-ID too.
   if (out && m.rfcMessageId) {
     const dup = await ctx.db.query.message.findFirst({ where: and(eq(message.firmId, ctx.firmId), eq(message.rfcMessageId, m.rfcMessageId)) });
     if (dup) return { ...dup, duplicate: true as const };
@@ -341,7 +341,7 @@ export async function newRequestFacts(ctx: Ctx, taskIds: string[], lang: Lang): 
       onFile: tt.checklist.filter((e) => e.status === "on_file").map((e) => itemLabel(e.key, lang, tt.params)),
       alreadyReceived: tt.checklist.filter((e) => e.status === "received" || (e.key === "contactInfo" && e.status === "needed" && e.value)).map(e => receivedItemLabel(e, lang, tt.params)),
       deadline: tt.dueDate ? `${fmtDate(tt.dueDate, lang)} (${pb.deadline.kind !== "none" ? pb.deadline.rule : ""})` : null,
-      notes: instructions.map(e => typeof e.data.replyNote === "string" ? e.data.replyNote : e.summary.replace(/^Harbourline read the client's message: /, "")),
+      notes: instructions.map(e => typeof e.data.replyNote === "string" ? e.data.replyNote : e.summary.replace(/^Clerk read the client's message: /, "")),
     });
   }
   return out;
@@ -413,7 +413,7 @@ async function startFromAction(ctx: Ctx, clientId: string, requestId: string, pb
   const t = await startTask(ctx, { requestId, clientId, playbookId: pb.id, personId, extracted });
   let replyNote = a.evidence ?? a.description ?? "";
   for (const f of a.fields.filter(f => PROTECTED_KEYS.has(f.key))) replyNote = replyNote.replaceAll(f.value, "(protected information supplied)");
-  await logEvent(ctx, t.id, "agent.intake", `Harbourline read the client's message: ${a.description ?? pb.name.en}`, { evidence: a.evidence, replyNote, confidence: a.confidence, messageId }, "agent");
+  await logEvent(ctx, t.id, "agent.intake", `Clerk read the client's message: ${a.description ?? pb.name.en}`, { evidence: a.evidence, replyNote, confidence: a.confidence, messageId }, "agent");
   return t;
 }
 
@@ -501,7 +501,7 @@ async function applyInformation(ctx: Ctx, t: Task, a: IntakeAction, atts: (typeo
   const extracted = { ...t.extracted, ...ex };
   await ctx.db.update(taskT).set({ extracted }).where(eq(taskT.id, t.id));
   await setChecklist(ctx, t.id, next, "Information received from the client", "agent");
-  await logEvent(ctx, t.id, "agent.information", `Harbourline filed ${received.length} item(s) from the client's message`, { keys: received, messageId }, "agent");
+  await logEvent(ctx, t.id, "agent.information", `Clerk filed ${received.length} item(s) from the client's message`, { keys: received, messageId }, "agent");
   const out = await applyReview(ctx, t.id, review, { clientId: t.clientId, kind: "information", trustedPersonIds });
   result.proposalIds.push(...out.proposals);
   return out.questions;

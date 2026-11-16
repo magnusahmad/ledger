@@ -1,4 +1,4 @@
-// Work outside Harbourline. Off-platform steps can be added to any running task (with an
+// Work outside Clerk. Off-platform steps can be added to any running task (with an
 // owner, due date, who it waits on, a follow-up date and proof when done), and a task can be
 // put on hold while it waits on someone. Both show on Today with their follow-up dates.
 import { and, asc, eq, isNotNull } from "drizzle-orm";
@@ -54,7 +54,7 @@ export async function completeOffPlatformStep(ctx: Ctx, actionId: string, proof:
   }
   if (!note && !reference && !documentId) throw new OffPlatformError("Add proof: a note, a reference or a document");
   const [row] = await ctx.db.update(taskAction).set({ status: "done", proofNote: note, proofReference: reference, proofDocumentId: documentId, completedBy: ctx.userId, completedAt: ctx.clock.now() }).where(eq(taskAction.id, actionId)).returning();
-  await logEvent(ctx, t.id, "action.done", `Done outside Harbourline: ${a.title}${reference ? ` (ref ${reference})` : ""}`, { actionId, documentId }, ctx.userId);
+  await logEvent(ctx, t.id, "action.done", `Done outside Clerk: ${a.title}${reference ? ` (ref ${reference})` : ""}`, { actionId, documentId }, ctx.userId);
   await advance(ctx, t.id);
   return row;
 }

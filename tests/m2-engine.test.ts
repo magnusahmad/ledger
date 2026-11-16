@@ -32,7 +32,7 @@ describe("Playbook library (data integrity)", () => {
     // (taxation-hk.com), 智明會計 (smartaccounting.hk), Kams Business Services. Director, secretary and
     // address changes HK$300-680; name change HK$680-1,900; share transfer HK$1,180-1,380; allotment
     // HK$300-1,380; annual return HK$300-780; amend articles HK$2,000; deregistration from HK$3,000.
-    // The ceiling allows for Harbourline's fuller service (CDD, prepared documents, e-signing).
+    // The ceiling allows for Clerk's fuller service (CDD, prepared documents, e-signing).
     const ceilingHkd: Record<string, number> = {
       "hk.appointDirector": 1000, "hk.resignDirector": 800, "hk.changeParticulars": 800, "hk.changeSecretary": 1000,
       "hk.resignSecretary": 800, "hk.changeOffice": 800, "hk.changeName": 2000, "hk.transferShares": 1500,

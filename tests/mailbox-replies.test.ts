@@ -1,5 +1,5 @@
 // Staff sometimes answer clients straight from the shared Gmail mailbox. Those replies must
-// land in the thread, and must stop Harbourline sending its own now-stale draft.
+// land in the thread, and must stop Clerk sending its own now-stale draft.
 import { describe, it, expect, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";
@@ -20,7 +20,7 @@ beforeEach(async () => {
   ctx.llm.on("draft", goodDraft);
 });
 
-/** A client email that Harbourline reads and drafts a reply to (pending approval). */
+/** A client email that Clerk reads and drafts a reply to (pending approval). */
 async function clientAsks() {
   const inbound = ctx.mail.deliver({ from: { email: "director@kbtrading.example", name: "CHAN Tai Man" }, subject: "Office move", text: "We are moving office next month.", providerThreadId: "thr-1" });
   await pollMail(ctx);
@@ -47,7 +47,7 @@ describe("Replies sent from the shared mailbox", () => {
     expect(ctx.llm.callsFor("intake").length).toBe(intakeCalls);
   });
 
-  it("a mailbox reply withdraws Harbourline's pending draft on that thread, so it can't be sent twice", async () => {
+  it("a mailbox reply withdraws Clerk's pending draft on that thread, so it can't be sent twice", async () => {
     const { inbound, p } = await clientAsks();
     staffRepliesInGmail(inbound.rfcMessageId);
     await pollMail(ctx);
@@ -69,7 +69,7 @@ describe("Replies sent from the shared mailbox", () => {
     expect(ctx.mail.sent()[0].attachmentNames[0]).toMatch(/^CRCS-\d{4}-\d{4}\.pdf$/);
   });
 
-  it("mail Harbourline sent itself isn't recorded twice when it shows up in the Sent folder", async () => {
+  it("mail Clerk sent itself isn't recorded twice when it shows up in the Sent folder", async () => {
     const { p } = await clientAsks();
     await approveProposal(ctx, p.id);
     const sent = ctx.mail.sent()[0];

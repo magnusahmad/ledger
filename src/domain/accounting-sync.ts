@@ -35,7 +35,7 @@ onJob("xero.sync_payment", async (ctx, { paymentId }) => {
   if (!inv) throw new Error("Invoice not found in this firm");
   if (!inv.xeroInvoiceId) throw new Error(`Invoice ${inv.number} is not in Xero yet; retrying after the invoice syncs`);
   try {
-    const id = await ctx.accounting.createPayment({ idempotencyKey: `harbourline:${ctx.firmId}:${pay.id}`, invoiceId: inv.xeroInvoiceId, amountCents: pay.amountCents, date: pay.receivedOn, reference: inv.number });
+    const id = await ctx.accounting.createPayment({ idempotencyKey: `clerk:${ctx.firmId}:${pay.id}`, invoiceId: inv.xeroInvoiceId, amountCents: pay.amountCents, date: pay.receivedOn, reference: inv.number });
     await ctx.db.update(payment).set({ xeroPaymentId: id, xeroStatus: "synced" }).where(and(eq(payment.id, pay.id), eq(payment.firmId, ctx.firmId)));
   } catch (e) {
     await ctx.db.update(payment).set({ xeroStatus: "error" }).where(and(eq(payment.id, pay.id), eq(payment.firmId, ctx.firmId)));

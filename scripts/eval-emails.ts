@@ -47,7 +47,7 @@ async function main() {
   const run = emailRun(process.argv.slice(2), { model: env.LLM_MODEL ?? process.env.LLM_MODEL ?? "google/gemini-3.8-flash", reasoning: effort as "none" | "low" | "medium" | "high" });
   const { batch, model, outputDir, checkerEnabled, sonnetSchemaCompatible } = run;
   const cases = batch.cases;
-  const url = isolatedDatabase("postgres://localhost/harbourline_emails_eval");
+  const url = isolatedDatabase("postgres://localhost/clerk_emails_eval");
   await mkdir(outputDir, { recursive: true });
   const key = env.or_api_key ?? process.env.or_api_key;
   if (!key) throw new Error("OpenRouter credential is not configured");
@@ -84,7 +84,7 @@ async function main() {
   try {
     const admin = new Client({ connectionString: "postgres://localhost/postgres" });
     await admin.connect();
-    try { if (!(await admin.query("select 1 from pg_database where datname = $1", ["harbourline_emails_eval"])).rowCount) await admin.query('CREATE DATABASE "harbourline_emails_eval"'); }
+    try { if (!(await admin.query("select 1 from pg_database where datname = $1", ["clerk_emails_eval"])).rowCount) await admin.query('CREATE DATABASE "clerk_emails_eval"'); }
     finally { await admin.end(); }
     await runMigrations(url);
     for (const c of cases) {

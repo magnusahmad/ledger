@@ -1,4 +1,4 @@
-// Resets the CWCCPA mail room demo: its own database (harbourline_cwc), the fictional client
+// Resets the CWCCPA mail room demo: its own database (clerk_cwc), the fictional client
 // index, an empty scan folder and draft folder, and a mock "server" with each client's folders.
 // Run with the mailroom env (npm run mailroom:reset).
 import { Client } from "pg";
@@ -17,7 +17,7 @@ import { csvRows, CSV_COLUMNS, syncClients } from "@/mailroom/client-sync";
 async function main() {
   const url = new URL(process.env.DATABASE_URL ?? "");
   const name = url.pathname.slice(1);
-  if (!/^harbourline_cwc/.test(name)) throw new Error(`Refusing to reset ${name}: the mail room demo uses its own database (harbourline_cwc).`);
+  if (!/^clerk_cwc/.test(name)) throw new Error(`Refusing to reset ${name}: the mail room demo uses its own database (clerk_cwc).`);
   const admin = new Client({ connectionString: Object.assign(new URL(url), { pathname: "/postgres" }).toString() });
   await admin.connect();
   const exists = await admin.query("select 1 from pg_database where datname = $1", [name]);

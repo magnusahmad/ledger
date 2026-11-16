@@ -112,7 +112,7 @@ it("the existing 15 MB boundary is inclusive and the first excess byte rejects b
 });
 it("a long Chinese upload filename remains usable with the actual disk adapter and preserves display title and exact bytes", async () => {
   const { req, t } = await setup();
-  const root = await mkdtemp(join(tmpdir(), "harbourline-upload-audit-"));
+  const root = await mkdtemp(join(tmpdir(), "clerk-upload-audit-"));
   const disk = new DiskStorage(root);
   const content = await bytes("readable-scan.jpg");
   const filename = `香港身份證-${"x".repeat(235)}.jpg`; // 255 UTF-8 bytes, valid ordinary filesystem input

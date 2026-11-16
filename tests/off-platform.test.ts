@@ -1,4 +1,4 @@
-// Work that happens outside Harbourline (Stamp Office visits, notaries, waiting on a bank or
+// Work that happens outside Clerk (Stamp Office visits, notaries, waiting on a bank or
 // the outgoing secretary) is tracked as off-platform steps and holds, so tasks don't stall silently.
 import { describe, it, expect, beforeEach } from "vitest";
 import { makeCtx, resetDb, type TestCtx } from "./helpers";

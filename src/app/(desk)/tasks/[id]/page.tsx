@@ -133,7 +133,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="card">
             <div className="sec-h"><h2>Off-platform steps</h2></div>
-            {steps.length === 0 && <p className="empty" style={{ paddingTop: 0 }}>Anything done outside Harbourline, such as stamping, a notary or chasing a bank.</p>}
+            {steps.length === 0 && <p className="empty" style={{ paddingTop: 0 }}>Anything done outside Clerk, such as stamping, a notary or chasing a bank.</p>}
             <ul className="list">
               {steps.map((a) => (
                 <li key={a.id} className="item" style={{ alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -236,7 +236,7 @@ export default async function TaskPage({ params }: { params: Promise<{ id: strin
             <h2>Timeline</h2>
             <ul className="timeline">
               {tl.ev.filter((e) => timelineText(e) !== null).map((e) => (
-                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{timelineText(e)}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Harbourline" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : e.actor === "mailbox" ? "Mailbox" : e.actor === "third_party" ? "Third party" : "Karen Yip"}</div></li>
+                <li key={e.id} className={e.actor === "agent" ? "agent" : ""}><div>{timelineText(e)}</div><div className="when">{fmt(e.at, true)} · {e.actor === "agent" ? "Clerk" : e.actor === "system" ? "Automatic" : e.actor === "client" ? "Client" : e.actor === "mailbox" ? "Mailbox" : e.actor === "third_party" ? "Third party" : "Karen Yip"}</div></li>
               ))}
             </ul>
           </div>
