@@ -1,9 +1,9 @@
 # UHY-ASK pilot: annual returns and AGMs, with CDD folded in
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-11-17
+Last reviewed: 2026-11-18
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
-Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Clerk module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
+Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Coe's answers on the DN workbook and Access, 18 November; Magnus's direction (6 Oct: lighter footprint, CDD as a Clerk module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Implementation plan](UHY_PILOT_PLAN.md), [Gap to deployment](UHY_DEPLOY_GAP.md), [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
 
 ## Why annual returns and AGMs first
@@ -45,6 +45,14 @@ Measure staff minutes per company against UHY's current process. Start with the 
   - a request to confirm whether the company has any mortgages or charges as at the made-up date (Part 9 of the NAR1), with details such as a bank statement if it has.
 - The client returns the ink-signed copies. Staff scan them for records and deliver the stamped originals to the Registry; approval takes roughly three to five days.
 - UHY's example email gave one made-up date in its heading and a different one in the charges paragraph. Dates computed once from the record and reused through the email avoid that.
+
+- Staff track annual returns in their own workbook: CSA generates a list of companies, and staff add columns for the DN number, payment status (paid or unpaid), PEP check (done or pending), the date the email was sent, the date the client returned the signed return, the date filed with the Registry and the Registry's approval date (Coe, 18 November). Where this workbook is kept is not yet known.
+
+**Retainer debit notes (Coe, 18 November)**
+- In the first week of each month, staff filter the DN workbook on "Debit Note Service Until" (column I) for service periods ending the following month (in November, those ending in December 2026).
+- For each client they copy the last retainer DN in Xero, usually changing only the year (2026 to 2027) and the Business Registration fee (HK$2,250 to HK$2,350), and add any courier fees paid on the client's behalf from a separate courier Excel list.
+- Once Allan approves and the DN is sent, staff enter the new DN number in "New DN" (column J) and move the service-until year on.
+- This is billing work outside the pilot; it matters because the pilot reads DN and must not depend on columns staff are mid-way through updating.
 
 **AGMs**
 - Most clients pass written resolutions in lieu of an AGM.
@@ -110,9 +118,9 @@ Clerk reads three sources on the pilot machine, over the network, and never writ
 
 **CSA.** Restored daily from its newest `.csa` backup as the read-only `CSA_Copy` (`scripts/uhy/csa-restore.ps1`). The backup time shown to staff is SQL Server's own finish time from `RESTORE HEADERONLY`, falling back to the file time. Table mapping is done once on the restored copy with `csa-schema.sql` and `csa-find-value.sql` and written into the installation's mapping file (`csa-mapping.example.json`); that mapping now includes `registeredOn` for NN3.
 
-**Access.** The admin database (about 1,100 rows, fewer than 5 new codes a month; a returning client gets a new code). The path Ruby gave ended in `.laccdb`, Access's lock file; the database is the `.accdb` or `.mdb` beside it, somewhere in the co-sec area of the shared drive. `6-find-source-files.cmd` on the server lists candidates. The reader (`src/integrations/uhy/access.ts`) refuses a lock file, lists tables and columns first, then maps one table by column name; its Excel export is read with the same workbook discovery as DN. Clients sharing a name under different codes are listed, not merged.
+**Access.** The admin database (about 1,100 rows, fewer than 5 new codes a month; a returning client gets a new code). The path Ruby gave ended in `.laccdb`, Access's lock file; the database is the `.accdb` or `.mdb` beside it. Coe confirmed on 18 November that it is in `F:\Cosec\Working` and has no password; the file name is still to be read from that folder (`6-find-source-files.cmd` lists it). The pilot reads it on a schedule to keep the client list current, from a copy held in memory, so Access's lock and staff's work in it are untouched. The reader (`src/integrations/uhy/access.ts`) refuses a lock file, lists tables and columns first, then maps one table by column name; its Excel export is read with the same workbook discovery as DN. Clients sharing a name under different codes are listed, not merged.
 
-**DN workbook.** UHY's client list and annual-cycle tracker, one company per row; two similar 2025 files exist and which is current is unconfirmed. Columns are found by header name (`seed/uhy/dn-columns.json`), never by position; missing and unknown columns are reported, and a value that doesn't parse is reported with its row and left empty. Mapping from the anonymised sample, to be confirmed on the real file:
+**DN workbook.** UHY's client list, retainer debit-note tracker and AGM tracker, one company per row. Coe confirmed on 18 November that the authoritative workbook is `2025 COSEC DN NEW` in `D:\Public\Cosec\Debit Notes` on the server; the installation config holds its network path. In the real file "Debit Note Service Until" is column I and "New DN" column J, so its columns sit further right than in the sample, which reading by header name absorbs. Columns are found by header name (`seed/uhy/dn-columns.json`), never by position; missing and unknown columns are reported, and a value that doesn't parse is reported with its row and left empty. Mapping from the anonymised sample, to be confirmed on the real file:
 
 | DN header | Field | Read as |
 |---|---|---|
@@ -126,9 +134,9 @@ Clerk reads three sources on the pilot machine, over the network, and never writ
 | Year-End-date | `yearEnd` | Chinese month-day, 12月31日 → 31 December |
 | AGM (Month) | `agmMonth` | English month name ("September") or 9月 |
 | Auditor | `auditor` | text code ("TK-VC") |
-| required AFS | `requiredAfs` | date, US m/d/yyyy |
-| Done, Sent, Received, Scan, File | `done`, `sent`, `received`, `scan`, `filed` | annual-cycle tracker: tick or m/d/yyyy date (blank in the sample) |
-| By. | `by` | staff initials |
+| required AFS | `requiredAfs` | date, US m/d/yyyy: the year end of the audited accounts this year's AGM papers need (AFS2025 if last year's papers approved AFS2024). Cross-checked against the year end. |
+| Done, Sent, Received, Scan, File | `agmDone`, `agmSent`, `agmReceived`, `agmScan`, `agmFiled` | AGM tracker only (Coe: columns AD, AF and AH; Scan and File assumed part of the same block). Coe prefers dates; a date or a tick is read, anything else reported. |
+| By. | `agmBy` | staff initials |
 | Remarks | `remarks` | text |
 | Engagement letter, DD form, Risk Assessment, ADDRESS, DIR & MEM | `engagementLetter`, `ddForm`, `riskAssessment`, `addressChecked`, `dirMemChecked` | tick; appears to be the CDD cleanup record |
 | Send $ email | `feeEmailSentOn` | date, US m/d/yyyy: when the fee request went out (DN has no paid status) |
@@ -139,7 +147,7 @@ Ticks use the Wingdings font: `ü` is yes, `û` is no, blank is not recorded, an
 
 **Deadlines** come from `src/annual/calendar.ts` using playbook data: NAR1 from `hk.annualReturn` (42 days after the incorporation anniversary), NN3 from `hk.nonHkAnnualReturn` (42 days after the anniversary of Hong Kong registration; on-time fee only, late bands unconfirmed), AGM from `hk.agm` (9 months after the year end). Public and guarantee companies get no date and a reason, since the playbooks have no rule for them. `src/annual/cross-check.ts` lists year ends that differ between CSA and DN, a DN AGM month after the AGM deadline month, and companies in one source but not the other. All rules need company-secretary verification.
 
-**Not yet done:** DN and Access are not yet wired into the annual cycle (the case list still uses CSA dates only), and none of the readers has run against UHY's real files.
+**Not yet done:** DN and Access are not yet wired into the annual cycle (the case list still uses CSA dates only), and none of the readers has run against UHY's real files. Coe named the AGM tracker as columns AD, AF and AH, but in the sample's order those letters fall on Sent, Received and File; `discover-dn` on the real workbook shows which headers sit there. The annual-return tracker workbook is a further source to locate and map; its payment status column could feed the payment gate instead of staff asking accounting.
 
 ## Principles
 

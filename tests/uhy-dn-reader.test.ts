@@ -12,7 +12,7 @@ import { parseTick, parseChineseYearEnd, parseUsDate, parseAgmMonth, splitEmails
 
 const HEADERS = [
   "CODE", "Company Name", "公司名", "Last DN", "Debit Note Service Until", "New DN (2026)", "Significant Controller", "Designated representative", null, null,
-  "新查冊", "新查冊invoice", "新查冊文件", "Year-End-date", "AGM (Month)", "Auditor", "required AFS", "Done", "Sent", "By.", "Received", "Scan", "File", "Remarks", null,
+  "新查冊", "新查冊invoice", "新查冊文件", "Year-End-date", "AGM (Month)", "Auditor", "required AFS", "Done", "Sent", "By", "Received", "Scan", "File", "Remarks", null,
   "Engagement letter", "DD form", "Risk Assessment", "ADDRESS", "DIR & MEM", null, "Send $ email", "Contact email", "RO (NR1+IRD form)", "ND2B (rk sec > UHY)",
   "RO≠UHY, 公司文件擺UHY 要NR2", "Correspondence收信 (IRD以外信)", "ND2A 轉comsec",
 ];
@@ -110,6 +110,18 @@ describe("DN workbook reader", () => {
       ddForm: "yes", riskAssessment: "no", engagementLetter: "not_recorded", feeEmailSentOn: "2026-10-02",
       contactEmails: ["ops@lantern.example", "boss@lantern.example"], problems: [],
     });
+  });
+
+  it("DN's Done, Sent and Received columns are the AGM tracker, read as the dates each step happened (Coe, 18 November)", async () => {
+    const file = await workbook(dir, "dn-agm.xlsx", HEADERS, [{ CODE: "X107", "Company Name": "Ap Lei Chau Boats Limited", Done: "10/20/2026", Sent: "11/3/2026", By: "CL", Received: wing("ü") }]);
+    const row = (await readDnWorkbook(file)).rows[0];
+    expect(row).toMatchObject({ agmDone: { date: "2026-10-20" }, agmSent: { date: "2026-11-03" }, agmBy: "CL", agmReceived: { tick: "yes", date: null } });
+    expect(row).not.toHaveProperty("done");
+  });
+
+  it("required AFS reads as the year end of the audited accounts this year's AGM papers need", async () => {
+    const file = await workbook(dir, "dn-afs.xlsx", HEADERS, [{ CODE: "X108", "Company Name": "Sham Shui Po Fabrics Limited", "required AFS": "12/31/2025" }]);
+    expect((await readDnWorkbook(file)).rows[0].requiredAfs).toBe("2025-12-31");
   });
 
   it("finds the header row below title rows and ignores blank columns", async () => {

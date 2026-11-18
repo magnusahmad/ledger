@@ -1,39 +1,251 @@
 {
-  "_note": "UHY's DN (Debit Note) workbook columns, from an anonymised sample (6 October). Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. Kinds: text, usDate (m/d/yyyy), yearEnd (Chinese month-day such as 12月31日), month (AGM month), tick (Wingdings ü/û or a check mark), mark (tick or date), emails. To be confirmed against the authoritative workbook on site.",
+  "_note": "UHY's DN (Debit Note) workbook columns, from an anonymised sample (6 October). Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. Kinds: text, usDate (m/d/yyyy), yearEnd (Chinese month-day such as 12月31日), month (AGM month), tick (Wingdings ü/û or a check mark), mark (tick or date), emails. To be confirmed against the authoritative workbook on site. Done, Sent and Received (with By., Scan and File, assumed part of the same block) track the AGM only (Coe, 18 November); the annual return is tracked in a separate workbook built from a CSA list. required AFS is the year end of the audited accounts this year's AGM papers need.",
   "columns": [
-    { "field": "code", "kind": "text", "required": true, "headers": ["CODE", "Client code"] },
-    { "field": "nameEn", "kind": "text", "required": true, "headers": ["Company Name"] },
-    { "field": "nameZh", "kind": "text", "headers": ["公司名"] },
-    { "field": "lastDn", "kind": "text", "headers": ["Last DN"] },
-    { "field": "serviceUntil", "kind": "usDate", "headers": ["Debit Note Service Until"] },
-    { "field": "newDn", "kind": "text", "headers": ["New DN", "New DN (2026)", "New DN (2027)"] },
-    { "field": "significantController", "kind": "text", "headers": ["Significant Controller"] },
-    { "field": "designatedRep", "kind": "tick", "headers": ["Designated representative"] },
-    { "field": "registrySearch", "kind": "text", "headers": ["新查冊"] },
-    { "field": "registrySearchInvoice", "kind": "text", "headers": ["新查冊invoice"] },
-    { "field": "registrySearchDocs", "kind": "text", "headers": ["新查冊文件"] },
-    { "field": "yearEnd", "kind": "yearEnd", "headers": ["Year-End-date", "Year End"] },
-    { "field": "agmMonth", "kind": "month", "headers": ["AGM (Month)", "AGM Month"] },
-    { "field": "auditor", "kind": "text", "headers": ["Auditor"] },
-    { "field": "requiredAfs", "kind": "usDate", "headers": ["required AFS"] },
-    { "field": "done", "kind": "mark", "headers": ["Done"] },
-    { "field": "sent", "kind": "mark", "headers": ["Sent"] },
-    { "field": "by", "kind": "text", "headers": ["By.", "By"] },
-    { "field": "received", "kind": "mark", "headers": ["Received"] },
-    { "field": "scan", "kind": "mark", "headers": ["Scan"] },
-    { "field": "filed", "kind": "mark", "headers": ["File"] },
-    { "field": "remarks", "kind": "text", "headers": ["Remarks"] },
-    { "field": "engagementLetter", "kind": "tick", "headers": ["Engagement letter"] },
-    { "field": "ddForm", "kind": "tick", "headers": ["DD form"] },
-    { "field": "riskAssessment", "kind": "tick", "headers": ["Risk Assessment"] },
-    { "field": "addressChecked", "kind": "tick", "headers": ["ADDRESS"] },
-    { "field": "dirMemChecked", "kind": "tick", "headers": ["DIR & MEM"] },
-    { "field": "feeEmailSentOn", "kind": "usDate", "headers": ["Send $ email"] },
-    { "field": "contactEmails", "kind": "emails", "headers": ["Contact email"] },
-    { "field": "roNr1", "kind": "text", "headers": ["RO (NR1+IRD form)"] },
-    { "field": "nd2b", "kind": "text", "headers": ["ND2B (rk sec > UHY)"] },
-    { "field": "nr2", "kind": "text", "headers": ["RO≠UHY, 公司文件擺UHY 要NR2"] },
-    { "field": "correspondence", "kind": "text", "headers": ["Correspondence收信 (IRD以外信)"] },
-    { "field": "nd2a", "kind": "text", "headers": ["ND2A 轉comsec"] }
+    {
+      "field": "code",
+      "kind": "text",
+      "required": true,
+      "headers": [
+        "CODE",
+        "Client code"
+      ]
+    },
+    {
+      "field": "nameEn",
+      "kind": "text",
+      "required": true,
+      "headers": [
+        "Company Name"
+      ]
+    },
+    {
+      "field": "nameZh",
+      "kind": "text",
+      "headers": [
+        "公司名"
+      ]
+    },
+    {
+      "field": "lastDn",
+      "kind": "text",
+      "headers": [
+        "Last DN"
+      ]
+    },
+    {
+      "field": "serviceUntil",
+      "kind": "usDate",
+      "headers": [
+        "Debit Note Service Until"
+      ]
+    },
+    {
+      "field": "newDn",
+      "kind": "text",
+      "headers": [
+        "New DN",
+        "New DN (2026)",
+        "New DN (2027)"
+      ]
+    },
+    {
+      "field": "significantController",
+      "kind": "text",
+      "headers": [
+        "Significant Controller"
+      ]
+    },
+    {
+      "field": "designatedRep",
+      "kind": "tick",
+      "headers": [
+        "Designated representative"
+      ]
+    },
+    {
+      "field": "registrySearch",
+      "kind": "text",
+      "headers": [
+        "新查冊"
+      ]
+    },
+    {
+      "field": "registrySearchInvoice",
+      "kind": "text",
+      "headers": [
+        "新查冊invoice"
+      ]
+    },
+    {
+      "field": "registrySearchDocs",
+      "kind": "text",
+      "headers": [
+        "新查冊文件"
+      ]
+    },
+    {
+      "field": "yearEnd",
+      "kind": "yearEnd",
+      "headers": [
+        "Year-End-date",
+        "Year End"
+      ]
+    },
+    {
+      "field": "agmMonth",
+      "kind": "month",
+      "headers": [
+        "AGM (Month)",
+        "AGM Month"
+      ]
+    },
+    {
+      "field": "auditor",
+      "kind": "text",
+      "headers": [
+        "Auditor"
+      ]
+    },
+    {
+      "field": "requiredAfs",
+      "kind": "usDate",
+      "headers": [
+        "required AFS"
+      ]
+    },
+    {
+      "field": "agmDone",
+      "kind": "mark",
+      "headers": [
+        "Done"
+      ]
+    },
+    {
+      "field": "agmSent",
+      "kind": "mark",
+      "headers": [
+        "Sent"
+      ]
+    },
+    {
+      "field": "agmBy",
+      "kind": "text",
+      "headers": [
+        "By.",
+        "By"
+      ]
+    },
+    {
+      "field": "agmReceived",
+      "kind": "mark",
+      "headers": [
+        "Received"
+      ]
+    },
+    {
+      "field": "agmScan",
+      "kind": "mark",
+      "headers": [
+        "Scan"
+      ]
+    },
+    {
+      "field": "agmFiled",
+      "kind": "mark",
+      "headers": [
+        "File"
+      ]
+    },
+    {
+      "field": "remarks",
+      "kind": "text",
+      "headers": [
+        "Remarks"
+      ]
+    },
+    {
+      "field": "engagementLetter",
+      "kind": "tick",
+      "headers": [
+        "Engagement letter"
+      ]
+    },
+    {
+      "field": "ddForm",
+      "kind": "tick",
+      "headers": [
+        "DD form"
+      ]
+    },
+    {
+      "field": "riskAssessment",
+      "kind": "tick",
+      "headers": [
+        "Risk Assessment"
+      ]
+    },
+    {
+      "field": "addressChecked",
+      "kind": "tick",
+      "headers": [
+        "ADDRESS"
+      ]
+    },
+    {
+      "field": "dirMemChecked",
+      "kind": "tick",
+      "headers": [
+        "DIR & MEM"
+      ]
+    },
+    {
+      "field": "feeEmailSentOn",
+      "kind": "usDate",
+      "headers": [
+        "Send $ email"
+      ]
+    },
+    {
+      "field": "contactEmails",
+      "kind": "emails",
+      "headers": [
+        "Contact email"
+      ]
+    },
+    {
+      "field": "roNr1",
+      "kind": "text",
+      "headers": [
+        "RO (NR1+IRD form)"
+      ]
+    },
+    {
+      "field": "nd2b",
+      "kind": "text",
+      "headers": [
+        "ND2B (rk sec > UHY)"
+      ]
+    },
+    {
+      "field": "nr2",
+      "kind": "text",
+      "headers": [
+        "RO≠UHY, 公司文件擺UHY 要NR2"
+      ]
+    },
+    {
+      "field": "correspondence",
+      "kind": "text",
+      "headers": [
+        "Correspondence收信 (IRD以外信)"
+      ]
+    },
+    {
+      "field": "nd2a",
+      "kind": "text",
+      "headers": [
+        "ND2A 轉comsec"
+      ]
+    }
   ]
 }

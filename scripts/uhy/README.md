@@ -28,6 +28,6 @@ Assessment scripts run on UHY's Windows Server over AnyDesk; setup scripts run o
 | `csa-mapping.example.json` | Template for the installation's CSA mapping, filled in on site from the restored copy. |
 | `../uhy-sources.ts` | No. Reads the DN workbook and Access database over the share. `discover-dn <xlsx>` and `discover-access <accdb or xlsx export>` write headers, column names, types, counts and value shapes (never values) to `private/uhy/discovery/`; `check-dn <xlsx> [--sheet name]` reports missing and unknown columns and unparseable cells by row. Run with `npx tsx scripts/uhy-sources.ts ...` from `C:\Clerk`. |
 
-The DN column mapping is `seed/uhy/dn-columns.json`; the full table and how ticks and dates are read are in `docs/UHY_AR_AGM_PILOT.md` ("Source data").
+Confirmed locations (Coe, 18 November): the DN workbook is `2025 COSEC DN NEW` in `D:\Public\Cosec\Debit Notes`, and the Access database is in `F:\Cosec\Working` (no password). Run `discover-dn` on that workbook first and check which headers sit in columns AD, AF and AH (Coe's AGM tracker). The DN column mapping is `seed/uhy/dn-columns.json`; the full table and how ticks and dates are read are in `docs/UHY_AR_AGM_PILOT.md` ("Source data").
 
 **Not verified on UHY's systems:** `find-source-files.ps1` and the `csa-restore.ps1` changes have not run anywhere (no PowerShell here); the Access reader's mdb-reader adapter has not opened a real `.accdb` (no fixture can be written on macOS); the DN reader has run only on fictional workbooks.

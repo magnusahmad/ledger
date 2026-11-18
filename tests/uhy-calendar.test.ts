@@ -83,7 +83,7 @@ describe("AGM", () => {
 
 describe("CSA and DN cross-check", () => {
   const csa = (o: Partial<{ code: string; nameEn: string; fyeMonth: number | null; fyeDay: number | null }> = {}) => ({ code: "X101", nameEn: "Harbour Lantern Limited", fyeMonth: 12, fyeDay: 31, companyType: "private" as const, ...o });
-  const dn = (o: Partial<{ code: string; nameEn: string; yearEnd: { month: number; day: number } | null; agmMonth: number | null }> = {}) => ({ code: "X101", nameEn: "Harbour Lantern Limited", yearEnd: { month: 12, day: 31 }, agmMonth: 9, ...o });
+  const dn = (o: Partial<{ code: string; nameEn: string; yearEnd: { month: number; day: number } | null; agmMonth: number | null; requiredAfs: string | null }> = {}) => ({ code: "X101", nameEn: "Harbour Lantern Limited", yearEnd: { month: 12, day: 31 }, agmMonth: 9, requiredAfs: null, ...o });
 
   it("matching year ends raise nothing", () => {
     expect(crossCheckCsaDn([csa()], [dn()], playbooks)).toEqual([]);
@@ -100,6 +100,14 @@ describe("CSA and DN cross-check", () => {
 
   it("an AGM month in DN after the AGM deadline is flagged", () => {
     expect(crossCheckCsaDn([csa()], [dn({ agmMonth: 11 })], playbooks)).toEqual([expect.objectContaining({ field: "agmMonth", dn: "November" })]);
+  });
+
+  it("a required AFS on the DN year end raises nothing", () => {
+    expect(crossCheckCsaDn([csa()], [dn({ requiredAfs: "2025-12-31" })], playbooks)).toEqual([]);
+  });
+
+  it("a required AFS that isn't on the year end is flagged, since it should name the accounts for that year end", () => {
+    expect(crossCheckCsaDn([csa()], [dn({ requiredAfs: "2025-03-31" })], playbooks)).toEqual([expect.objectContaining({ field: "requiredAfs", csa: "31 December", dn: "31 March 2025" })]);
   });
 
   it("a company in CSA but not DN, or in DN but not CSA, is listed", () => {

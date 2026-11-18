@@ -4,9 +4,9 @@
 import { agmDue, type CalendarPlaybooks, type CompanyType } from "./calendar";
 
 export type CsaSide = { code: string | null; nameEn: string; fyeMonth: number | null; fyeDay: number | null; companyType: CompanyType };
-export type DnSide = { code: string; nameEn: string | null; yearEnd: { month: number; day: number } | null; agmMonth: number | null };
+export type DnSide = { code: string; nameEn: string | null; yearEnd: { month: number; day: number } | null; agmMonth: number | null; requiredAfs?: string | null };
 export type Discrepancy = {
-  code: string; nameEn: string | null; field: "yearEnd" | "agmMonth" | "missingInDn" | "missingInCsa";
+  code: string; nameEn: string | null; field: "yearEnd" | "agmMonth" | "requiredAfs" | "missingInDn" | "missingInCsa";
   csa: string | null; dn: string | null; message: string;
 };
 
@@ -26,7 +26,11 @@ export function crossCheckCsaDn(csa: CsaSide[], dn: DnSide[], pbs: CalendarPlayb
     if (!d) { out.push({ code: k, nameEn: c.nameEn, field: "missingInDn", csa: c.nameEn, dn: null, message: "In CSA but not in the DN workbook." }); continue; }
     const a = md(c.fyeMonth, c.fyeDay), b = md(d.yearEnd?.month, d.yearEnd?.day);
     if (a !== b) out.push({ code: k, nameEn: c.nameEn, field: "yearEnd", csa: a, dn: b, message: `Year end differs: CSA ${a ?? "has none"}, DN ${b ?? "has none"}. Check which is right before relying on the AGM date.` });
-    else if (a && d.agmMonth && c.fyeMonth && c.fyeDay) {
+    else if (a && d.requiredAfs && Number(d.requiredAfs.slice(5, 7)) * 100 + Number(d.requiredAfs.slice(8, 10)) !== c.fyeMonth! * 100 + c.fyeDay!) {
+      const afs = `${Number(d.requiredAfs.slice(8, 10))} ${MONTHS[Number(d.requiredAfs.slice(5, 7)) - 1]} ${d.requiredAfs.slice(0, 4)}`;
+      out.push({ code: k, nameEn: c.nameEn, field: "requiredAfs", csa: a, dn: afs, message: `DN's required AFS (${afs}) is not on the year end (${a}); it should name the accounts for that year end.` });
+    }
+    if (a === b && a && d.agmMonth && c.fyeMonth && c.fyeDay) {
       // DN's AGM month should fall on or before the month the AGM is due (compare by month after the year end).
       const due = agmDue({ companyType: c.companyType, yearEnd: { month: c.fyeMonth, day: c.fyeDay } }, 2001, pbs);
       if (due.ok) {

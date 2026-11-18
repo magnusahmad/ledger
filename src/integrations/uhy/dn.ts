@@ -21,8 +21,11 @@ export type DnRow = {
   row: number; code: string; nameEn: string | null; nameZh: string | null;
   lastDn: string | null; serviceUntil: string | null; newDn: string | null; significantController: string | null; designatedRep: Tick | null;
   registrySearch: string | null; registrySearchInvoice: string | null; registrySearchDocs: string | null;
-  yearEnd: MonthDay | null; agmMonth: number | null; auditor: string | null; requiredAfs: string | null;
-  done: Mark | null; sent: Mark | null; by: string | null; received: Mark | null; scan: Mark | null; filed: Mark | null; remarks: string | null;
+  yearEnd: MonthDay | null; agmMonth: number | null; auditor: string | null;
+  /** Year end of the audited accounts this year's AGM papers need (e.g. 2025-12-31 for AFS2025). */
+  requiredAfs: string | null;
+  /** AGM tracker (DN's Done, Sent, By., Received, Scan, File): the date each step happened, or a tick. */
+  agmDone: Mark | null; agmSent: Mark | null; agmBy: string | null; agmReceived: Mark | null; agmScan: Mark | null; agmFiled: Mark | null; remarks: string | null;
   engagementLetter: Tick | null; ddForm: Tick | null; riskAssessment: Tick | null; addressChecked: Tick | null; dirMemChecked: Tick | null;
   feeEmailSentOn: string | null; contactEmails: string[];
   roNr1: string | null; nd2b: string | null; nr2: string | null; correspondence: string | null; nd2a: string | null;
