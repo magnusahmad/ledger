@@ -28,18 +28,27 @@ function Invoke-Sql($sql, $db = 'master') {
 }
 $q = { param($s) $s.Replace("'", "''") }
 
-$info = @{ backupFile = $null; backupTakenAt = $null; restoredAt = $null; error = $null }
+# backupTakenAt is when SQL Server finished writing the backup (RESTORE HEADERONLY), which the app
+# shows on every screen that uses CSA data; the file's write time is kept to skip unchanged files.
+$info = @{ backupFile = $null; fileWrittenAt = $null; backupTakenAt = $null; restoredAt = $null; error = $null }
 try {
+  # Newest of the weekday (CSA_Expert_1_Mon.csa) and monthly (CSA_Expert_1_2026_10.csa) files.
   $newest = Get-ChildItem -Path $BackupShare -Filter '*.csa' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   if (-not $newest) { throw "No .csa backups found in $BackupShare" }
   $info.backupFile = $newest.Name
-  $info.backupTakenAt = $newest.LastWriteTimeUtc.ToString('o')
+  $info.fileWrittenAt = $newest.LastWriteTimeUtc.ToString('o')
 
   $prev = if (Test-Path $StatusFile) { Get-Content $StatusFile -Raw | ConvertFrom-Json } else { $null }
-  if ($prev -and $prev.ok -and $prev.backupTakenAt -eq $info.backupTakenAt) { Write-Status $true $prev; return }
+  if ($prev -and $prev.ok -and $prev.fileWrittenAt -eq $info.fileWrittenAt) { Write-Status $true $prev; return }
 
   $local = Join-Path $DataDir 'latest.bak'
   Copy-Item -Path $newest.FullName -Destination $local -Force
+  $hdr = Invoke-Sql "RESTORE HEADERONLY FROM DISK = N'$(& $q $local)'"
+  if ($hdr.Rows.Count -ne 1) { throw "$($newest.Name) holds $($hdr.Rows.Count) backup sets; expected one" }
+  if ($hdr.Rows[0].DatabaseName -ne 'CSA_Expert_1') { Write-Warning "$($newest.Name) is a backup of $($hdr.Rows[0].DatabaseName), not CSA_Expert_1" }
+  $finish = $hdr.Rows[0].BackupFinishDate
+  # BackupFinishDate is the CSA server's local time; the pilot machine is in the same time zone (HKT).
+  $info.backupTakenAt = if ($finish -is [datetime]) { $finish.ToUniversalTime().ToString('o') } else { $info.fileWrittenAt }
   $files = Invoke-Sql "RESTORE FILELISTONLY FROM DISK = N'$(& $q $local)'"
   $stamp = Get-Date -Format 'yyyyMMddHHmmss'
   $staging = "${Database}_new"

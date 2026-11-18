@@ -1,6 +1,6 @@
 # UHY-ASK pilot: setup scripts
 
-Assessment scripts run on UHY's Windows Server over AnyDesk; setup scripts run on the pilot machine, as described in `docs/UHY_PILOT_PLAN.md`. Every script here is read-only against UHY's data unless its header says otherwise. Outputs go to `C:\uhy-pilot\out\`; copy off the server only the files each step names (schema and server facts, never client values).
+Assessment scripts run on UHY's Windows Server over AnyDesk; setup scripts run on the pilot machine, as described in `docs/UHY_PILOT_PLAN.md`. Server scripts run on PowerShell 2.0 (Windows Server 2008 R2); extract the zip first, then double-click the `.cmd` launcher. Every script here is read-only against UHY's data unless its header says otherwise. Outputs go to `C:\uhy-pilot\out\`; copy off the server only the files each step names (schema and server facts, never client values).
 
 | Script | Stage | Changes anything? |
 |---|---|---|
@@ -9,6 +9,7 @@ Assessment scripts run on UHY's Windows Server over AnyDesk; setup scripts run o
 | `3-csa-schema.cmd` | 1 | No. Runs `csa-schema.sql` against `CSA_Expert_1` on `localhost\CSAEXPERT`. |
 | `4-list-csa-backups.cmd` | 1 | No. Lists CSA backup files and any backup schedules (names, sizes, dates). |
 | `5-check-backup-format.cmd` | 1 | No. Reads the first 64 bytes of the newest CSA backup to identify its format. |
+| `6-find-source-files.cmd` | 1 | No. Launcher for `find-source-files.ps1`: lists Access databases (`.accdb`, `.mdb`), Access lock files and DN workbooks (names containing Debit or DN) on the server's disk shares, with sizes and dates; never opens them. Output stays on the server, as paths can include client names: copy off only the DN and Access lines. |
 | `assess-server.ps1` | 1 | No. Writes a facts file. |
 | `run-sql.ps1` | 1, 4 | Runs any `.sql` file here with Windows authentication when `sqlcmd` isn't installed; writes results to CSV. |
 | `csa-schema.sql` | 1 | No. Exports table and column names, types and row counts. |
@@ -22,6 +23,11 @@ Assessment scripts run on UHY's Windows Server over AnyDesk; setup scripts run o
 
 | Script | Changes anything? |
 |---|---|
-| `csa-restore.ps1` | Yes, on the pilot machine only: copies the newest `.csa` backup from the share and restores it as the read-only `CSA_Copy`; swaps only after a successful restore; writes `restore-status.json`. Never touches the live CSA database. |
+| `csa-restore.ps1` | Yes, on the pilot machine only: copies the newest `.csa` backup from the share and restores it as the read-only `CSA_Copy`; swaps only after a successful restore; writes `restore-status.json` with the backup's own finish time (`RESTORE HEADERONLY`), which the app shows as the CSA copy's age. Never touches the live CSA database. |
 | `register-csa-restore.ps1` | Yes: schedules the restore at 12:30 and 18:30 on weekdays under the service account. |
 | `csa-mapping.example.json` | Template for the installation's CSA mapping, filled in on site from the restored copy. |
+| `../uhy-sources.ts` | No. Reads the DN workbook and Access database over the share. `discover-dn <xlsx>` and `discover-access <accdb or xlsx export>` write headers, column names, types, counts and value shapes (never values) to `private/uhy/discovery/`; `check-dn <xlsx> [--sheet name]` reports missing and unknown columns and unparseable cells by row. Run with `npx tsx scripts/uhy-sources.ts ...` from `C:\Clerk`. |
+
+The DN column mapping is `seed/uhy/dn-columns.json`; the full table and how ticks and dates are read are in `docs/UHY_AR_AGM_PILOT.md` ("Source data").
+
+**Not verified on UHY's systems:** `find-source-files.ps1` and the `csa-restore.ps1` changes have not run anywhere (no PowerShell here); the Access reader's mdb-reader adapter has not opened a real `.accdb` (no fixture can be written on macOS); the DN reader has run only on fictional workbooks.

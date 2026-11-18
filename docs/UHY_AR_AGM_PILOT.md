@@ -1,7 +1,7 @@
 # UHY-ASK pilot: annual returns and AGMs, with CDD folded in
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-10-23
+Last reviewed: 2026-11-17
 Status: implementation brief; nothing built or verified on UHY's systems yet. Open questions below gate live data, not development against fictional data.
 Sources: [5 October meeting](../crv-kb/meetings/2026-10-05-uhy-ask-first-in-person.md); [6 October meeting](../crv-kb/meetings/2026-10-06-uhy-ask-data-mapping-ctc-pilot.md); Allan's email answers, 7 and 9 October; Magnus's direction (6 Oct: lighter footprint, CDD as a Clerk module, scanned post in scope, several users, external AI processing acceptable; 7 Oct: annual returns and AGMs first, CDD folded in); [CR monitoring research](CR_MONITORING.md); [TCSP CDD requirements](../crv-kb/research/tcsp-cdd-requirements.md).
 Related: [Implementation plan](UHY_PILOT_PLAN.md), [Gap to deployment](UHY_DEPLOY_GAP.md), [Decisions](DECISIONS.md) #53–55, [CDD flow and timing](UHY_CDD_FLOW_AND_TIMING.md), [Product spec](PRODUCT_SPEC.md), [Playbooks](PLAYBOOKS.md).
@@ -83,7 +83,7 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
 - The PDFs on file are **scans of the filed copy** (from the office Apeos C3570), image only with no text layer, 9–11 pages each. Reading them needs OCR or a vision model.
 - Each scan includes the Registry's payment receipt (submission date and time, form type, fee, payment method). That is evidence of filing and of the fee actually paid, so a scan can propose "filed" with its date and fee for staff to confirm.
 - The forms come from CSA (footer "CSA by P & L Associates") and match the current Registry specification, which is the same one Clerk's NAR1 template uses (No. 2/2025).
-- **One of the five is a registered non-Hong Kong company,** which files **Form NN3** on the anniversary of its registration, not NAR1. Clerk has no NN3 template, so that company falls back to CSA's form unless NN3 is added.
+- **One of the five is a registered non-Hong Kong company,** which files **Form NN3** on the anniversary of its registration, not NAR1. Clerk computes its NN3 deadline from the `hk.nonHkAnnualReturn` playbook and the Hong Kong registration date in CSA, but has no NN3 template, so the form itself comes from CSA.
 - The presenter is UHY's secretarial company. The presenter's reference combines staff initials, the client code and the filing due date.
 - File naming on F:: `<client code>-Annual Return-<made-up date, e.g. 17Oct2025>.pdf` and `<client code>-AGM-<year>.pdf`.
 
@@ -103,6 +103,43 @@ Ruby supplied last year's annual return and AGM papers for the five sample compa
 - Several things come from the audited accounts: the year end, the date the directors signed them, and the remuneration figures. The NDA with UHY is signed (confirmed by Magnus, 28 October), so audit reports can be shared. Everything else carries over from last year's document plus CSA.
 - Small template errors carried from year to year (for example "ensuring year" for "ensuing year"). Drafting from last year's document will copy them unless the template is cleaned once.
 - One company is incorporated outside Hong Kong but its members' resolution cites section 548 of the Hong Kong Companies Ordinance. A company secretary should check which law governs its written resolutions.
+
+## Source data: DN, Access and CSA (mapped 6 October; readers built 17 November)
+
+Clerk reads three sources on the pilot machine, over the network, and never writes to any of them (#61). CSA is the source for incorporation date (and, for a registered non-Hong Kong company, Hong Kong registration date), company type, directors, secretary, members, shares and registered office. DN supplies the year end, AGM month, auditor, contact emails and the CDD cleanup ticks; the year end is cross-checked against CSA. Access issues client codes.
+
+**CSA.** Restored daily from its newest `.csa` backup as the read-only `CSA_Copy` (`scripts/uhy/csa-restore.ps1`). The backup time shown to staff is SQL Server's own finish time from `RESTORE HEADERONLY`, falling back to the file time. Table mapping is done once on the restored copy with `csa-schema.sql` and `csa-find-value.sql` and written into the installation's mapping file (`csa-mapping.example.json`); that mapping now includes `registeredOn` for NN3.
+
+**Access.** The admin database (about 1,100 rows, fewer than 5 new codes a month; a returning client gets a new code). The path Ruby gave ended in `.laccdb`, Access's lock file; the database is the `.accdb` or `.mdb` beside it, somewhere in the co-sec area of the shared drive. `6-find-source-files.cmd` on the server lists candidates. The reader (`src/integrations/uhy/access.ts`) refuses a lock file, lists tables and columns first, then maps one table by column name; its Excel export is read with the same workbook discovery as DN. Clients sharing a name under different codes are listed, not merged.
+
+**DN workbook.** UHY's client list and annual-cycle tracker, one company per row; two similar 2025 files exist and which is current is unconfirmed. Columns are found by header name (`seed/uhy/dn-columns.json`), never by position; missing and unknown columns are reported, and a value that doesn't parse is reported with its row and left empty. Mapping from the anonymised sample, to be confirmed on the real file:
+
+| DN header | Field | Read as |
+|---|---|---|
+| CODE | `code` | text, upper-cased; rows without a code are skipped and counted |
+| Company Name / 公司名 | `nameEn` / `nameZh` | text |
+| Last DN, New DN (2026) | `lastDn`, `newDn` | text (DN numbers such as 260588) |
+| Debit Note Service Until | `serviceUntil` | date, US m/d/yyyy |
+| Significant Controller | `significantController` | free text ("by itself", "BVI; 不用處理") |
+| Designated representative | `designatedRep` | tick |
+| 新查冊, 新查冊invoice, 新查冊文件 | `registrySearch`, `registrySearchInvoice`, `registrySearchDocs` | text ("28/7/2022 sent" is day-first, kept as text) |
+| Year-End-date | `yearEnd` | Chinese month-day, 12月31日 → 31 December |
+| AGM (Month) | `agmMonth` | English month name ("September") or 9月 |
+| Auditor | `auditor` | text code ("TK-VC") |
+| required AFS | `requiredAfs` | date, US m/d/yyyy |
+| Done, Sent, Received, Scan, File | `done`, `sent`, `received`, `scan`, `filed` | annual-cycle tracker: tick or m/d/yyyy date (blank in the sample) |
+| By. | `by` | staff initials |
+| Remarks | `remarks` | text |
+| Engagement letter, DD form, Risk Assessment, ADDRESS, DIR & MEM | `engagementLetter`, `ddForm`, `riskAssessment`, `addressChecked`, `dirMemChecked` | tick; appears to be the CDD cleanup record |
+| Send $ email | `feeEmailSentOn` | date, US m/d/yyyy: when the fee request went out (DN has no paid status) |
+| Contact email | `contactEmails` | several addresses split on `;`, `,` or line breaks |
+| RO (NR1+IRD form), ND2B (rk sec > UHY), RO≠UHY 公司文件擺UHY 要NR2, Correspondence收信 (IRD以外信), ND2A 轉comsec | `roNr1`, `nd2b`, `nr2`, `correspondence`, `nd2a` | text |
+
+Ticks use the Wingdings font: `ü` is yes, `û` is no, blank is not recorded, and anything else is an error rather than a guess (Unicode ✓/✗ and Wingdings 2 `P`/`O` read the same). Date columns are US m/d/yyyy; day-first text in them (28/7/2022) is an error, never swapped. DN holds no incorporation date or annual-return due date.
+
+**Deadlines** come from `src/annual/calendar.ts` using playbook data: NAR1 from `hk.annualReturn` (42 days after the incorporation anniversary), NN3 from `hk.nonHkAnnualReturn` (42 days after the anniversary of Hong Kong registration; on-time fee only, late bands unconfirmed), AGM from `hk.agm` (9 months after the year end). Public and guarantee companies get no date and a reason, since the playbooks have no rule for them. `src/annual/cross-check.ts` lists year ends that differ between CSA and DN, a DN AGM month after the AGM deadline month, and companies in one source but not the other. All rules need company-secretary verification.
+
+**Not yet done:** DN and Access are not yet wired into the annual cycle (the case list still uses CSA dates only), and none of the readers has run against UHY's real files.
 
 ## Principles
 

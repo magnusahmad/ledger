@@ -1112,6 +1112,98 @@
     ]
   },
   {
+    "id": "hk.nonHkAnnualReturn",
+    "version": 1,
+    "jurisdiction": "HK",
+    "category": "Annual cycle",
+    "name": {
+      "en": "Annual return (registered non-Hong Kong company)",
+      "tc": "周年申報表（註冊非香港公司）",
+      "sc": "周年申报表（注册非香港公司）"
+    },
+    "phrase": {
+      "en": "the annual return",
+      "tc": "周年申報表",
+      "sc": "周年申报表"
+    },
+    "description": "Prepare and file the annual return (NN3) for a registered non-Hong Kong company.",
+    "whenToUse": "A registered non-Hong Kong company's annual return is due, from the anniversary of its registration in Hong Kong.",
+    "startedBy": "firm calendar",
+    "personSelection": "none",
+    "forms": "NN3",
+    "deadline": {
+      "kind": "anniversary",
+      "days": 42,
+      "rule": "Registered non-Hong Kong company: within 42 days after each anniversary of its registration in Hong Kong"
+    },
+    "requirements": [
+      {
+        "key": "changesSince"
+      }
+    ],
+    "steps": [
+      {
+        "kind": "send",
+        "label": "Send invoice and information request",
+        "human": true
+      },
+      {
+        "kind": "pay",
+        "label": "Payment received"
+      },
+      {
+        "kind": "collect",
+        "label": "Collect client confirmation"
+      },
+      {
+        "kind": "generate",
+        "label": "Prepare NN3 in CSA",
+        "human": true,
+        "instructions": "Clerk has no NN3 template yet; prepare the form in CSA."
+      },
+      {
+        "kind": "sign",
+        "label": "Collect signature"
+      },
+      {
+        "kind": "file",
+        "label": "File NN3 and pay the fee",
+        "human": true,
+        "authority": "Companies Registry e-Registry"
+      },
+      {
+        "kind": "register",
+        "label": "Record the annual return",
+        "human": true
+      },
+      {
+        "kind": "confirm",
+        "label": "Confirm to client",
+        "human": true
+      }
+    ],
+    "documents": [],
+    "registerEffects": [
+      {
+        "kind": "record_annual_return"
+      }
+    ],
+    "feeCents": 60000,
+    "statutoryFees": [
+      {
+        "description": "Annual registration fee (delivered within 42 days)",
+        "amountCents": 18000
+      }
+    ],
+    "complianceNotes": [
+      "A registered non-Hong Kong company delivers Form NN3 within 42 days after each anniversary of the date of its registration in Hong Kong, even if nothing has changed.",
+      "The anniversary is of registration in Hong Kong, not of incorporation overseas.",
+      "Late delivery attracts a higher registration fee (the Registry quotes HK$1,200 to HK$4,800) that the Registrar cannot waive."
+    ],
+    "periodKey": "NN3:{year}",
+    "verifyNote": "Statutory rule and fees summarised from Companies Registry guidance (cr.gov.hk, non-Hong Kong company annual return); verify with the firm's company secretary before relying on them. The on-time fee is the paper-filing figure (e-filing may be lower), and the late-fee bands are not yet in this playbook because their boundaries are unconfirmed."
+  },
+  {
     "id": "hk.agm",
     "version": 3,
     "jurisdiction": "HK",

@@ -41,11 +41,11 @@ export async function importCsa(ctx: Ctx, src: CsaSource, o: { backupTakenAt: Da
         fyeMonth: c.fyeMonth, fyeDay: c.fyeDay, regOfficeEn: c.registeredOffice, companyType: c.companyType,
       };
       if (prev) {
-        await db.update(clientT).set({ ...fields, jurisdictionData: { ...prev.jurisdictionData, csa: mark, brNumber: c.brNumber } }).where(eq(clientT.id, prev.id));
+        await db.update(clientT).set({ ...fields, jurisdictionData: { ...prev.jurisdictionData, csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn } }).where(eq(clientT.id, prev.id));
         clientOf.set(c.csaId, prev.id);
       } else {
         const id = ctx.ids.next("cl");
-        await db.insert(clientT).values({ id, firmId: ctx.firmId, ...fields, jurisdictionData: { csa: mark, brNumber: c.brNumber } });
+        await db.insert(clientT).values({ id, firmId: ctx.firmId, ...fields, jurisdictionData: { csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn } });
         clientOf.set(c.csaId, id);
       }
     }

@@ -57,6 +57,16 @@ describe("CSA import", () => {
     expect(k).toMatchObject([{ email: "finance@alpha.example", language: "tc", name: "Ms Chan" }]);
   });
 
+  it("a registered non-Hong Kong company keeps its Hong Kong registration date from CSA, for the NN3 deadline", async () => {
+    const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seedFirm(ctx);
+    const t = tables();
+    t.companies = [...t.companies, { csaId: "C3", code: "N003", nameEn: "Overseas Gamma Inc.", nameZh: null, brNumber: null, companyNumber: "F0001234", incorporatedOn: "1998-05-01", registeredOn: "2015-06-15", fyeMonth: 12, fyeDay: 31, registeredOffice: null, companyType: "non_hk" }];
+    await importCsa(ctx, sourceFor(t), { backupTakenAt: new Date("2026-11-05T02:13:00Z") });
+    const [c] = await ctx.db.select().from(client).where(eq(client.code, "N003"));
+    expect(c.companyType).toBe("non_hk");
+    expect((c.jurisdictionData as { registeredOn?: string }).registeredOn).toBe("2015-06-15");
+  });
+
   it("re-importing updates in place, and a company missing from CSA is flagged, never deleted", async () => {
     const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seedFirm(ctx);
     await importCsa(ctx, sourceFor(tables()), { backupTakenAt: new Date("2026-11-05T02:13:00Z") });

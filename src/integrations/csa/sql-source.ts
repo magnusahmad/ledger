@@ -9,9 +9,10 @@ const str = z.preprocess((v) => (typeof v === "number" ? String(v) : typeof v ==
 const optStr = z.preprocess((v) => (v === undefined || v === "" ? null : typeof v === "string" ? v.trim() || null : typeof v === "number" ? String(v) : v), z.string().nullable());
 const num = z.preprocess((v) => (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v)) ? Number(v) : v), z.number());
 
+/** registeredOn: Hong Kong registration date of a registered non-Hong Kong company (its NN3 anniversary). */
 export const CsaCompanyZ = z.object({
   csaId: str, code: optStr, nameEn: str, nameZh: optStr, brNumber: optStr, companyNumber: optStr,
-  incorporatedOn: optDay, fyeMonth: num.nullable().default(null), fyeDay: num.nullable().default(null),
+  incorporatedOn: optDay, registeredOn: optDay, fyeMonth: num.nullable().default(null), fyeDay: num.nullable().default(null),
   registeredOffice: optStr, companyType: z.enum(["private", "public", "guarantee", "non_hk"]).default("private"),
 });
 export const CsaOfficerZ = z.object({
