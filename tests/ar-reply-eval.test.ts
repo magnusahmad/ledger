@@ -78,6 +78,11 @@ describe("the frozen set", () => {
     expect(has((c) => !!c.attachments?.some((a) => a.kind === "unreadable"))).toBe(true);
   });
 
+  it("an address change for someone who is both director and member is expected once per register", () => {
+    const c = AR_REPLY_CASES.find((x) => x.id === "en-director-address")!;
+    expect(c.expect.changes.map((x) => x.types.join()).sort()).toEqual(["member_particulars", "officer_particulars"]);
+  });
+
   it("every case names only fictional example addresses", () => {
     for (const c of AR_REPLY_CASES) expect(c.from).toMatch(/\.example$/);
   });

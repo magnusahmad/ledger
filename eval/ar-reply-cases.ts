@@ -3,7 +3,9 @@
 // before the first live run. Modelled on the kinds of reply a company secretarial firm gets; no real
 // client, person or document. Run with scripts/eval-ar-replies.ts after every prompt or model
 // change. Add cases (from recorded defects, rewritten as fiction); never edit an expectation to fit
-// a model's answer. Not covered yet: image-only scans, which need a rendered fixture.
+// a model's answer. Rule set by the owner on 19 November, after the first run: when someone who is both
+// an officer and a member changes name or address, that is two changes, one for each register (four
+// cases updated; a passport number is an officer's detail only). Not covered yet: image-only scans, which need a rendered fixture.
 import type { Expected } from "./ar-reply-score";
 
 export type CaseAttachment =
@@ -60,7 +62,7 @@ export const AR_REPLY_CASES: ReplyCase[] = [
     expect: { ...none, charges: "not_answered", changes: [{ types: ["registered_office"], subject: "sample", effectiveDate: "2026-11-01" }] } },
   { id: "en-director-address", lang: "en", note: "A director's home address changed, no date given.", ...from,
     text: "Hi Ruby,\n\nNo mortgages or charges. One correction: Mr Chan has moved house. His address is now Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.\n\nMs Chan",
-    expect: { ...none, changes: [{ types: ["officer_particulars", "member_particulars"], subject: "chan", effectiveDate: null }] } },
+    expect: { ...none, changes: [{ types: ["officer_particulars"], subject: "chan", effectiveDate: null }, { types: ["member_particulars"], subject: "chan", effectiveDate: null }] } },
   { id: "en-share-transfer", lang: "en", note: "Shares transferred between the two members.", ...from,
     text: "Dear Ruby,\n\nNo charges. Mr Lee transferred 20 of his shares to Mr Chan on 5 October 2026, so Mr Chan now holds 80 and Mr Lee 20. The instrument of transfer was stamped last month.\n\nMs Chan",
     expect: { ...none, changes: [{ types: ["shares_transferred"], subject: "lee|chan", effectiveDate: "2026-10-05" }] } },
@@ -87,14 +89,14 @@ export const AR_REPLY_CASES: ReplyCase[] = [
     earlier: [{ direction: "in", text: "Dear Ruby,\n\nNo mortgages or charges. I will come back to you on whether anything else changed.\n\nMs Chan" }],
     text: "Dear Ruby,\n\nFurther to my email yesterday: Mr Lee renewed his passport in September, so his passport number has changed. Copy of the new passport attached.\n\nMs Chan",
     attachments: [{ filename: "lee-passport.pdf", kind: "pdf", lines: ["PASSPORT (fictional specimen)", "Surname: LEE   Given names: SIU MING", "Passport No: X0000000", "Date of issue: 12 SEP 2026"] }],
-    expect: { ...none, charges: "not_answered", changes: [{ types: ["officer_particulars", "member_particulars"], subject: "lee" }], documents: ["id_document"] } },
+    expect: { ...none, charges: "not_answered", changes: [{ types: ["officer_particulars"], subject: "lee" }], documents: ["id_document"] } },
   { id: "en-name-change", lang: "en", note: "Company name changed.", ...from,
     text: "Dear Ruby,\n\nNo charges. The company changed its name to Alpha Global Trading Limited on 3 November 2026. Has the return been prepared in the new name?\n\nMs Chan",
     expect: { ...none, changes: [{ types: ["company_name"], subject: "alpha global", effectiveDate: "2026-11-03" }] } },
   { id: "en-unsigned-draft-back", lang: "en", note: "The draft sent back with a correction is not a signed paper.", ...from,
     text: "Hi Ruby,\n\nI'm returning the draft because Mr Lee's residential address on page 4 is out of date. He now lives at Flat 9, 9/F, Harbour Mansion, 9 Harbour Street, Kowloon. Please amend and resend for signing.\n\nMs Chan",
     attachments: [{ filename: "AR-draft.pdf", kind: "pdf", lines: ["FORM NAR1  ANNUAL RETURN (DRAFT)", "Alpha Trading Limited", "Signed: ____________________  Director", "Date: ____________________"] }],
-    expect: { ...none, charges: "not_answered", changes: [{ types: ["officer_particulars", "member_particulars"], subject: "lee" }] } },
+    expect: { ...none, charges: "not_answered", changes: [{ types: ["officer_particulars"], subject: "lee" }, { types: ["member_particulars"], subject: "lee" }] } },
   { id: "en-allotment", lang: "en", note: "New shares issued.", ...from,
     text: "Dear Ruby,\n\nThe company has no charges. We issued 100 new ordinary shares to Mr Chan on 12 October 2026 at HK$1 each, so the issued share capital is now 200 shares.\n\nMs Chan",
     expect: { ...none, changes: [{ types: ["shares_allotted"], subject: "chan|100|shares", effectiveDate: "2026-10-12" }] } },
@@ -128,7 +130,7 @@ export const AR_REPLY_CASES: ReplyCase[] = [
     text: "Ruby 你好，\n\n周年申報表已由陳先生簽署，正本今天已寄出。公司沒有按揭或押記。\n\n陳小姐", expect: none },
   { id: "tc-director-address", lang: "tc", note: "董事住址變更。", from: "finance@alpha.example", fromName: "陳小姐",
     text: "Ruby 你好，\n\n公司沒有押記。陳大文先生上月搬家，新住址為香港花園道5號花園閣5樓5室，請更新。\n\n陳小姐",
-    expect: { ...none, changes: [{ types: ["officer_particulars", "member_particulars"], subject: "chan|陳大文", effectiveDate: null }] } },
+    expect: { ...none, changes: [{ types: ["officer_particulars"], subject: "chan|陳大文", effectiveDate: null }, { types: ["member_particulars"], subject: "chan|陳大文", effectiveDate: null }] } },
   { id: "tc-share-transfer", lang: "tc", note: "股份轉讓。", from: "finance@alpha.example", fromName: "陳小姐",
     text: "Ruby 你好，\n\n李小明先生已於2026年10月5日將其20股普通股轉讓予陳大文先生。公司並無按揭或押記。\n\n陳小姐",
     expect: { ...none, changes: [{ types: ["shares_transferred"], subject: "lee|chan|李小明|陳大文", effectiveDate: "2026-10-05" }] } },
@@ -160,5 +162,5 @@ export const AR_REPLY_CASES: ReplyCase[] = [
     expect: { about: "other", charges: "not_answered", changes: [], signedPapers: [] } },
   { id: "sc-member-address", lang: "sc", note: "股东地址变更。", from: "admin@alpha.example", fromName: "李先生",
     text: "Ruby 你好，\n\n公司没有押记。股东李小明的地址已更改为九龙海港街9号海港大厦9楼9室。\n\n李",
-    expect: { ...none, changes: [{ types: ["member_particulars", "officer_particulars"], subject: "lee|李小明", effectiveDate: null }] } },
+    expect: { ...none, changes: [{ types: ["officer_particulars"], subject: "lee|李小明", effectiveDate: null }, { types: ["member_particulars"], subject: "lee|李小明", effectiveDate: null }] } },
 ];

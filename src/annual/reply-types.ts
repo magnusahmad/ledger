@@ -4,7 +4,7 @@
 import { z } from "zod";
 
 /** Bump whenever the prompt or schema changes; stored with every reading and every defect. */
-export const PROMPT_VERSION = "ar-reply-1";
+export const PROMPT_VERSION = "ar-reply-2";
 export const REPLY_TASK = "ar_reply";
 
 export const CHANGE_TYPES = [
