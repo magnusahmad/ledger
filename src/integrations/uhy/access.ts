@@ -3,18 +3,23 @@
 // the database and Access's lock on it are untouched. describeAccess lists tables, columns, types
 // and row counts for the first look; readAccessClients maps one table by column name once that
 // mapping is known. The .laccdb/.ldb lock file is never opened as a database.
-import { readFile } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
+import path from "node:path";
 import MDBReader from "mdb-reader";
 
 export type AccessTable = { columns: { name: string; type: string }[]; rowCount: number; rows(): Record<string, unknown>[] };
 export interface AccessDb { tableNames(): string[]; table(name: string): AccessTable }
 
-export async function openAccess(file: string): Promise<AccessDb> {
+function refuseLockFile(file: string) {
   const lock = /\.(laccdb|ldb)$/i.exec(file);
   if (lock) {
     const db = file.slice(0, -lock[0].length) + (lock[1].toLowerCase() === "laccdb" ? ".accdb" : ".mdb");
     throw new Error(`${file} is Access's lock file, not the database. Use ${db.split(/[\\/]/).pop()} beside it.`);
   }
+}
+
+export async function openAccess(file: string): Promise<AccessDb> {
+  refuseLockFile(file);
   const reader = new MDBReader(await readFile(file));
   return {
     tableNames: () => reader.getTableNames(),
@@ -23,6 +28,37 @@ export async function openAccess(file: string): Promise<AccessDb> {
       return { columns: t.getColumns().map((c) => ({ name: c.name, type: String(c.type) })), rowCount: t.rowCount, rows: () => t.getData() as Record<string, unknown>[] };
     },
   };
+}
+
+// UHY's database sits on a QNAP SmartShare link reachable only in a browser, so someone downloads it
+// once a week into a folder on the pilot machine (decision 63). Given that folder, the newest .accdb
+// or .mdb is used; given a file, that file. The copy's age comes from the file's modified time and is
+// shown with every result; past maxAgeDays staff are warned, but the copy is still read.
+export type AccessCopy = { file: string; copiedAt: Date; ageDays: number; warning: string | null };
+const DAY = 86_400_000;
+
+export async function findAccessCopy(source: string, opts: { now: Date; maxAgeDays?: number }): Promise<AccessCopy> {
+  const maxAgeDays = opts.maxAgeDays ?? 10;
+  let file = source;
+  let copiedAt: Date;
+  const s = await stat(source);
+  if (s.isDirectory()) {
+    const found: { file: string; mtime: Date }[] = [];
+    for (const name of await readdir(source)) {
+      if (!/\.(accdb|mdb)$/i.test(name)) continue;
+      const st = await stat(path.join(source, name));
+      if (st.isFile()) found.push({ file: path.join(source, name), mtime: st.mtime });
+    }
+    if (!found.length) throw new Error(`No Access copy has been downloaded to ${source} yet (looking for .accdb or .mdb files).`);
+    found.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+    ({ file, mtime: copiedAt } = found[0]);
+  } else {
+    refuseLockFile(source);
+    copiedAt = s.mtime;
+  }
+  const ageDays = Math.max(0, Math.floor((opts.now.getTime() - copiedAt.getTime()) / DAY));
+  const warning = ageDays > maxAgeDays ? `The Access copy (${path.basename(file)}) is ${ageDays} days old. Download this week's copy from the SmartShare link into the same folder.` : null;
+  return { file, copiedAt, ageDays, warning };
 }
 
 export function describeAccess(db: AccessDb) {

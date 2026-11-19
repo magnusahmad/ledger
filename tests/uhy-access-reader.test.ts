@@ -3,10 +3,10 @@
 // column name. No .accdb fixture can be written on this machine, so table access goes through a
 // small interface; the mdb-reader adapter itself is verified on the pilot machine.
 import { describe, it, expect } from "vitest";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, writeFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describeAccess, readAccessClients, openAccess, type AccessDb } from "@/integrations/uhy/access";
+import { describeAccess, readAccessClients, openAccess, findAccessCopy, type AccessDb } from "@/integrations/uhy/access";
 
 function fakeDb(tables: Record<string, { columns: { name: string; type: string }[]; rows: Record<string, unknown>[] }>): AccessDb {
   return {
@@ -74,5 +74,62 @@ describe("opening the database", () => {
     const f = path.join(dir, "Clients.accdb");
     await writeFile(f, "not a database");
     await expect(openAccess(f)).rejects.toThrow();
+  });
+});
+
+// UHY keeps the Access database on a QNAP SmartShare link that staff can only reach through a browser.
+// Someone downloads it once a week into a folder on the pilot machine; the reader takes the newest
+// copy there and says how old it is, so a missed week is visible instead of silently stale.
+describe("weekly Access downloads", () => {
+  const now = new Date("2026-11-19T09:00:00Z");
+  const daysAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
+  async function folder(files: Record<string, number>) {
+    const dir = await mkdtemp(path.join(tmpdir(), "uhy-access-"));
+    for (const [name, age] of Object.entries(files)) { const f = path.join(dir, name); await writeFile(f, "x"); await utimes(f, daysAgo(age), daysAgo(age)); }
+    return dir;
+  }
+
+  it("a folder of weekly downloads uses the newest Access copy", async () => {
+    const dir = await folder({ "Clients (1).accdb": 15, "Clients (2).accdb": 8, "Clients.accdb": 1 });
+    const s = await findAccessCopy(dir, { now });
+    expect(path.basename(s.file)).toBe("Clients.accdb");
+  });
+
+  it("lock files and other files in the folder are never picked as the database", async () => {
+    const dir = await folder({ "Clients.accdb": 6, "Clients.laccdb": 0, "notes.xlsx": 0, "Old.mdb": 9 });
+    expect(path.basename((await findAccessCopy(dir, { now })).file)).toBe("Clients.accdb");
+  });
+
+  it("an empty folder says no Access copy has been downloaded yet", async () => {
+    const dir = await folder({ "readme.txt": 0 });
+    await expect(findAccessCopy(dir, { now })).rejects.toThrow(/No Access copy .*downloaded/);
+  });
+
+  it("a copy within 10 days carries its age and no warning", async () => {
+    const s = await findAccessCopy(await folder({ "Clients.accdb": 6 }), { now });
+    expect(s).toMatchObject({ ageDays: 6, warning: null });
+    expect(s.copiedAt.toISOString()).toBe(daysAgo(6).toISOString());
+  });
+
+  it("a copy older than 10 days warns staff and names its age, but is still read", async () => {
+    const s = await findAccessCopy(await folder({ "Clients.accdb": 12 }), { now });
+    expect(s.ageDays).toBe(12);
+    expect(s.warning).toMatch(/12 days old/);
+  });
+
+  it("the warning threshold can be changed for the installation", async () => {
+    const s = await findAccessCopy(await folder({ "Clients.accdb": 6 }), { now, maxAgeDays: 5 });
+    expect(s.warning).toMatch(/6 days old/);
+  });
+
+  it("a single file path still works and reports its age", async () => {
+    const dir = await folder({ "Clients.accdb": 3 });
+    const s = await findAccessCopy(path.join(dir, "Clients.accdb"), { now });
+    expect(s).toMatchObject({ ageDays: 3, warning: null });
+  });
+
+  it("a lock file given directly is refused, naming the database beside it", async () => {
+    const dir = await folder({ "Clients.accdb": 3, "Clients.laccdb": 0 });
+    await expect(findAccessCopy(path.join(dir, "Clients.laccdb"), { now })).rejects.toThrow(/Clients\.accdb/);
   });
 });
