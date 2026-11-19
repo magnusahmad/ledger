@@ -32,6 +32,6 @@ export function cycleDeps(c: Config): CycleDeps {
     restoreStatusFile: c.CSA_RESTORE_STATUS_FILE ?? null,
     openCsa: c.CSA_SQL_CONNECTION && mapping ? async () => { const q = await mssqlQuery(c.CSA_SQL_CONNECTION!); return { source: new SqlCsaSource(q.query, mapping), close: q.close }; } : null,
     mail: graphFromConfig(c), sync: { mailboxes: list(c.PILOT_MAILBOXES), firmDomains: list(c.FIRM_EMAIL_DOMAINS), lookbackDays: c.MAIL_LOOKBACK_DAYS },
-    statusDir: c.STATUS_DIR ?? null, withinDays: c.ANNUAL_WINDOW_DAYS,
+    statusDir: c.STATUS_DIR ?? null, withinDays: c.ANNUAL_WINDOW_DAYS, readReplies: c.AR_REPLY_READER === "1",
   };
 }

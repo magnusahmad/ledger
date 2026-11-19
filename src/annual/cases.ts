@@ -2,9 +2,9 @@
 // records the person who did it. Creating a draft is not sending: a case reaches "sent" only when
 // the sent email is seen in the mailbox or staff record it. "Registered" writes the filing, so the
 // deadline engine treats the period as done.
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
-import { AR_STAGES, arCase, arCaseEvent, client as clientT, filing, type ArStage } from "@/db/schema";
+import { AR_STAGES, arCase, arCaseEvent, arReply, arReplyItem, client as clientT, filing, type ArStage } from "@/db/schema";
 import { upcomingDeadlines } from "@/domain/deadlines";
 import { addDays } from "@/domain/dates";
 import { allPlaybookFiles, getPlaybook } from "@/domain/playbooks";
@@ -130,9 +130,25 @@ export async function markSignedReceived(ctx: Ctx, id: string, o: { via?: "scan"
   await step(ctx, id, "signed_received", { stage: "signed_received" }, { via: o.via ?? "staff" });
 }
 
+/** Client replies not yet reviewed, and accepted changes not yet settled, per case (src/annual/reply-review.ts). */
+export async function replyHolds(ctx: Ctx, caseIds?: string[]) {
+  const out = new Map<string, { repliesToReview: number; openChanges: number }>();
+  const at = (id: string) => out.get(id) ?? out.set(id, { repliesToReview: 0, openChanges: 0 }).get(id)!;
+  const scope = <T extends typeof arReply | typeof arReplyItem>(t: T) => (caseIds ? and(eq(t.firmId, ctx.firmId), inArray(t.caseId, caseIds)) : eq(t.firmId, ctx.firmId));
+  if (caseIds && !caseIds.length) return out;
+  for (const r of await ctx.db.select({ caseId: arReply.caseId }).from(arReply).where(and(scope(arReply), isNull(arReply.reviewedAt)))) at(r.caseId).repliesToReview++;
+  for (const i of await ctx.db.select({ caseId: arReplyItem.caseId }).from(arReplyItem)
+    .where(and(scope(arReplyItem), eq(arReplyItem.kind, "change"), inArray(arReplyItem.status, ["accepted", "edited", "added"]), isNull(arReplyItem.resolution)))) at(i.caseId).openChanges++;
+  return out;
+}
+
 export async function markFiled(ctx: Ctx, id: string, o: { filedOn: string }) {
   const c = await load(ctx, id);
   need(c, "signed_received", "File after the signed papers are back");
+  // A reply nobody has reviewed, or a reported change nobody has settled, could make this return wrong.
+  const hold = (await replyHolds(ctx, [id])).get(id);
+  if (hold?.repliesToReview) throw new Error("Review the client's reply before recording the filing");
+  if (hold?.openChanges) throw new Error("Settle the change the client reported before recording the filing");
   await step(ctx, id, "filed", { stage: "filed", filedOn: o.filedOn }, o);
 }
 

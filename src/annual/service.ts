@@ -30,7 +30,9 @@ async function loadCase(ctx: Ctx, id: string) {
   return { c, cl };
 }
 
-export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o: { returnBy?: string } = {}): Promise<{ ok: true; filedPath: string | null } | { ok: false; reason: string }> {
+/** Fills the NAR1 from the latest records copy, files it to the client folder and stores it. Changes no case. */
+export async function buildAnnualReturn(ctx: Ctx, deps: AnnualDeps, caseId: string, o: { returnBy?: string; charges?: string } = {}):
+  Promise<{ ok: true; filedPath: string | null; documentId: string; returnBy: string } | { ok: false; reason: string }> {
   const { c, cl } = await loadCase(ctx, caseId);
   if (c.kind !== "AR") return { ok: false, reason: "AGM papers are prepared by staff for now; mark them prepared when ready." };
   if (!cl.incorporatedOn) return { ok: false, reason: "The company has no incorporation date in CSA." };
@@ -42,7 +44,7 @@ export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o:
   const f = (await ctx.db.query.firm.findFirst({ where: eq(firmT.id, ctx.firmId) }))!;
   const me = await ctx.db.query.appUser.findFirst({ where: and(eq(appUser.id, ctx.userId), eq(appUser.firmId, ctx.firmId)) });
   const r = await nar1InputFromCsa(ctx, cl.id, {
-    madeUpTo: dates.madeUpDate, signDate: "", email: f.email ?? "",
+    madeUpTo: dates.madeUpDate, signDate: "", email: f.email ?? "", charges: o.charges,
     presentor: { name: f.legalName, address: f.address ?? "", tel: f.phone ?? "", email: f.email ?? "", reference: `${me?.initials ?? ""}, ${cl.code ?? ""}, Due Date:${ddmmyyyy(dates.deadline)}` },
   });
   if (!r.ok) return r;
@@ -51,10 +53,16 @@ export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o:
     ? await filePaper({ root: deps.filingRoot, rules: deps.filingRules, client: { code: cl.code, name: cl.nameEn }, kind: "annualReturn", madeUpDate: dates.madeUpDate, year: c.periodYear, content: pdf })
     : null;
   const name = filedPath ? path.basename(filedPath) : `${cl.code ?? cl.id}-Annual Return-${compactDate(dates.madeUpDate)}.pdf`;
-  const key = `annual/${c.id}/${name}`;
-  await ctx.storage.put(key, pdf);
-  await markPrepared(ctx, c.id, { formSource: "generated", documentId: key, returnBy });
-  return { ok: true, filedPath };
+  const documentId = `annual/${c.id}/${name}`;
+  await ctx.storage.put(documentId, pdf);
+  return { ok: true, filedPath, documentId, returnBy };
+}
+
+export async function prepareCase(ctx: Ctx, deps: AnnualDeps, caseId: string, o: { returnBy?: string } = {}): Promise<{ ok: true; filedPath: string | null } | { ok: false; reason: string }> {
+  const r = await buildAnnualReturn(ctx, deps, caseId, o);
+  if (!r.ok) return r;
+  await markPrepared(ctx, caseId, { formSource: "generated", documentId: r.documentId, returnBy: r.returnBy });
+  return { ok: true, filedPath: r.filedPath };
 }
 
 export async function draftDispatch(ctx: Ctx, deps: AnnualDeps, caseId: string, o: { returnBy?: string; includeAgm?: boolean; cddItems?: { person: string; items: string[] }[] }) {

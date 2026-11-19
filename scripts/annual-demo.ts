@@ -13,6 +13,12 @@ import { importCsa } from "@/integrations/csa/import";
 import { SqlCsaSource } from "@/integrations/csa/sql-source";
 import { syncCases, listCases, recordRegistryCheck, markPrepared, confirmPayment } from "@/annual/cases";
 import { kvSet } from "@/domain/kv";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import { arMail } from "@/db/schema";
+import { startAtStage } from "@/annual/cases";
+import { ScriptedLlm } from "@/integrations/llm/scripted";
+import { readPendingReplies } from "@/annual/reply-reader";
+import * as review from "@/annual/reply-review";
 
 const url = process.env.DATABASE_URL!;
 if (!/annual_demo/.test(url)) throw new Error("Refusing: DATABASE_URL must name an annual_demo database");
@@ -58,6 +64,45 @@ const byCode = (code: string) => cs.find((c) => c.clientCode === code)!;
 await recordRegistryCheck(ruby, byCode("F1002").id, { result: "no_changes" });
 await markPrepared(ruby, byCode("F1002").id, { formSource: "csa" });
 await confirmPayment(ruby, byCode("F1002").id);
+
+// Two client replies, read with a scripted model answer (no live model in the demo): one waiting for
+// review with an attachment the model wasn't given, one already reviewed with a change to settle.
+const pdf = await PDFDocument.create();
+pdf.addPage().drawText("Fictional signed annual return (demo)", { x: 50, y: 760, size: 14, font: await pdf.embedFont(StandardFonts.Helvetica) });
+const signed = Buffer.from(await pdf.save());
+async function inbound(caseId: string, o: { id: string; from: string; fromName: string; subject: string; text: string; attachments?: { filename: string; mime: string; content: Buffer }[] }) {
+  const attachments = [];
+  for (const [i, a] of (o.attachments ?? []).entries()) { const storageKey = `annual-mail/${o.id}/${i}-${a.filename}`; await ctx.storage.put(storageKey, a.content); attachments.push({ filename: a.filename, mime: a.mime, storageKey, bytes: a.content.length }); }
+  await ctx.db.insert(arMail).values({ id: o.id, firmId: ctx.firmId, caseId, status: "linked", via: "thread", mailbox: "ruby@firm.example", graphId: o.id, folder: "inbox", direction: "in", conversationId: `cv-${o.id}`, internetMessageId: `<${o.id}@demo>`, fromAddr: o.from, fromName: o.fromName, toAddrs: ["ruby@firm.example"], subject: o.subject, text: o.text, attachments, receivedAt: new Date(Date.now() - 2 * 3600_000) });
+}
+await startAtStage(ruby, byCode("F1003").id, "sent");
+await inbound(byCode("F1003").id, {
+  id: "arm_demo1", from: "admin@kblogistics.example", fromName: "李先生", subject: "回复：九龍灣物流控股有限公司 - 周年申报表",
+  text: "Ruby 你好，\n\n周年申报表已签署，扫描件见附件，正本今天寄出。\n\n公司没有任何按揭或押记。\n\n另外，公司注册办事处已于10月15日迁至香港测试大道8号测试广场12楼1203室，新地址证明见附件。\n\n谢谢。\n李",
+  attachments: [{ filename: "signed-annual-return.pdf", mime: "application/pdf", content: signed }, { filename: "新地址证明.docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", content: Buffer.from("PK demo") }],
+});
+await startAtStage(ruby, byCode("F1001").id, "sent");
+await inbound(byCode("F1001").id, { id: "arm_demo2", from: "finance@harbourview.example", fromName: "陳小姐", subject: "RE: Harbour View Trading Limited - Annual Return", text: "Dear Ruby,\n\nNo mortgages or charges.\n\nPlease note Mr Chan moved last month. His new address is Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.\n\nRegards,\nMs Chan" });
+const scripted = new ScriptedLlm()
+  .on("ar_reply", (req: { messages: { content: unknown }[] }) => JSON.stringify(req.messages).includes("kblogistics") ? {
+    about: "this_return", summary: "Signed return attached, no charges, and the registered office moved on 15 October.",
+    charges: { answer: "none", details: null, quote: "公司没有任何按揭或押记。" },
+    changes: [{ changeType: "registered_office", subject: null, detail: "Registered office moved to Room 1203, 12/F, Test Plaza, 8 Test Avenue, Hong Kong.", effectiveDate: `${today.slice(0, 4)}-10-15`, quote: "公司注册办事处已于10月15日迁至香港测试大道8号测试广场12楼1203室", source: "email" }],
+    signedPapers: [{ document: "annual_return", filename: "signed-annual-return.pdf", quote: "周年申报表已签署，扫描件见附件" }], documents: [],
+  } : {
+    about: "this_return", summary: "No charges; a director's address changed.",
+    charges: { answer: "none", details: null, quote: "No mortgages or charges." },
+    changes: [{ changeType: "officer_particulars", subject: "CHAN Tai Man", detail: "New residential address: Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.", effectiveDate: null, quote: "His new address is Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.", source: "email" }],
+    signedPapers: [], documents: [],
+  });
+await readPendingReplies({ ...ctx, llm: scripted });
+const done = await review.repliesToReview(ruby, byCode("F1001").id);
+const full = await review.replyForReview(ruby, done[0].reply.id);
+await review.openSource(ruby, full.reply.id);
+await review.answerCharges(ruby, full.items.find((i) => i.kind === "charges")!.id, { answer: "none" });
+await review.decideItem(ruby, full.items.find((i) => i.kind === "change")!.id, { action: "accept" });
+await review.finishReview(ruby, full.reply.id);
+
 await kvSet(ctx, "annual.health", { lastCycleAt: new Date().toISOString(), csaBackupTakenAt: backup.toISOString(), csaImportedAt: new Date().toISOString(), lastMailSyncAt: new Date().toISOString(), lastStatusWriteAt: null, errors: {} });
 console.log(`Seeded ${cs.length} annual-return cases. Sign in as ruby@firm.example / demo password 123`);
 await closePools();

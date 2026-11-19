@@ -34,6 +34,21 @@
 .an-ev:last-child { border-bottom: 0; }
 .an-mail { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .an-mail pre { white-space: pre-wrap; font: inherit; font-size: 14px; margin: 8px 0 0; color: var(--ink2); }
+.an-source { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 14.5px; margin: 0; padding: 14px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); max-height: 420px; overflow: auto; }
+.an-files { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.an-files li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; overflow-wrap: anywhere; }
+.an-flag { display: inline-block; font-size: 12.5px; color: var(--amber); background: var(--amber-bg); border-radius: 5px; padding: 1px 7px; }
+.an-quote { margin: 0 0 16px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line2); color: var(--ink2); font-size: 14.5px; overflow-wrap: anywhere; }
+.an-quote .an-flag { display: table; margin-top: 6px; }
+.an-done { margin: 0 !important; font-size: 14px !important; color: var(--muted) !important; }
+.an-inner { margin-top: 16px; padding-top: 12px; }
+.an-finish { margin-top: 28px; }
+.an-change { padding: 12px 0; border-top: 1px solid var(--line); display: grid; gap: 3px; }
+.an-change b { font-weight: 500; overflow-wrap: anywhere; }
+.an-change .an-inner { margin-top: 8px; border-top: 0; padding-top: 0; }
+.an-stack { display: grid; gap: 10px; justify-items: start; }
+.an-stack form { flex-wrap: wrap; }
+.an-stack .btn { flex: none; }
 .an-login { max-width: 360px; margin: 12vh auto 0; padding: 0 16px; }
 .an-login .an-field input { max-width: none; }
 @media (max-width: 720px) {

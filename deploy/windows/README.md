@@ -30,7 +30,7 @@ In PowerShell as administrator, from `deploy\windows`:
 . .\secrets.ps1
 Set-ClerkSecret -Name DATABASE_URL          # postgres://clerk:<password>@localhost/clerk_uhy
 Set-ClerkSecret -Name APP_SECRET            # 48+ random characters
-Set-ClerkSecret -Name or_api_key            # the UHY OpenRouter key with a spend limit
+Set-ClerkSecret -Name or_api_key            # the UHY OpenRouter key with a spend limit (only when AR_REPLY_READER=1)
 Set-ClerkSecret -Name CSA_READER_PASSWORD   # a new strong password for the read-only SQL login
 Set-ClerkSecret -Name CSA_SQL_CONNECTION    # Server=localhost\SQLEXPRESS;Database=CSA_Copy;User Id=clerk_reader;Password=<same>;Encrypt=true;TrustServerCertificate=true
 ```

@@ -76,11 +76,24 @@ describe("production guard", () => {
   });
 
   it("a production installation refuses fixture AI, demo tools, the default secret or no sign-in", () => {
-    const p = productionProblems(loadConfig({ ...base, LLM_MODE: "fixture", DEMO_TOOLS: "1", APP_SECRET: undefined, AUTH: "0" }));
+    const p = productionProblems(loadConfig({ ...base, AR_REPLY_READER: "1", LLM_MODE: "fixture", DEMO_TOOLS: "1", APP_SECRET: undefined, AUTH: "0" }));
     expect(p.join(" ")).toMatch(/AI/);
     expect(p.join(" ")).toMatch(/demo/i);
     expect(p.join(" ")).toMatch(/secret/i);
     expect(p.join(" ")).toMatch(/sign-in/i);
+  });
+
+  it("an annual-only installation with the reply reader off starts without an AI key, because nothing in it calls the model", () => {
+    expect(productionProblems(loadConfig({ ...base, or_api_key: undefined, LLM_MODE: undefined, AR_REPLY_READER: "0" }))).toEqual([]);
+  });
+
+  it("with the reply reader on, an annual-only installation refuses to start without live AI", () => {
+    expect(productionProblems(loadConfig({ ...base, or_api_key: undefined, LLM_MODE: undefined, AR_REPLY_READER: "1" })).join(" ")).toMatch(/AI/);
+    expect(productionProblems(loadConfig({ ...base, AR_REPLY_READER: "1" }))).toEqual([]);
+  });
+
+  it("an installation with a module that uses the model still needs live AI whatever the reply reader setting", () => {
+    expect(productionProblems(loadConfig({ ...base, MODULES: "annual,mailroom", or_api_key: undefined, LLM_MODE: undefined, AR_REPLY_READER: "0" })).join(" ")).toMatch(/AI/);
   });
 
   it("production turns sign-in on by default", () => {

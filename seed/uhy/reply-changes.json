@@ -1,0 +1,15 @@
+{
+  "_note": "Kinds of change a client may report when replying about the annual return, with the label staff see and the playbook for the separate filing or internal step each one usually needs. The form name shown to staff is read from that playbook, never written here. Which changes need their own filing is a statutory matter: verify with the firm's company secretary before relying on it.",
+  "changes": {
+    "director_appointed": { "label": "New director", "playbookId": "hk.appointDirector" },
+    "director_ceased": { "label": "Director left", "playbookId": "hk.resignDirector" },
+    "secretary_changed": { "label": "Change of company secretary", "playbookId": "hk.changeSecretary" },
+    "officer_particulars": { "label": "Change in a director's or secretary's details", "playbookId": "hk.changeParticulars" },
+    "registered_office": { "label": "New registered office", "playbookId": "hk.changeOffice" },
+    "company_name": { "label": "Change of company name", "playbookId": "hk.changeName" },
+    "shares_allotted": { "label": "New shares issued", "playbookId": "hk.allotShares" },
+    "shares_transferred": { "label": "Shares transferred", "playbookId": "hk.transferShares" },
+    "member_particulars": { "label": "Change in a member's details", "playbookId": null },
+    "other": { "label": "Other change", "playbookId": null }
+  }
+}

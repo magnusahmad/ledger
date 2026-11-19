@@ -60,3 +60,15 @@ export async function dispatchFactsFromCsa(ctx: Ctx, clientId: string) {
   const holders = new Map(s.members.map((m) => [m.nameEn.toLowerCase(), m.kind]));
   return { signer: directors[0]?.nameEn ?? null, directors: directors.length, members: holders.size, corporateMembers: [...holders.values()].filter((k) => k === "corporate").length, backupTakenAt: s.backupTakenAt };
 }
+
+/** Current particulars for reading a client's reply: names, roles, holdings and the registered office.
+ *  ID numbers and home addresses are left out; the model doesn't need them to spot a change. */
+export async function particularsFromCsa(ctx: Ctx, clientId: string) {
+  const s = await snapshot(ctx, clientId);
+  if (!s) return null;
+  return {
+    registeredOffice: s.company.registeredOffice, backupTakenAt: s.backupTakenAt,
+    officers: s.officers.map((o) => ({ role: o.role, name: o.nameEn, nameZh: o.nameZh })),
+    members: s.members.map((m) => ({ name: m.nameEn, nameZh: m.nameZh, className: m.className, shares: m.shares })),
+  };
+}

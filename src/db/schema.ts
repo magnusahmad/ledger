@@ -782,6 +782,8 @@ export const arCase = pgTable("ar_case", {
   sentAt: timestamp("sent_at", { withTimezone: true }),
   combinedWithCaseId: text("combined_with_case_id"),
   cddOutstanding: boolean("cdd_outstanding").notNull().default(false),
+  /** The client's Part 9 answer, entered by staff from a reply (src/annual/reply-review.ts). */
+  chargesAnswer: jsonb("charges_answer").$type<{ answer: "none" | "has_charges"; details: string | null; itemId: string; by: string; at: string }>(),
   filedOn: date("filed_on"), registeredOn: date("registered_on"),
   createdAt: createdAt(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("ar_case_period_uq").on(t.firmId, t.clientId, t.periodKey)]);
@@ -825,6 +827,57 @@ export const arMailScan = pgTable("ar_mail_scan", {
   scanned: integer("scanned").notNull().default(0), linked: integer("linked").notNull().default(0), ask: integer("ask").notNull().default(0),
   skipped: jsonb("skipped").$type<Record<string, number>>().notNull().default({}),
 }, (t) => [uniqueIndex("ar_mail_scan_uq").on(t.firmId, t.day, t.mailbox)]);
+
+// ---------- Client replies read by the model (UHY pilot, DECISIONS.md #56 and #64) ----------
+export type ReplyItemKind = "charges" | "change" | "signed_papers" | "document";
+export type ReplyItemStatus = "proposed" | "accepted" | "edited" | "rejected" | "added";
+
+/** One reading of one inbound email on a case. A failed reading is kept and never means "nothing found". */
+export const arReply = pgTable("ar_reply", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  mailId: text("mail_id").notNull(), caseId: text("case_id").notNull(),
+  status: text("status").$type<"read" | "failed">().notNull(),
+  about: text("about").$type<"this_return" | "other">(),
+  summary: text("summary"),
+  /** Every attachment, and whether the model was given it. */
+  attachments: jsonb("attachments").$type<{ filename: string; read: boolean; reason?: string }[]>().notNull().default([]),
+  model: text("model"), promptVersion: text("prompt_version").notNull(),
+  attempts: integer("attempts").notNull().default(1), error: text("error"),
+  readAt: timestamp("read_at", { withTimezone: true }).notNull(),
+  /** Staff who opened the source email, and when: nothing can be decided before this. */
+  opens: jsonb("opens").$type<Record<string, string>>().notNull().default({}),
+  reviewedBy: text("reviewed_by"), reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+}, (t) => [uniqueIndex("ar_reply_mail_uq").on(t.firmId, t.mailId), index("ar_reply_case_idx").on(t.caseId)]);
+
+/**
+ * What a reply says, one row per point: the model's proposal and the value staff settled on.
+ * An accepted change is a dated record of what changed, kept so it can later be applied to
+ * Clerk's own registers; until then it holds filing until staff settle it (resolution).
+ */
+export const arReplyItem = pgTable("ar_reply_item", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  replyId: text("reply_id").notNull(), caseId: text("case_id").notNull(), mailId: text("mail_id").notNull(),
+  kind: text("kind").$type<ReplyItemKind>().notNull(),
+  origin: text("origin").$type<"model" | "staff">().notNull(),
+  proposed: jsonb("proposed").$type<Record<string, unknown>>(),
+  final: jsonb("final").$type<Record<string, unknown>>(),
+  status: text("status").$type<ReplyItemStatus>().notNull().default("proposed"),
+  decidedBy: text("decided_by"), decidedAt: timestamp("decided_at", { withTimezone: true }),
+  resolution: jsonb("resolution").$type<{ kind: "prepared_again" | "not_affecting"; reason?: string; by: string; at: string }>(),
+  createdAt: createdAt(),
+}, (t) => [index("ar_reply_item_reply_idx").on(t.replyId), index("ar_reply_item_case_idx").on(t.caseId)]);
+
+/** Every time a person changes, removes or adds to a model output (UHY pilot brief, "AI accuracy and oversight"). */
+export const aiDefect = pgTable("ai_defect", {
+  id: text("id").primaryKey(), firmId: firmId(),
+  task: text("task").notNull(),
+  kind: text("kind").$type<"edited" | "rejected" | "missed">().notNull(),
+  inputRef: text("input_ref").notNull(), itemId: text("item_id"), caseId: text("case_id"),
+  modelOutput: jsonb("model_output").$type<Record<string, unknown>>(),
+  finalValue: jsonb("final_value").$type<Record<string, unknown>>(),
+  model: text("model"), promptVersion: text("prompt_version"),
+  by: text("by").notNull(), at: timestamp("at", { withTimezone: true }).notNull(),
+}, (t) => [index("ai_defect_task_idx").on(t.firmId, t.task, t.at)]);
 
 // ---------- CSA snapshot (UHY pilot) ----------
 // A read-only copy of CSA's current records from its restored backup. Officers, members and shares

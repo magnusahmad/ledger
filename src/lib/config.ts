@@ -75,6 +75,8 @@ const Env = z.object({
   DISPATCH_TEMPLATE: z.string().default("seed/uhy/dispatch-template.json"),
   ANNUAL_WINDOW_DAYS: z.coerce.number().default(60),
   ANNUAL_POLL_MS: z.coerce.number().default(300_000),
+  /** 1: the model reads client replies on annual-return cases and proposes; staff review everything. */
+  AR_REPLY_READER: z.enum(["0", "1"]).default("0"),
 });
 
 export type Config = z.infer<typeof Env> & {

@@ -40,6 +40,7 @@ const STEP_LABEL: Record<string, string> = {
   started_at_stage: "Joined the pilot at this stage", registry_check: "Registry check", prepared: "Papers prepared", form_compare: "Compared with CSA's form",
   payment_confirmed: "Payment confirmed", draft_created: "Email drafted", sent: "Email sent", signed_received: "Signed copy received",
   filed: "Filed", registered: "Registered", gate_defect: "Email linked by hand",
+  reply_reviewed: "Client reply reviewed", signed_scan_noted: "Signed scan received by email", change_settled: "Reported change doesn't affect this return", prepared_again: "Return prepared again",
 };
 const csv = (s: unknown) => { const t = s === null || s === undefined ? "" : String(s); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 

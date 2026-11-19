@@ -15,6 +15,8 @@ import { draftDispatch, prepareCase } from "@/annual/service";
 import { annualDeps } from "@/annual/runtime";
 import { resolveAsk } from "@/annual/mail-sync";
 import { isIsoDate } from "@/domain/dates";
+import * as replies from "@/annual/reply-review";
+import { CHANGE_TYPES } from "@/annual/reply-types";
 
 const fail = (e: unknown): ActionResult => ({ ok: false, error: (e as Error).message });
 const done = (message?: string): ActionResult => { refresh(); return { ok: true, message }; };
@@ -85,4 +87,46 @@ export async function registeredAction(id: string, _p: ActionResult | null, f: F
 export async function resolveAskAction(mailId: string, _p: ActionResult | null, f: FormData) {
   const choice = s(f, "caseId");
   return run((ctx) => resolveAsk(ctx, mailId, choice === "none" ? null : choice));
+}
+
+// ---- Client replies read by the model (src/annual/reply-review.ts). Each action is one decision by
+// the signed-in person; nothing here accepts several points at once.
+const changeValue = (f: FormData) => {
+  const changeType = s(f, "changeType");
+  if (!(CHANGE_TYPES as readonly string[]).includes(changeType)) throw new Error("Choose the kind of change");
+  if (!s(f, "detail")) throw new Error("Say what changed");
+  const effectiveDate = s(f, "effectiveDate");
+  if (effectiveDate && !isIsoDate(effectiveDate)) throw new Error("Enter a valid date");
+  return { changeType, subject: s(f, "subject") || null, detail: s(f, "detail"), effectiveDate: effectiveDate || null, quote: s(f, "quote") || null, source: s(f, "source") || "email" };
+};
+export async function openSourceAction(replyId: string) { return run((ctx) => replies.openSource(ctx, replyId)); }
+export async function acceptItemAction(itemId: string) { return run((ctx) => replies.decideItem(ctx, itemId, { action: "accept" })); }
+export async function rejectItemAction(itemId: string) { return run((ctx) => replies.decideItem(ctx, itemId, { action: "reject" })); }
+export async function editChangeAction(itemId: string, _p: ActionResult | null, f: FormData) {
+  return run(async (ctx) => replies.decideItem(ctx, itemId, { action: "edit", value: changeValue(f) }));
+}
+export async function answerChargesAction(itemId: string, _p: ActionResult | null, f: FormData) {
+  return run((ctx) => replies.answerCharges(ctx, itemId, { answer: s(f, "answer"), details: s(f, "details") }));
+}
+export async function addMissedAction(replyId: string, _p: ActionResult | null, f: FormData) {
+  const kind = s(f, "kind");
+  return run(async (ctx) => {
+    if (kind === "change") await replies.addMissed(ctx, replyId, { kind, value: changeValue(f) });
+    else if (kind === "charges") await replies.addMissed(ctx, replyId, { kind, value: { answer: s(f, "answer"), details: s(f, "details") } });
+    else if (kind === "signed_papers") await replies.addMissed(ctx, replyId, { kind, value: { document: s(f, "document") || "annual_return", filename: s(f, "filename") || null, quote: null } });
+    else throw new Error("Choose what to add");
+  }, "Added.");
+}
+export async function finishReviewAction(caseId: string, replyId: string, _p?: ActionResult | null, _f?: FormData): Promise<ActionResult> {
+  void _p; void _f;
+  try { const { ctx } = await pilotCtx(); await replies.finishReview(ctx, replyId); return { ok: true, redirectTo: `/annual/${caseId}` }; } catch (e) { return fail(e); }
+}
+export async function settleChangeAction(itemId: string, _p: ActionResult | null, f: FormData) { return run((ctx) => replies.settleChange(ctx, itemId, { reason: s(f, "reason") })); }
+export async function prepareAgainAction(id: string, useCsaForm: boolean): Promise<ActionResult> {
+  try {
+    const { ctx } = await pilotCtx();
+    const r = await replies.prepareAgain(ctx, annualDeps(ctx.config), id, { useCsaForm });
+    if (!r.ok) return { ok: false, error: r.reason };
+    return done(useCsaForm ? "Marked as prepared again in CSA." : r.filedPath ? "Prepared again and saved to the client folder." : "Prepared again.");
+  } catch (e) { return fail(e); }
 }

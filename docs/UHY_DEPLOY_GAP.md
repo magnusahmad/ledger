@@ -141,4 +141,4 @@ Screens checked in the browser at 375, 768 and 1440 px with fictional data (`ann
 3. Graph app registration, `new-app-cert.ps1`, `scripts/uhy/mailbox-rbac.ps1` with the three addresses, `mailbox-smoke.ps1`.
 4. The F: share path and status folder in `.env.production`; confirm the client-folder pattern in `seed/uhy/filing-rules.json`.
 5. Staff accounts, the CA certificate on staff PCs, and a first case end to end with Ruby.
-6. Run the AI-free pilot first: nothing in this build calls the model yet. Reading client replies into proposed changes, AGM papers and CDD follow, in shadow mode (#56).
+6. The reply reader is built (#64) and switched with `AR_REPLY_READER`: with it off, nothing in this build calls the model and no AI key is needed. With it on, client replies linked to a case are read and every proposal is reviewed by staff. AGM papers and CDD follow, in shadow mode (#56).

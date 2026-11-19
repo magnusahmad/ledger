@@ -36,13 +36,21 @@ export function homePath(mods: Set<ModuleId>): string {
   return "/login";
 }
 
+/** Whether anything this installation loads calls the model. The annual module does only through the
+ *  reply reader; an installation without it sends nothing to the model and needs no key. */
+export function usesModel(c: Config): boolean {
+  let mods: Set<ModuleId>;
+  try { mods = enabledModules(c); } catch { return true; }
+  return [...mods].some((m) => m !== "annual") || c.AR_REPLY_READER === "1";
+}
+
 const DEFAULT_SECRET = "dev-only-secret-change-me-dev-only-secret";
 
 /** Reasons a production installation must not start. Empty when it may. */
 export function productionProblems(c: Config): string[] {
   if (c.INSTALLATION !== "production") return [];
   const p: string[] = [];
-  if (c.llmMode !== "live" || !c.or_api_key) p.push("AI is not live (fixture or missing OpenRouter key)");
+  if (usesModel(c) && (c.llmMode !== "live" || !c.or_api_key)) p.push("AI is not live (fixture or missing OpenRouter key)");
   if (c.demoTools) p.push("demo tools are switched on");
   if (c.APP_SECRET === DEFAULT_SECRET) p.push("APP_SECRET is the development default secret");
   if (!c.authRequired) p.push("staff sign-in is switched off");
