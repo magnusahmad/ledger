@@ -8,7 +8,7 @@ import { Crypto } from "@/lib/crypto";
 import { advance, assertTaskAmendable, getTask, logEvent, outstanding, setChecklist, tasksForRequest, type Task } from "./engine";
 import { getPlaybook } from "./playbooks";
 import { itemLabel, itemKind } from "./labels";
-import { contactInfoPatch, getPersonProtected, updatePerson } from "./records";
+import { compatibleContactInfo, contactInfoPatch, getPersonProtected, updatePerson } from "./records";
 import { createProposal } from "./proposals";
 import { extractFromDocument } from "@/agent/extract";
 import { isIsoDate } from "./dates";
@@ -131,11 +131,17 @@ async function portalSubmitFieldAtomic(ctx: Ctx, token: string, f: Parameters<ty
     const person = await getPersonProtected(ctx, entry.personId);
     if (!(person as Record<string, unknown>)[PERSON_FIELD[f.key]]) await updatePerson(ctx, entry.personId, { [PERSON_FIELD[f.key]]: value }, "Entered by the client on the secure link");
   }
+  let saved = value;
   if (entry.personId && f.key === "contactInfo") {
-    const patch = contactInfoPatch(value, await getPersonProtected(ctx, entry.personId));
+    const person = await getPersonProtected(ctx, entry.personId);
+    const onFile = [person.email, person.phone].filter(Boolean).join(" / ");
+    const patch = contactInfoPatch(value, person);
     if (Object.keys(patch).length) await updatePerson(ctx, entry.personId, patch, "Entered by the client on the secure link");
+    // A client asked for the missing half types only that half: the item is the email and mobile
+    // together, so join it with what is on file. A value that differs from the record stays as typed.
+    if (onFile && compatibleContactInfo(onFile, value)) saved = [person.email ?? patch.email, person.phone ?? patch.phone].filter(Boolean).join(" / ");
   }
-  const next = t.checklist.map((e) => e === entry ? { ...e, status: "received" as const, value: ["idNo", "resAddr"].includes(f.key) ? "Provided" : value, source: "Entered on the secure link" } : e);
+  const next = t.checklist.map((e) => e === entry ? { ...e, status: "received" as const, value: ["idNo", "resAddr"].includes(f.key) ? "Provided" : saved, source: "Entered on the secure link" } : e);
   await setChecklist(ctx, t.id, next, `Client entered ${itemLabel(f.key)}`, "client");
   return advance(ctx, t.id);
 }

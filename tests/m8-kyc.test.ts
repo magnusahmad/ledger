@@ -47,6 +47,24 @@ describe("Upload portal", () => {
     expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com", phone: "+852 9123 0007" });
   });
 
+  it.each([
+    ["mobile number", { email: "meiwah.wong@example.com" }, "+852 9123 0007"],
+    ["email", { phone: "+852 9123 0007" }, "meiwah.wong@example.com"],
+  ])("a client typing only the missing %s on the upload link completes the email-and-mobile item using the half already on file", async (_part, onFile, typed) => {
+    const { req, t, p } = await appointment("cli_c1", "WONG Mei Wah", onFile);
+    expect(t.checklist.find((e) => e.key === "contactInfo")?.status).toBe("needed");
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: typed });
+    expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com", phone: "+852 9123 0007" });
+    expect((await getTask(ctx, t.id)).checklist.find((e) => e.key === "contactInfo")).toMatchObject({ status: "received", value: "meiwah.wong@example.com / +852 9123 0007" });
+  });
+
+  it("a different email typed on the upload link never replaces the email on file, and the task shows what the client typed", async () => {
+    const { req, t, p } = await appointment("cli_c1", "WONG Mei Wah", { email: "meiwah.wong@example.com" });
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: "someone.else@example.com / +852 9123 0007" });
+    expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com" });
+    expect((await getTask(ctx, t.id)).checklist.find((e) => e.key === "contactInfo")?.value).toBe("someone.else@example.com / +852 9123 0007");
+  });
+
   it("an uploaded ID copy ticks the item for that task's person only", async () => {
     ctx.llm.on("extract", noExtraction);
     const a = await appointment("cli_c1", "WONG Ka Man");
