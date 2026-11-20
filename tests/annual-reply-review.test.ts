@@ -16,16 +16,17 @@ import { readPendingReplies } from "@/annual/reply-reader";
 import * as R from "@/annual/reply-review";
 import { markFiled, markSignedReceived } from "@/annual/cases";
 import { importCsa } from "@/integrations/csa/import";
+import { csaRecords } from "@/integrations/csa/records";
 import { allPlaybookFiles } from "@/domain/playbooks";
 import { PROMPT_VERSION } from "@/annual/reply-types";
 import type { AnnualDeps } from "@/annual/service";
-import template from "../seed/uhy/dispatch-template.json";
+import template from "../clients/uhy/data/dispatch-template.json";
 
 async function read(o: { text?: string; model?: Parameters<typeof reading>[0]; attachments?: { filename: string; mime: string; content: Buffer }[] } = {}) {
   const s = await setupSentCase();
   const mailId = await addInbound(s.ctx, s.caseId, { text: o.text ?? "No charges. Mr Lee resigned as director on 31 October.", attachments: o.attachments });
   s.ctx.llm.on("ar_reply", reading(o.model ?? { changes: [resignation] }));
-  await readPendingReplies(s.ctx);
+  await readPendingReplies(s.ctx, csaRecords());
   const [reply] = await s.ctx.db.select().from(arReply);
   const items = await s.ctx.db.select().from(arReplyItem);
   return { ...s, mailId, reply, change: items.find((i) => i.kind === "change"), charges: items.find((i) => i.kind === "charges")!, items };
@@ -115,7 +116,7 @@ describe("reviewing what the model read", () => {
     const s = await setupSentCase();
     await addInbound(s.ctx, s.caseId);
     s.ctx.llm.on("ar_reply", () => { throw new Error("model unavailable"); });
-    await readPendingReplies(s.ctx);
+    await readPendingReplies(s.ctx, csaRecords());
     const [reply] = await s.ctx.db.select().from(arReply);
     await R.openSource(s.ctx, reply.id);
     await R.addMissed(s.ctx, reply.id, { kind: "change", value: resignation });
@@ -195,7 +196,7 @@ describe("reviewing what the model read", () => {
   it("preparing again waits for a records copy newer than the change, then regenerates the return with the charges answer and sends the case back to drafting", async () => {
     const { ctx, reply, charges, change, caseId } = await read();
     const root = await mkdtemp(path.join(tmpdir(), "uhy-reply-"));
-    const deps: AnnualDeps = { mail: null, mailboxes: [], filingRoot: root, filingRules: { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" }, template };
+    const deps: AnnualDeps = { records: csaRecords(), mail: null, mailboxes: [], filingRoot: root, filingRules: { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" }, template };
     await R.openSource(ctx, reply.id);
     await R.answerCharges(ctx, charges.id, { answer: "none" });
     await R.decideItem(ctx, change!.id, { action: "accept" });

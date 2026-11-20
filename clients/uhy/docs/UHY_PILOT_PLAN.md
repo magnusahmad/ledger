@@ -3,7 +3,7 @@
 Owner: Magnus Ahmad
 Last reviewed: 2026-10-20
 Status: working plan, fast track. Target dates are estimates and move with UHY's and Topone's response times.
-Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does and its acceptance tests), [Decisions](DECISIONS.md) #53–55, [UHY-ASK KB page](../crv-kb/research/targets/uhy-ask.md).
+Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does and its acceptance tests), [Decisions](../../../docs/DECISIONS.md) #53–55, [UHY-ASK KB page](../../../crv-kb/research/targets/uhy-ask.md).
 
 This plan says who does what, in order, to get the [pilot brief](UHY_AR_AGM_PILOT.md) running at UHY. Each stage lists what Magnus does, what Claude builds or prepares, what UHY or Topone must do, and how we know the stage is done. Tick items off here as they happen.
 
@@ -51,7 +51,7 @@ The five sample companies have annual returns due roughly between early November
 - [ ] Set up a test Microsoft 365 tenant with two or three test mailboxes, so the mail connector is built without UHY's mail.
 
 **Claude**
-- [x] Write the server assessment and mailbox scripts: `scripts/uhy/` (not yet run on Windows; check them on the test VM first).
+- [x] Write the server assessment and mailbox scripts: `clients/uhy/ops/` (not yet run on Windows; check them on the test VM first).
 - [ ] Draft the emails above.
 
 **Done when:** mailbox addresses received, CSA licence confirmed, NDA sent, assessment session booked. Target: Wed 21 October.
@@ -62,7 +62,7 @@ Look only. No installs, no changes, and no client data leaves the server.
 
 **Before**
 - [ ] Magnus books a time with Allan, so UHY knows when CRV is connected.
-- [ ] Copy `scripts/uhy/` to the server (AnyDesk file transfer) into `C:\uhy-pilot\`.
+- [ ] Copy `clients/uhy/ops/` to the server (AnyDesk file transfer) into `C:\uhy-pilot\`.
 - Scripts ready: `assess-server.ps1` (server facts and outbound HTTPS test), `csa-schema.sql` (tables, columns, types, keys, row counts; no values), `csa-find-value.sql` (which table holds a value you see on CSA's screen, printing names and counts only), `csa-readonly-login.sql`.
 
 **Magnus, during the session**

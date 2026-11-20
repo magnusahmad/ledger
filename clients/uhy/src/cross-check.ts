@@ -1,7 +1,7 @@
 // CSA and DN both describe each client company. Where they disagree on the year end, where DN's
 // AGM month falls after the AGM deadline, or where a company is in one and not the other, staff
 // are shown the difference; nothing is resolved silently or filled in from the other source.
-import { agmDue, type CalendarPlaybooks, type CompanyType } from "./calendar";
+import { agmDue, type CalendarPlaybooks, type CompanyType } from "@/annual/calendar";
 
 export type CsaSide = { code: string | null; nameEn: string; fyeMonth: number | null; fyeDay: number | null; companyType: CompanyType };
 export type DnSide = { code: string; nameEn: string | null; yearEnd: { month: number; day: number } | null; agmMonth: number | null; requiredAfs?: string | null };

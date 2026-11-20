@@ -11,6 +11,7 @@ import { readPendingReplies, readReply, quoteFound } from "@/annual/reply-reader
 import { repliesToReview } from "@/annual/reply-review";
 import { runAnnualCycle, type CycleDeps } from "@/annual/cycle";
 import { PROMPT_VERSION } from "@/annual/reply-types";
+import { csaRecords } from "@/integrations/csa/records";
 
 const userText = (req: { messages: { role: string; content: unknown }[] }) => {
   const c = req.messages.find((m) => m.role === "user")!.content;
@@ -25,8 +26,8 @@ describe("reading a client reply", () => {
     const mailId = await addInbound(ctx, caseId, { text: "Dear Ruby,\n\nNo charges. Mr Lee resigned as director on 31 October.\n\nMs Chan" });
     ctx.llm.on("ar_reply", reading({ summary: "No charges; a director resigned.", changes: [resignation] }));
     const before = await caseRow(ctx, caseId);
-    await readPendingReplies(ctx);
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
+    await readPendingReplies(ctx, csaRecords());
     expect(ctx.llm.callsFor("ar_reply")).toHaveLength(1);
     const [r] = await ctx.db.select().from(arReply);
     expect(r).toMatchObject({ mailId, caseId, status: "read", about: "this_return", model: "scripted", promptVersion: PROMPT_VERSION, reviewedAt: null });
@@ -42,7 +43,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId, { text: "Could you send me last year's audit report?" });
     ctx.llm.on("ar_reply", reading({ about: "other", summary: "Asks for last year's audit report.", changes: [resignation] }));
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const [r] = await ctx.db.select().from(arReply);
     expect(r.about).toBe("other");
     expect(await ctx.db.select().from(arReplyItem)).toHaveLength(0);
@@ -54,7 +55,7 @@ describe("reading a client reply", () => {
     await addInbound(ctx, caseId, { direction: "out", text: "Please confirm whether the Company has any mortgages or charges.", receivedAt: "2026-11-04T03:00:00Z" });
     await addInbound(ctx, caseId, { text: "No charges." });
     ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const sent = userText(ctx.llm.callsFor("ar_reply")[0]);
     expect(sent).toContain("LEE Siu Ming");
     expect(sent).toContain("1 Example Road");
@@ -70,7 +71,7 @@ describe("reading a client reply", () => {
       { filename: "new-address.docx", mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", content: Buffer.from("PK") },
     ] });
     ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const parts = ctx.llm.callsFor("ar_reply")[0].messages.find((m) => m.role === "user")!.content as { type: string; file?: { filename: string } }[];
     expect(parts.filter((p) => p.type === "file").map((p) => p.file!.filename)).toEqual(["signed-ar.pdf"]);
     const [r] = await ctx.db.select().from(arReply);
@@ -81,7 +82,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId, { text: "No charges.  Mr Lee\nresigned as director on 31 October." });
     ctx.llm.on("ar_reply", reading({ changes: [resignation, { ...resignation, changeType: "registered_office", subject: null, detail: "Moved to 9 Invented Road", quote: "we have moved to 9 Invented Road" }] }));
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const changes = (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change").map((i) => i.proposed as { changeType: string; quoteFound: boolean });
     expect(changes.find((c) => c.changeType === "director_ceased")!.quoteFound).toBe(true); // spacing and line breaks don't matter
     expect(changes.find((c) => c.changeType === "registered_office")!.quoteFound).toBe(false);
@@ -94,13 +95,13 @@ describe("reading a client reply", () => {
     await addInbound(ctx, caseId, { text: "Mr Lee resigned on 31 December.", receivedAt: "2027-01-05T01:30:00Z" });
     ctx.clock.set("2027-01-05T02:00:00Z");
     ctx.llm.on("ar_reply", reading({ changes: [{ ...resignation, effectiveDate: "2026-12-31", yearAssumed: true }, { ...resignation, changeType: "registered_office", effectiveDate: "2026-09-01", yearAssumed: false }] }));
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const stored = async () => (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change").map((i) => i.proposed as { changeType: string; effectiveDate: string | null; yearAssumed?: boolean });
     expect((await stored()).find((c) => c.changeType === "director_ceased")).toMatchObject({ effectiveDate: "2026-12-31", yearAssumed: true });
     expect((await stored()).find((c) => c.changeType === "registered_office")).toMatchObject({ effectiveDate: "2026-09-01", yearAssumed: false });
     // Looked at again a year later, the date is what was stored; the email is not read again.
     ctx.clock.set("2028-02-01T02:00:00Z");
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     expect((await stored()).find((c) => c.changeType === "director_ceased")).toMatchObject({ effectiveDate: "2026-12-31" });
     expect(ctx.llm.callsFor("ar_reply")).toHaveLength(1);
   });
@@ -109,7 +110,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId, { text: "Mr Lee resigned on 31 December.", receivedAt: "2027-01-05T01:30:00Z" });
     ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const req = ctx.llm.callsFor("ar_reply")[0];
     expect(userText(req)).toContain("2027-01-05");
     expect(String(req.messages[0].content)).toMatch(/without a year/i);
@@ -119,7 +120,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId, { text: "From 31 October." });
     ctx.llm.on("ar_reply", reading({ changes: [{ ...resignation, effectiveDate: "--10-31", yearAssumed: true }, { ...resignation, changeType: "registered_office", effectiveDate: "2026-02-30", yearAssumed: true }] }));
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     const changes = (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change").map((i) => i.proposed);
     expect(changes).toHaveLength(2);
     for (const c of changes) expect(c).toMatchObject({ effectiveDate: null, yearAssumed: false });
@@ -129,13 +130,13 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId);
     ctx.llm.on("ar_reply", () => { throw new Error("model unavailable"); });
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     let [r] = await ctx.db.select().from(arReply);
     expect(r).toMatchObject({ status: "failed", about: null, attempts: 1 });
     expect(r.error).toMatch(/model unavailable/);
     expect(await repliesToReview(ctx, caseId)).toHaveLength(1);
     ctx.llm.set("ar_reply", reading());
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     [r] = await ctx.db.select().from(arReply);
     expect(r).toMatchObject({ status: "read", attempts: 2, error: null });
     expect(await ctx.db.select().from(arReply)).toHaveLength(1);
@@ -145,7 +146,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId);
     ctx.llm.on("ar_reply", () => { throw new Error("model unavailable"); });
-    for (let i = 0; i < 5; i++) await readPendingReplies(ctx);
+    for (let i = 0; i < 5; i++) await readPendingReplies(ctx, csaRecords());
     const [r] = await ctx.db.select().from(arReply);
     expect(r).toMatchObject({ status: "failed", attempts: 3 });
   });
@@ -155,7 +156,7 @@ describe("reading a client reply", () => {
     await addInbound(ctx, caseId, { direction: "out" });
     await addInbound(ctx, caseId, { status: "ask" });
     ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(ctx);
+    await readPendingReplies(ctx, csaRecords());
     expect(ctx.llm.calls).toHaveLength(0);
     expect(await ctx.db.select().from(arReply)).toHaveLength(0);
   });
@@ -164,7 +165,7 @@ describe("reading a client reply", () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId);
     ctx.llm.on("ar_reply", reading());
-    const deps: CycleDeps = { restoreStatusFile: null, openCsa: null, mail: null, sync: { mailboxes: [], firmDomains: [], lookbackDays: 60 }, statusDir: null, withinDays: 60, readReplies: false };
+    const deps: CycleDeps = { records: csaRecords(), mail: null, sync: { mailboxes: [], firmDomains: [], lookbackDays: 60 }, statusDir: null, withinDays: 60, readReplies: false };
     await runAnnualCycle(ctx, deps);
     expect(ctx.llm.calls).toHaveLength(0);
     const h = await runAnnualCycle(ctx, { ...deps, readReplies: true });
@@ -177,11 +178,11 @@ describe("reading a client reply", () => {
     const b = await setupSentCase({ firmId: "firm_other" });
     const mailB = await addInbound(b.ctx, b.caseId);
     a.ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(a.ctx);
+    await readPendingReplies(a.ctx, csaRecords());
     expect(a.ctx.llm.calls).toHaveLength(0);
-    await expect(readReply(a.ctx, mailB)).rejects.toThrow(/not found/i);
+    await expect(readReply(a.ctx, csaRecords(), mailB)).rejects.toThrow(/not found/i);
     b.ctx.llm.on("ar_reply", reading());
-    await readPendingReplies(b.ctx);
+    await readPendingReplies(b.ctx, csaRecords());
     expect(await repliesToReview(a.ctx, b.caseId)).toHaveLength(0);
     expect(await repliesToReview(b.ctx, b.caseId)).toHaveLength(1);
   });

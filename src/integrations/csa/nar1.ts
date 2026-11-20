@@ -24,7 +24,7 @@ async function snapshot(ctx: Ctx, clientId: string) {
 const n = (x: number) => x.toLocaleString("en-US");
 
 export async function nar1InputFromCsa(ctx: Ctx, clientId: string, o: { madeUpTo: string; presentor: Presentor; signDate: string; email: string; charges?: string }):
-  Promise<{ ok: true; input: NAR1Input; backupTakenAt: string } | { ok: false; reason: string }> {
+  Promise<{ ok: true; input: NAR1Input; asAt: string } | { ok: false; reason: string }> {
   const s = await snapshot(ctx, clientId);
   if (!s) return { ok: false, reason: "No CSA record for this company yet; use CSA's form." };
   if (s.company.companyType === "non_hk") return { ok: false, reason: "A registered non-Hong Kong company files NN3; use CSA's form." };
@@ -40,7 +40,7 @@ export async function nar1InputFromCsa(ctx: Ctx, clientId: string, o: { madeUpTo
   const missingAddress = s.members.find((m) => !m.address);
   if (missingAddress) return { ok: false, reason: `CSA has no address for member ${missingAddress.nameEn}; add it in CSA first.` };
   return {
-    ok: true, backupTakenAt: s.backupTakenAt,
+    ok: true, asAt: s.backupTakenAt,
     input: {
       brNumber: s.company.brNumber ?? "", companyName: s.company.nameEn, type: s.company.companyType === "public" || s.company.companyType === "guarantee" ? s.company.companyType : "private",
       madeUpTo: o.madeUpTo, registeredOffice: s.company.registeredOffice ?? "", email: o.email, charges: o.charges ?? "",
@@ -58,7 +58,7 @@ export async function dispatchFactsFromCsa(ctx: Ctx, clientId: string) {
   if (!s) return null;
   const directors = s.officers.filter((x) => x.role !== "secretary");
   const holders = new Map(s.members.map((m) => [m.nameEn.toLowerCase(), m.kind]));
-  return { signer: directors[0]?.nameEn ?? null, directors: directors.length, members: holders.size, corporateMembers: [...holders.values()].filter((k) => k === "corporate").length, backupTakenAt: s.backupTakenAt };
+  return { signer: directors[0]?.nameEn ?? null, directors: directors.length, members: holders.size, corporateMembers: [...holders.values()].filter((k) => k === "corporate").length, asAt: s.backupTakenAt };
 }
 
 /** Current particulars for reading a client's reply: names, roles, holdings and the registered office.
@@ -67,7 +67,7 @@ export async function particularsFromCsa(ctx: Ctx, clientId: string) {
   const s = await snapshot(ctx, clientId);
   if (!s) return null;
   return {
-    registeredOffice: s.company.registeredOffice, backupTakenAt: s.backupTakenAt,
+    registeredOffice: s.company.registeredOffice, asAt: s.backupTakenAt,
     officers: s.officers.map((o) => ({ role: o.role, name: o.nameEn, nameZh: o.nameZh })),
     members: s.members.map((m) => ({ name: m.nameEn, nameZh: m.nameZh, className: m.className, shares: m.shares })),
   };

@@ -3,14 +3,14 @@
 Owner: Magnus Ahmad
 Last reviewed: 2026-11-04
 Status: gaps 1–7 built against fictional data on 4 November (decision #59); Windows steps untested until the first install. What remains needs the pilot machine: see "Still to do on the machine" at the end.
-Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does, acceptance tests), [Implementation plan](UHY_PILOT_PLAN.md), [Decisions](DECISIONS.md) #53–58.
+Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does, acceptance tests), [Implementation plan](UHY_PILOT_PLAN.md), [Decisions](../../../docs/DECISIONS.md) #53–58.
 
 ## Where we stand
 
 | Area | State | Reuse |
 |---|---|---|
 | Access, findings, data route | Done: server assessed, CSA read from its own SQL Server backups (licence confirmed), machine confirmed, NDA signed, Topone engaged | — |
-| Setup scripts | Written (`scripts/uhy/`): assessment, CSA backup checks, mailbox certificate, mailbox scope, smoke test | Restore script and mapping queries still to write |
+| Setup scripts | Written (`clients/uhy/ops/`): assessment, CSA backup checks, mailbox certificate, mailbox scope, smoke test | Restore script and mapping queries still to write |
 | Domain engine | Built: playbooks, deadlines, register tables (effective-dated), approval gate, chasing, NAR1 generator (spec 2/2025), generic resolution templates | Most of the annual-return loop sits on these |
 | Mail room (#57, #58) | Built for CWCCPA: scan folder watcher, split, match in code, filing by firm rules with no overwrite, undo, Outlook `.eml` drafts, client list synced from Excel/Access/folders | Scanned post, F: filing rules, DN workbook sync |
 | Running on Windows | **Not started** | — |
@@ -126,7 +126,7 @@ That puts first live use about **8 working days** from tomorrow's session (mid-N
 |---|---|---|
 | 1 Running on Windows | `deploy/windows/` (install, services, secrets, Caddy, backups, guide), `src/worker/annual.ts`, `/api/health` | `annual-cycle` (4); Windows scripts untested |
 | 2 Sign-in, users, HTTPS | `src/lib/auth.ts`, `/login`, `deploy/windows/pilot-ca.sh` | `pilot-auth` (8); CA script checked on macOS |
-| 3 Reading CSA | `scripts/uhy/csa-restore.ps1`, `src/integrations/csa/` | `csa-import` (9) |
+| 3 Reading CSA | `clients/uhy/ops/csa-restore.ps1`, `src/integrations/csa/` | `csa-import` (9) |
 | 4 Microsoft 365 mail | `src/integrations/mail/graph.ts` | `graph-mail` (9) |
 | 5 Relevance gate | `src/annual/mail-gate.ts`, `src/annual/mail-sync.ts` | `annual-mail-gate` (12), `annual-mail-sync` (9) |
 | 6 Case flow | `src/annual/` (cases, dispatch, service, writeback, next-step), `/annual` screens | `annual-cases` (9), `annual-dispatch` (18), `annual-service` (5), `annual-writeback` (4), `annual-next-step` (4) |
@@ -138,7 +138,7 @@ Screens checked in the browser at 375, 768 and 1440 px with fictional data (`ann
 
 1. Prerequisites and secrets (`deploy/windows/README.md` sections 2–3), then `install.ps1`.
 2. First CSA restore, then write `csa-mapping.json` against the real tables and run an import.
-3. Graph app registration, `new-app-cert.ps1`, `scripts/uhy/mailbox-rbac.ps1` with the three addresses, `mailbox-smoke.ps1`.
-4. The F: share path and status folder in `.env.production`; confirm the client-folder pattern in `seed/uhy/filing-rules.json`.
+3. Graph app registration, `new-app-cert.ps1`, `clients/uhy/ops/mailbox-rbac.ps1` with the three addresses, `mailbox-smoke.ps1`.
+4. The F: share path and status folder in `.env.production`; confirm the client-folder pattern in `clients/uhy/data/filing-rules.json`.
 5. Staff accounts, the CA certificate on staff PCs, and a first case end to end with Ruby.
 6. The reply reader is built (#64) and switched with `AR_REPLY_READER`: with it off, nothing in this build calls the model and no AI key is needed. With it on, client replies linked to a case are read and every proposal is reviewed by staff. AGM papers and CDD follow, in shadow mode (#56).

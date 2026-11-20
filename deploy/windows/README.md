@@ -5,7 +5,7 @@ The pilot runs on UHY's spare ASUS ExpertCenter D7 (Windows 11 Pro), never on UH
 ## What runs
 
 - **PostgreSQL 17**: the pilot's own database, listening on localhost only.
-- **SQL Server 2022 Express**: holds `CSA_Copy`, restored from CSA's own backup by `scripts/uhy/csa-restore.ps1`.
+- **SQL Server 2022 Express**: holds `CSA_Copy`, restored from CSA's own backup by `clients/uhy/ops/csa-restore.ps1`.
 - **clerk-web** and **clerk-worker** (Windows services via WinSW), running as the domain service account.
 - **clerk-caddy**: HTTPS on port 443 for the office network, using the pilot certificate.
 
@@ -34,14 +34,14 @@ Set-ClerkSecret -Name or_api_key            # the UHY OpenRouter key with a spen
 Set-ClerkSecret -Name CSA_READER_PASSWORD   # a new strong password for the read-only SQL login
 Set-ClerkSecret -Name CSA_SQL_CONNECTION    # Server=localhost\SQLEXPRESS;Database=CSA_Copy;User Id=clerk_reader;Password=<same>;Encrypt=true;TrustServerCertificate=true
 ```
-For mail: run `scripts\uhy\new-app-cert.ps1` in PowerShell 7 (stores `GRAPH_PRIVATE_KEY_PEM`), or store a client secret as `GRAPH_CLIENT_SECRET`.
+For mail: run `clients\uhy\ops\new-app-cert.ps1` in PowerShell 7 (stores `GRAPH_PRIVATE_KEY_PEM`), or store a client secret as `GRAPH_CLIENT_SECRET`.
 
 ## 4. Install
 
 ```
 .\install.ps1 -ServiceAccount UHYASK\svc-clerk -OfficeSubnet 192.168.1.0/24
 ```
-The first run copies `env.production.example` to `C:\Clerk\app\.env.production` and stops; fill it in (mailboxes, Graph IDs, F: path, status folder), then run it again. It builds the app, runs migrations, installs the three services and the firewall rule, and checks `/api/health`.
+The first run copies `env.production.example` to `C:\Clerk\app\.env.production` and stops; fill it in (mailboxes, Graph IDs, F: path, status folder), then run it again. The file names the client profile (`INSTALLATION_PROFILE=uhy`), which sets the modules, firm id and UHY's own filing rules and email template from `clients/uhy/`; the installation refuses to start without it. The script also stamps the build: `https://<host>/api/health` then reports the commit, client profile, modules and model under `build`. If the copy on this machine has no `.git` folder, run `npm run build:stamp` in the repository before copying it here. It builds the app, runs migrations, installs the three services and the firewall rule, and checks `/api/health`.
 
 Then, from `C:\Clerk\app` with the same environment loaded:
 ```
@@ -52,8 +52,8 @@ npm run user:add -- --email <ruby's address> --name Ruby --initials RL --role st
 
 ## 5. CSA copy
 
-1. Copy `scripts\uhy\csa-mapping.example.json` to `C:\Clerk\config\csa-mapping.json` and rewrite its queries against the restored copy's real tables (first restore: run `scripts\uhy\csa-restore.ps1` by hand, then `csa-schema.sql` on `CSA_Copy`).
-2. `scripts\uhy\register-csa-restore.ps1 -RunAs UHYASK\svc-clerk` schedules the restore at 12:30 and 18:30 on weekdays.
+1. Copy `clients\uhy\ops\csa-mapping.example.json` to `C:\Clerk\config\csa-mapping.json` and rewrite its queries against the restored copy's real tables (first restore: run `clients\uhy\ops\csa-restore.ps1` by hand, then `csa-schema.sql` on `CSA_Copy`).
+2. `clients\uhy\ops\register-csa-restore.ps1 -RunAs UHYASK\svc-clerk` schedules the restore at 12:30 and 18:30 on weekdays.
 
 ## 6. Backups
 

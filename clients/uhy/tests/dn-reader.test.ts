@@ -8,7 +8,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import ExcelJS from "exceljs";
-import { parseTick, parseChineseYearEnd, parseUsDate, parseAgmMonth, splitEmails, readDnWorkbook, discoverWorkbook } from "@/integrations/uhy/dn";
+import { parseTick, parseChineseYearEnd, parseUsDate, parseAgmMonth, splitEmails, readDnWorkbook, discoverWorkbook } from "../src/dn";
 
 const HEADERS = [
   "CODE", "Company Name", "公司名", "Last DN", "Debit Note Service Until", "New DN (2026)", "Significant Controller", "Designated representative", null, null,

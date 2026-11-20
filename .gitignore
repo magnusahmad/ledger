@@ -26,5 +26,8 @@ playwright-report/
 .next-mailroom/
 *.tsbuildinfo
 
+# Build stamp written by scripts/build-stamp.mjs (travels with a deployed copy, not with the repo)
+/build.json
+
 # Personal spaced repetition questions, answers and review history
 .study/

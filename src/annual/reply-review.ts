@@ -12,7 +12,6 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { Ctx } from "@/lib/ctx";
 import { aiDefect, arCase, arCaseEvent, arMail, arReply, arReplyItem, type ReplyItemKind } from "@/db/schema";
 import type { PlaybookDef } from "@/domain/playbook-types";
-import { latestImport } from "@/integrations/csa/import";
 import { buildAnnualReturn, type AnnualDeps } from "./service";
 import { REPLY_TASK, VALUE_SCHEMA, type ChangeType } from "./reply-types";
 
@@ -174,7 +173,7 @@ const fmtCopy = (d: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/
 /**
  * After staff update the records for the changes the client reported: the return is prepared again
  * and the case goes back to be sent for signature. Clerk's own form is refilled from the records copy,
- * which must be newer than the changes (today that copy is CSA's backup); with useCsaForm, staff have
+ * which must be newer than the changes (the records source says when it was taken); with useCsaForm, staff have
  * redone the form in CSA themselves. Payment already confirmed stays confirmed.
  */
 export async function prepareAgain(ctx: Ctx, deps: AnnualDeps, caseId: string, o: { useCsaForm?: boolean } = {}):
@@ -188,9 +187,9 @@ export async function prepareAgain(ctx: Ctx, deps: AnnualDeps, caseId: string, o
   let built: { filedPath: string | null; documentId: string | null } = { filedPath: null, documentId: null };
   if (!o.useCsaForm) {
     const newest = Math.max(...open.map((i) => i.decidedAt!.getTime()));
-    const imp = await latestImport(ctx);
-    if (!imp || imp.backupTakenAt.getTime() <= newest)
-      return { ok: false, reason: `The records copy is from ${imp ? fmtCopy(imp.backupTakenAt) : "before the first import"}, before this change was accepted. Update the records, then prepare again after the next copy.` };
+    const asAt = await deps.records.asAt(ctx);
+    if (!asAt || asAt.getTime() <= newest)
+      return { ok: false, reason: `The records copy is from ${asAt ? fmtCopy(asAt) : "before the first import"}, before this change was accepted. Update the records, then prepare again after the next copy.` };
     const r = await buildAnnualReturn(ctx, deps, caseId, { charges });
     if (!r.ok) return r;
     built = r;
@@ -209,7 +208,7 @@ export async function prepareAgain(ctx: Ctx, deps: AnnualDeps, caseId: string, o
 
 type ChangeMap = { changes: Record<string, { label: string; playbookId: string | null }> };
 let changeMap: ChangeMap | null = null;
-const changes = () => (changeMap ??= JSON.parse(readFileSync(path.join(process.cwd(), "seed", "uhy", "reply-changes.json"), "utf8")) as ChangeMap).changes;
+const changes = () => (changeMap ??= JSON.parse(readFileSync(path.join(process.cwd(), "seed", "annual", "reply-changes.json"), "utf8")) as ChangeMap).changes;
 export const changeLabel = (t: string) => changes()[t]?.label ?? "Other change";
 
 /** The separate filing a kind of change usually needs: the form comes from the playbook, never from code. */

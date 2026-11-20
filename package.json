@@ -6,6 +6,8 @@
     "dev": "concurrently -k -n web,worker -c blue,green \"next dev\" \"tsx watch --env-file-if-exists=.env src/worker/main.ts\"",
     "dev:web": "next dev",
     "worker": "tsx --env-file-if-exists=.env src/worker/main.ts",
+    "build:stamp": "node scripts/build-stamp.mjs",
+    "prebuild": "node scripts/build-stamp.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

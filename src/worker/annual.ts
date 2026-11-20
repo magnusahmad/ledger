@@ -4,7 +4,7 @@ import { makeRuntimeCtx } from "@/lib/runtime";
 import { enabledModules, productionProblems } from "@/lib/modules";
 import { withLease } from "@/domain/kv";
 import { runAnnualCycle } from "@/annual/cycle";
-import { cycleDeps } from "@/annual/runtime";
+import { cycleDeps, recordsLinked } from "@/annual/runtime";
 import { closePools } from "@/db/client";
 
 const ctx = { ...makeRuntimeCtx(), userId: "system:worker" };
@@ -15,7 +15,7 @@ const deps = cycleDeps(ctx.config);
 let stopping = false;
 for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { stopping = true; });
 
-console.log(`Annual worker started: mailboxes ${deps.sync.mailboxes.length}, CSA ${deps.openCsa ? "on" : "off"}, status files ${deps.statusDir ? "on" : "off"}`);
+console.log(`Annual worker started: mailboxes ${deps.sync.mailboxes.length}, ${deps.records.label} ${recordsLinked(ctx.config) ? "on" : "off"}, status files ${deps.statusDir ? "on" : "off"}`);
 while (!stopping) {
   try {
     const h = await withLease(ctx, "annual-cycle", Math.ceil(ctx.config.ANNUAL_POLL_MS / 1000) + 600, () => runAnnualCycle(ctx, deps));

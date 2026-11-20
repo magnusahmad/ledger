@@ -3,7 +3,12 @@
 import { describe, it, expect } from "vitest";
 import { enabledModules, moduleForPath, productionProblems } from "@/lib/modules";
 import { proxyDecision } from "@/lib/proxy-decision";
-import { loadConfig } from "@/lib/config";
+import { loadConfig as load } from "@/lib/config";
+import type { Installation } from "@/lib/installation";
+
+// A fictional client profile: a production installation has to name one (DECISIONS.md #65).
+const registry: Record<string, Installation> = { acme: { id: "acme", name: "Acme Secretaries", product: "clerk", modules: ["annual"], settings: { DISPATCH_TEMPLATE: "clients/acme/data/dispatch-template.json" } } };
+const loadConfig = (env: Record<string, string | undefined>) => load(env, registry);
 
 describe("installation modules", () => {
   it("a development install with no module list keeps every module on", () => {
@@ -69,7 +74,7 @@ describe("request gate", () => {
 });
 
 describe("production guard", () => {
-  const base = { INSTALLATION: "production", MODULES: "annual", AUTH: "1", APP_SECRET: "s".repeat(48), or_api_key: "k", LLM_MODE: "live", DATABASE_URL: "postgres://pilot@localhost/clerk_uhy", DEMO_TOOLS: "0" };
+  const base = { INSTALLATION: "production", INSTALLATION_PROFILE: "acme", MODULES: "annual", AUTH: "1", APP_SECRET: "s".repeat(48), or_api_key: "k", LLM_MODE: "live", DATABASE_URL: "postgres://pilot@localhost/clerk_uhy", DEMO_TOOLS: "0" };
 
   it("a correctly configured production installation has no problems", () => {
     expect(productionProblems(loadConfig(base))).toEqual([]);

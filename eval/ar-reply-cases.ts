@@ -24,7 +24,7 @@ export type ReplyCase = {
 export const CASE_COMPANY = {
   companyName: "Alpha Trading Limited", year: 2026, madeUpDate: "2026-11-20", today: "2026-11-25",
   particulars: {
-    registeredOffice: "Unit 1, 1/F, Example Building, 1 Example Road, Kowloon", backupTakenAt: "2026-11-25T04:30:00.000Z",
+    registeredOffice: "Unit 1, 1/F, Example Building, 1 Example Road, Kowloon", asAt: "2026-11-25T04:30:00.000Z",
     officers: [
       { role: "director" as const, name: "CHAN Tai Man", nameZh: "陳大文" },
       { role: "director" as const, name: "LEE Siu Ming", nameZh: "李小明" },

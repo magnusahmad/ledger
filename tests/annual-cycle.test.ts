@@ -1,4 +1,5 @@
-// The pilot's background cycle: import CSA when a newer restore exists, open cases, read mail, and
+// The pilot's background cycle: bring in a newer copy of the records (here CSA's restore) when one
+// exists, open cases, read mail, and
 // write the status files to the share. One failing step is reported in the health record and does
 // not stop the others; the health record holds no client data.
 import { describe, it, expect, beforeEach } from "vitest";
@@ -8,7 +9,8 @@ import path from "node:path";
 import { resetDb, makeCtx } from "./helpers";
 import { firm } from "@/db/schema";
 import { runAnnualCycle, readHealth, type CycleDeps } from "@/annual/cycle";
-import { SqlCsaSource } from "@/integrations/csa/sql-source";
+import { SqlCsaSource, type CsaSource } from "@/integrations/csa/sql-source";
+import { csaRecords } from "@/integrations/csa/records";
 import { listCases } from "@/annual/cases";
 import type { MailboxSource } from "@/annual/mail-sync";
 
@@ -19,12 +21,13 @@ const emptyMail: MailboxSource = {
   full: async () => { throw new Error("unused"); }, createDraft: async () => { throw new Error("unused"); },
 };
 
-async function deps(over: Partial<CycleDeps> = {}): Promise<CycleDeps & { restoreStatus: string }> {
+type Open = () => Promise<{ source: CsaSource; close: () => Promise<void> }>;
+async function deps(over: Partial<CycleDeps> & { openCsa?: Open } = {}): Promise<CycleDeps & { restoreStatus: string }> {
   const dir = await mkdtemp(path.join(tmpdir(), "uhy-cycle-"));
   const restoreStatus = path.join(dir, "restore-status.json");
   await writeFile(restoreStatus, JSON.stringify({ ok: true, backupTakenAt: "2026-11-05T02:13:00.000Z", restoredAt: "2026-11-05T04:30:00.000Z" }));
   return {
-    restoreStatusFile: restoreStatus, openCsa: async () => ({ source: csa(), close: async () => {} }),
+    records: csaRecords({ restoreStatusFile: restoreStatus, open: over.openCsa ?? (async () => ({ source: csa(), close: async () => {} })) }),
     mail: emptyMail, sync: { mailboxes: ["ruby@uhy.example"], firmDomains: ["uhy.example"], lookbackDays: 60 },
     statusDir: path.join(dir, "status"), restoreStatus, withinDays: 60, ...over,
   };
@@ -41,7 +44,7 @@ describe("pilot background cycle", () => {
     expect((await listCases(ctx)).map((c) => c.clientCode)).toEqual(["A001"]);
     expect((await readdir(d.statusDir!)).sort()).toEqual(["Clerk annual returns.xlsx", "Clerk review log.csv"]);
     const h = await readHealth(ctx);
-    expect(h).toMatchObject({ csaBackupTakenAt: "2026-11-05T02:13:00.000Z", errors: {} });
+    expect(h).toMatchObject({ recordsAsAt: "2026-11-05T02:13:00.000Z", errors: {} });
     expect(h?.lastCycleAt).toBe("2026-11-05T05:00:00.000Z");
   });
 
@@ -61,7 +64,7 @@ describe("pilot background cycle", () => {
     const d = await deps();
     await writeFile(d.restoreStatus, JSON.stringify({ ok: false, backupTakenAt: "2026-11-06T02:13:00.000Z", error: "disk full" }));
     await runAnnualCycle(ctx, d);
-    expect((await readHealth(ctx))?.errors.csa).toMatch(/disk full/);
+    expect((await readHealth(ctx))?.errors.records).toMatch(/disk full/);
   });
 
   it("a failing mail sync is recorded and doesn't stop the status files", async () => {

@@ -8,10 +8,10 @@ import path from "node:path";
 import ExcelJS from "exceljs";
 import { resetDb, makeCtx } from "./helpers";
 import { client, firm } from "@/db/schema";
-import { filePaper, writeStatusFiles, type UhyFilingRules } from "@/annual/writeback";
+import { filePaper, writeStatusFiles, type FilingRules } from "@/annual/writeback";
 import { syncCases, listCases, recordRegistryCheck, markPrepared, confirmPayment } from "@/annual/cases";
 
-const rules: UhyFilingRules = { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" };
+const rules: FilingRules = { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" };
 
 describe("filing generated papers", () => {
   it("a generated annual return is saved in the client folder under UHY's naming convention", async () => {

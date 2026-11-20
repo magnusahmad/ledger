@@ -10,10 +10,10 @@ import type { Ctx } from "@/lib/ctx";
 import type { LlmMessage } from "@/integrations/types";
 import { arCase, arMail, arReply, arReplyItem, client as clientT, llmCall, type ReplyItemKind } from "@/db/schema";
 import { callAgent } from "@/agent/call";
-import { particularsFromCsa } from "@/integrations/csa/nar1";
 import { arPlaybook } from "./cases";
 import { annualReturnDates } from "./dispatch";
 import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, type ReplyReading } from "./reply-types";
+import type { Particulars, RecordsSource } from "./records";
 
 export const MAX_ATTEMPTS = 3;
 const MAX_FILES = 4;
@@ -42,7 +42,7 @@ documents: other attachments worth filing: an ID document, an address proof, a b
 
 export type ReplyInput = {
   today: string; caseKind: "AR" | "AGM"; companyName: string; year: number; madeUpDate: string | null;
-  particulars: Awaited<ReturnType<typeof particularsFromCsa>>;
+  particulars: Particulars | null;
   earlier: { direction: "in" | "out"; at: string; from: string; subject: string; text: string }[];
   message: { from: string; fromName: string | null; subject: string; receivedAt: string; text: string };
   /** content is loaded only for the files the model is given (attachmentPlan). */
@@ -111,7 +111,7 @@ export function itemsFromReading(r: ReplyReading, o: { caseKind: "AR" | "AGM"; e
   ];
 }
 
-async function inputFor(ctx: Ctx, mail: typeof arMail.$inferSelect): Promise<ReplyInput> {
+async function inputFor(ctx: Ctx, records: RecordsSource, mail: typeof arMail.$inferSelect): Promise<ReplyInput> {
   const c = (await ctx.db.query.arCase.findFirst({ where: and(eq(arCase.id, mail.caseId!), eq(arCase.firmId, ctx.firmId)) }))!;
   const cl = (await ctx.db.query.client.findFirst({ where: and(eq(clientT.id, c.clientId), eq(clientT.firmId, ctx.firmId)) }))!;
   const earlier = await ctx.db.select().from(arMail)
@@ -122,7 +122,7 @@ async function inputFor(ctx: Ctx, mail: typeof arMail.$inferSelect): Promise<Rep
   return {
     today: ctx.clock.today(), caseKind: c.kind, companyName: cl.nameEn, year: c.periodYear,
     madeUpDate: c.kind === "AR" && cl.incorporatedOn ? annualReturnDates({ incorporatedOn: cl.incorporatedOn, year: c.periodYear, playbook: await arPlaybook(ctx) }).madeUpDate : null,
-    particulars: await particularsFromCsa(ctx, cl.id),
+    particulars: await records.particulars(ctx, cl.id),
     earlier: earlier.slice(-6).map((e) => ({ direction: e.direction, at: e.receivedAt.toISOString(), from: e.fromAddr, subject: e.subject, text: e.text })),
     message: { from: mail.fromAddr, fromName: mail.fromName, subject: mail.subject, receivedAt: mail.receivedAt.toISOString(), text: mail.text },
     attachments,
@@ -130,13 +130,13 @@ async function inputFor(ctx: Ctx, mail: typeof arMail.$inferSelect): Promise<Rep
 }
 
 /** Reads one inbound email linked to a case. Safe to call again: a finished reading is left alone. */
-export async function readReply(ctx: Ctx, mailId: string) {
+export async function readReply(ctx: Ctx, records: RecordsSource, mailId: string) {
   const mail = await ctx.db.query.arMail.findFirst({ where: and(eq(arMail.id, mailId), eq(arMail.firmId, ctx.firmId)) });
   if (!mail) throw new Error("Email not found");
   if (mail.direction !== "in" || mail.status !== "linked" || !mail.caseId) throw new Error("Only a client's email linked to a case is read");
   const prev = await ctx.db.query.arReply.findFirst({ where: and(eq(arReply.firmId, ctx.firmId), eq(arReply.mailId, mailId)) });
   if (prev && (prev.status === "read" || prev.reviewedAt || prev.attempts >= MAX_ATTEMPTS)) return prev;
-  const input = await inputFor(ctx, mail);
+  const input = await inputFor(ctx, records, mail);
   const prompt = buildReplyPrompt(input);
   const id = prev?.id ?? ctx.ids.next("arr");
   const base = { firmId: ctx.firmId, mailId, caseId: mail.caseId, attachments: prompt.attachments, promptVersion: PROMPT_VERSION, attempts: (prev?.attempts ?? 0) + 1, readAt: ctx.clock.now() };
@@ -168,7 +168,7 @@ async function lastModel(ctx: Ctx) {
 }
 
 /** Reads every client email on a case that hasn't been read yet, oldest first; failures are retried up to MAX_ATTEMPTS. */
-export async function readPendingReplies(ctx: Ctx, o: { limit?: number } = {}) {
+export async function readPendingReplies(ctx: Ctx, records: RecordsSource, o: { limit?: number } = {}) {
   const rows = await ctx.db.select({ id: arMail.id }).from(arMail)
     .leftJoin(arReply, and(eq(arReply.mailId, arMail.id), eq(arReply.firmId, arMail.firmId)))
     .where(and(
@@ -176,6 +176,6 @@ export async function readPendingReplies(ctx: Ctx, o: { limit?: number } = {}) {
       or(isNull(arReply.id), and(eq(arReply.status, "failed"), lt(arReply.attempts, MAX_ATTEMPTS), isNull(arReply.reviewedAt))),
     )).orderBy(asc(arMail.receivedAt)).limit(o.limit ?? 20);
   let read = 0, failed = 0;
-  for (const r of rows) { const out = await readReply(ctx, r.id); if (out.status === "read") read++; else failed++; }
+  for (const r of rows) { const out = await readReply(ctx, records, r.id); if (out.status === "read") read++; else failed++; }
   return { read, failed };
 }

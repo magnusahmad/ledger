@@ -18,6 +18,12 @@ foreach ($svc in 'postgresql*', 'MSSQL$SQLEXPRESS') { if (-not (Get-Service $svc
 foreach ($f in "$Root\caddy\caddy.exe", "$PSScriptRoot\services\WinSW-x64.exe") { if (-not (Test-Path $f)) { throw "Missing $f (README.md)" } }
 if (-not (Test-Path "$Root\certs\server.crt")) { throw "Copy server.crt and server.key from pilot-ca.sh to $Root\certs first" }
 
+Step 'Stamping the build'
+# build.json says which commit this copy is; the health check reports it. Without git here, the copy
+# keeps the stamp it came with (run `npm run build:stamp` in the repository before copying it over).
+if (Test-Path (Join-Path $Source '.git')) { Push-Location $Source; try { node scripts\build-stamp.mjs } finally { Pop-Location } }
+elseif (-not (Test-Path (Join-Path $Source 'build.json'))) { Write-Warning 'This copy has no build.json, so the health check cannot say which build it is. Run "npm run build:stamp" in the repository before copying it here.' }
+
 Step 'Copying the app'
 foreach ($d in "$Root\app", "$Root\deploy", 'C:\ProgramData\Clerk\logs', 'C:\ProgramData\Clerk\csa') { if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d | Out-Null } }
 robocopy $Source "$Root\app" /MIR /XD node_modules .next .next-* storage private crv-kb .git /XF .env .env.* /NFL /NDL /NJH /NJS | Out-Null

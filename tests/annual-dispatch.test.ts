@@ -7,7 +7,7 @@ import type { PlaybookDef } from "@/domain/playbook-types";
 import { annualReturnDates, checkReturnBy, registryFeeOn, maxRegistryFee, shouldCombine, buildDispatchEmail, type DispatchInput } from "@/annual/dispatch";
 
 const ar = (hk as unknown as PlaybookDef[]).find((p) => p.id === "hk.annualReturn")!;
-const template = (await import("../seed/uhy/dispatch-template.json")).default;
+const template = (await import("../clients/uhy/data/dispatch-template.json")).default;
 
 describe("annual-return dates", () => {
   it("the made-up date is the incorporation anniversary and the deadline 42 days later, from playbook data", () => {

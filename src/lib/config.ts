@@ -1,6 +1,7 @@
 // Typed environment. Each integration is "real" only when its keys are present;
 // otherwise the fake adapter is used (BUILD_SPEC.md §2: credentials never block).
 import { z } from "zod";
+import { installationProfile, type Installation } from "./installation";
 
 const Env = z.object({
   DATABASE_URL: z.string().default("postgres://localhost/clerk"),
@@ -49,11 +50,14 @@ const Env = z.object({
   MAILROOM_REPLAY: z.enum(["0", "1"]).default("1"),
   /** "production" for a firm installation: refuses demo and fixture parts (DECISIONS.md #56). */
   INSTALLATION: z.enum(["dev", "production"]).default("dev"),
+  /** The client this installation is for: a folder under clients/ (DECISIONS.md #65). Its profile
+   *  supplies the modules and the client's own data files; anything set here overrides it. */
+  INSTALLATION_PROFILE: z.string().optional(),
   /** Comma-separated modules this installation loads (src/lib/modules.ts); empty = all. */
   MODULES: z.string().optional(),
   /** Staff sign-in. Defaults on in production, off for the single-user development build. */
   AUTH: z.enum(["0", "1"]).optional(),
-  /** UHY pilot (annual module). Team mailboxes read through Microsoft Graph, comma-separated. */
+  /** Annual module. Team mailboxes read through Microsoft Graph, comma-separated. */
   PILOT_MAILBOXES: z.string().default(""),
   FIRM_EMAIL_DOMAINS: z.string().default(""),
   MAIL_LOOKBACK_DAYS: z.coerce.number().default(60),
@@ -70,9 +74,11 @@ const Env = z.object({
   CSA_RESTORE_STATUS_FILE: z.string().optional(),
   /** UNC path of the share mapped as F:, and the share folder for the status workbook and log. */
   FILING_ROOT: z.string().optional(),
-  FILING_RULES: z.string().default("seed/uhy/filing-rules.json"),
+  /** The firm's own naming on its share and its own email wording: set by the installation
+   *  profile, with no default, so one firm's files are never used for another. */
+  FILING_RULES: z.string().optional(),
   STATUS_DIR: z.string().optional(),
-  DISPATCH_TEMPLATE: z.string().default("seed/uhy/dispatch-template.json"),
+  DISPATCH_TEMPLATE: z.string().optional(),
   ANNUAL_WINDOW_DAYS: z.coerce.number().default(60),
   ANNUAL_POLL_MS: z.coerce.number().default(300_000),
   /** 1: the model reads client replies on annual-return cases and proposes; staff review everything. */
@@ -89,8 +95,10 @@ export type Config = z.infer<typeof Env> & {
   authRequired: boolean;
 };
 
-export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
-  const e = Env.parse(env);
+export function loadConfig(env: Record<string, string | undefined> = process.env, registry?: Record<string, Installation>): Config {
+  const profile = env.INSTALLATION_PROFILE ? installationProfile(env.INSTALLATION_PROFILE, registry) : null;
+  const set = Object.fromEntries(Object.entries(env).filter(([, v]) => v !== undefined));
+  const e = Env.parse(profile ? { MODULES: profile.modules.join(","), ...profile.settings, ...set } : set);
   const gmailReady = !!(e.GOOGLE_CLIENT_ID && e.GOOGLE_CLIENT_SECRET);
   const agentmailReady = !!(e.AGENTMAIL_API_KEY && e.AGENTMAIL_INBOX);
   const mailProvider =

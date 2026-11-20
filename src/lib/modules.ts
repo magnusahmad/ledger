@@ -1,6 +1,6 @@
 // Installation modules (DECISIONS.md #56): one codebase and schema; each installation lists the
 // modules it loads. A switched-off module's pages and API routes answer "not found".
-import type { Config } from "./config";
+import { loadConfig, type Config } from "./config";
 
 export const MODULE_IDS = ["desk", "annual", "cdd", "mailroom", "signing"] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
@@ -55,6 +55,18 @@ export function productionProblems(c: Config): string[] {
   if (c.APP_SECRET === DEFAULT_SECRET) p.push("APP_SECRET is the development default secret");
   if (!c.authRequired) p.push("staff sign-in is switched off");
   if (c.DATABASE_URL === "postgres://localhost/clerk") p.push("DATABASE_URL is the development database");
-  try { enabledModules(c); } catch (e) { p.push((e as Error).message); }
+  if (!c.INSTALLATION_PROFILE) p.push("INSTALLATION_PROFILE is not set, so this installation doesn't say which client it is for");
+  try {
+    if (enabledModules(c).has("mailroom")) {
+      // The development defaults are the anonymised demo's; a firm files and writes under its own.
+      const demo = loadConfig({});
+      for (const k of ["MAILROOM_RULES", "MAILROOM_CLIENT_SOURCES", "MAILROOM_FIRM_NAME", "MAILROOM_FROM"] as const)
+        if (c[k] === demo[k]) p.push(`the mail room is still on the demo's ${k}; set the firm's own`);
+    }
+    if (enabledModules(c).has("annual")) {
+      if (!c.DISPATCH_TEMPLATE) p.push("the annual module has no dispatch template (DISPATCH_TEMPLATE), so client emails can't be drafted");
+      if (c.FILING_ROOT && !c.FILING_RULES) p.push("papers are filed to a share (FILING_ROOT) but the firm's filing rules (FILING_RULES) are not set");
+    }
+  } catch (e) { p.push((e as Error).message); }
   return p;
 }

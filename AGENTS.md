@@ -22,6 +22,7 @@ It is **not a SaaS product**: there are no outside customers and no platform bil
 - **Never store or display credentials in plain text.** Companies Registry e-accounts, bank API keys, etc. go in a secrets vault with access logging.
 - **Statutory registers are effective-dated.** Every officer appointment, shareholding and controller entry has from/to dates and a full history. Registers must be reproducible as at any date. Design this in from the start; it's very hard to retrofit.
 - **Each firm's data is isolated.** Every row carries `firm_id`, enforced by Postgres row-level security. Staff see only their own firm; only CRV group roles see across firms. Pre-acquisition trial firms run in their own deployment. Like effective dating, this is hard to retrofit, so it's built in from the first migration (`docs/DECISIONS.md` #20).
+- **The core names no client.** Each client's differences live in `clients/<id>/` (config and data first, then client-only code, then a core change behind a setting). `src/` never names a client or imports from `clients/` except through `src/lib/installation.ts`; `tests/client-layer.test.ts` enforces it. Read `clients/README.md` before any client-specific work (`docs/DECISIONS.md` #65).
 - **Playbooks are data, not code.** Company secretaries must be able to review and edit them. Seed data lives in `seed/playbooks.json`.
 - **Three languages throughout**: English, Traditional Chinese (繁體中文, Hong Kong clients), Simplified Chinese (简体中文, mainland clients). Per client and per contact.
 - **Hong Kong data residency** for client data by default.
@@ -67,6 +68,7 @@ Neutral light theme, low clutter, clear visual precedence. IBM Plex Sans with No
 - `docs/CR_TPSI.md`: scope for filing with the Companies Registry through its Third Party Software Interface (not built yet).
 - `docs/WEIXIN_GATEWAY.md`: spec for a direct Weixin OpenClaw channel (iLink protocol) without OpenClaw, plus a review of the earlier gateway proposal.
 - Company-level knowledge (thesis, market research, service workflows, meetings) lives in the separate CRV knowledge base, not in this repo. See "CRV knowledge base" below.
+- `clients/README.md`: the client layer. One folder per client (`clients/uhy/`, `clients/cwccpa/`) with its installation profile, data, client-only code, ops scripts, docs and tests. Client pilot documents live there, not in `docs/`.
 - `seed/playbooks.json`: 12 draft playbooks (steps, requirements, documents, deadlines, fees, notes, trigger keywords).
 - `seed/requirement-items.json`: 35 reusable requirement items with trilingual labels and extraction hints.
 - `seed/message-templates.json`: trilingual message building blocks (request, chase, confirmation, invoice lines, payment reminder). Stored as JS function source from the prototype; port to a proper template format (never `eval` it).

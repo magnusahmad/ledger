@@ -1,5 +1,5 @@
-// Writing results back into UHY's own systems (UHY pilot brief, "Principles"): papers into the client
-// folders on F: under the firm's naming convention (seed/uhy/filing-rules.json), never overwriting;
+// Writing results back into the firm's own systems (UHY pilot brief, "Principles"): papers into the client
+// folders on its share under the firm's naming convention (the installation's FILING_RULES), never overwriting;
 // and a status workbook plus review log on the share, regenerated from the database, so staff keep
 // the record without the app. The log starts with a byte-order mark so Excel shows Chinese correctly.
 import { mkdir, open, rename, writeFile } from "node:fs/promises";
@@ -11,14 +11,14 @@ import { arCase, arCaseEvent, client as clientT } from "@/db/schema";
 import { cleanSegment, safeTarget } from "@/mailroom/rules";
 import { listCases } from "./cases";
 
-export type UhyFilingRules = { clientFolder: string; annualReturn: string; agm: string };
+export type FilingRules = { clientFolder: string; annualReturn: string; agm: string };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const compactDate = (d: string) => `${Number(d.slice(8, 10))}${MONTHS[Number(d.slice(5, 7)) - 1]}${d.slice(0, 4)}`;
 const fill = (t: string, v: Record<string, string>) => cleanSegment(t.replace(/\{(\w+)\}/g, (_, k: string) => cleanSegment(v[k] ?? "")));
 
 /** Saves a generated paper in the client's folder; adds " (2)", " (3)"… rather than overwrite anything. */
-export async function filePaper(o: { root: string; rules: UhyFilingRules; client: { code: string | null; name: string }; kind: "annualReturn" | "agm"; madeUpDate: string | null; year: number; content: Buffer }): Promise<string> {
+export async function filePaper(o: { root: string; rules: FilingRules; client: { code: string | null; name: string }; kind: "annualReturn" | "agm"; madeUpDate: string | null; year: number; content: Buffer }): Promise<string> {
   const v = { code: o.client.code ?? "", client: o.client.name, madeUp: o.madeUpDate ? compactDate(o.madeUpDate) : "", year: String(o.year) };
   const folder = fill(o.rules.clientFolder, v);
   const base = fill(o.rules[o.kind], v);

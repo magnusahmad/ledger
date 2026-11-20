@@ -1,0 +1,20 @@
+{
+  "clientFolder": "CWCHK Client Folder/{client}",
+  "unsortedFolder": "_Mail room unsorted",
+  "display": { "root": "X:\\", "separator": "\\" },
+  "types": {
+    "ird_demand_note": { "label": "IRD notice of assessment and demand note (tax to pay)", "folder": "{codePrefix}Tax Folder", "file": "{date} IRD demand note {taxYear}" },
+    "ird_assessment_no_tax": { "label": "IRD notice of assessment with nothing to pay (loss or nil)", "folder": "{codePrefix}Tax Folder", "file": "{date} IRD assessment {taxYear}" },
+    "ird_tax_return_issued": { "label": "Profits tax return issued (BIR51)", "folder": "{codePrefix}Tax Folder", "file": "{date} BIR51 issued {taxYear}" },
+    "ird_employer_return": { "label": "Employer's return issued (BIR56A)", "folder": "{codePrefix}Tax Folder", "file": "{date} BIR56A issued {taxYear}" },
+    "ird_enquiry": { "label": "IRD enquiry letter", "folder": "{codePrefix}Tax Folder", "file": "{date} IRD enquiry {taxYear}" },
+    "ird_other": { "label": "Other IRD letter", "folder": "{codePrefix}Tax Folder", "file": "{date} IRD letter" },
+    "br_renewal": { "label": "Business registration renewal demand", "folder": "", "file": "{date} BR renewal demand" },
+    "cr_annual_return": { "label": "Companies Registry annual return or late filing notice", "folder": "", "file": "{date} Companies Registry annual return notice" },
+    "cr_other": { "label": "Other Companies Registry letter", "folder": "", "file": "{date} Companies Registry letter" },
+    "mpf_notice": { "label": "MPF contribution or surcharge notice", "folder": "", "file": "{date} MPF notice" },
+    "bank_statement": { "label": "Bank statement or advice", "folder": "", "file": "{date} {sender} statement" },
+    "junk": { "label": "Advertising or junk mail", "folder": "Junk", "file": "{date} {sender}", "noEmail": true, "unsorted": true }
+  },
+  "fallback": { "label": "Letter", "folder": "", "file": "{date} {sender} letter" }
+}

@@ -10,10 +10,11 @@ import { resetDb, makeCtx } from "./helpers";
 import { arCase, firm, appUser } from "@/db/schema";
 import { importCsa } from "@/integrations/csa/import";
 import { SqlCsaSource } from "@/integrations/csa/sql-source";
+import { csaRecords } from "@/integrations/csa/records";
 import { syncCases, listCases, recordRegistryCheck, confirmPayment, markPrepared } from "@/annual/cases";
 import { prepareCase, draftDispatch, type AnnualDeps } from "@/annual/service";
 import type { MailboxSource } from "@/annual/mail-sync";
-import template from "../seed/uhy/dispatch-template.json";
+import template from "../clients/uhy/data/dispatch-template.json";
 
 const t: Record<string, Record<string, unknown>[]> = {
   companies: [
@@ -43,7 +44,7 @@ async function setup() {
   await syncCases(ctx, { withinDays: 60 });
   const root = await mkdtemp(path.join(tmpdir(), "uhy-svc-"));
   const spy = new DraftSpy();
-  const deps: AnnualDeps = { mail: spy as unknown as MailboxSource, mailboxes: ["ruby@uhy.example", "coe@uhy.example"], filingRoot: root, filingRules: { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" }, template };
+  const deps: AnnualDeps = { records: csaRecords(), mail: spy as unknown as MailboxSource, mailboxes: ["ruby@uhy.example", "coe@uhy.example"], filingRoot: root, filingRules: { clientFolder: "{code}-{client}", annualReturn: "{code}-Annual Return-{madeUp}", agm: "{code}-AGM-{year}" }, template };
   const cases = await listCases(ctx);
   return { ctx, deps, spy, root, alpha: cases.find((c) => c.clientCode === "A001" && c.kind === "AR")!, beta: cases.find((c) => c.clientCode === "B002" && c.kind === "AR")! };
 }

@@ -123,7 +123,7 @@ describe("annual-return facts from the CSA snapshot", () => {
     ] }]);
     expect(r.input.capital).toEqual([{ className: "Ordinary", currency: "HKD", totalNumber: 10000, totalAmount: 10000, paidUp: 10000 }]);
     expect(r.input.signer).toEqual({ name: "CHAN Tai Man", capacity: "director" });
-    expect(r.backupTakenAt).toBe("2026-11-05T02:13:00.000Z");
+    expect(r.asAt).toBe("2026-11-05T02:13:00.000Z");
   });
 
   it("a corporate director stops the automatic NAR1 and says to use CSA's form", async () => {
@@ -146,6 +146,6 @@ describe("annual-return facts from the CSA snapshot", () => {
     const ctx = makeCtx(); await seedFirm(ctx);
     await importCsa(ctx, sourceFor(tables()), { backupTakenAt: new Date("2026-11-05T02:13:00Z") });
     const [a] = await ctx.db.select().from(client).where(eq(client.code, "A001"));
-    expect(await dispatchFactsFromCsa(ctx, a.id)).toEqual({ signer: "CHAN Tai Man", directors: 1, members: 2, corporateMembers: 1, backupTakenAt: "2026-11-05T02:13:00.000Z" });
+    expect(await dispatchFactsFromCsa(ctx, a.id)).toEqual({ signer: "CHAN Tai Man", directors: 1, members: 2, corporateMembers: 1, asAt: "2026-11-05T02:13:00.000Z" });
   });
 });

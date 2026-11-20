@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
 import { mkdtemp, writeFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describeAccess, readAccessClients, openAccess, findAccessCopy, type AccessDb } from "@/integrations/uhy/access";
+import { describeAccess, readAccessClients, openAccess, findAccessCopy, type AccessDb } from "../src/access";
 
 function fakeDb(tables: Record<string, { columns: { name: string; type: string }[]; rows: Record<string, unknown>[] }>): AccessDb {
   return {

@@ -1,6 +1,6 @@
 // Annual-return dates, Registry fees and the client dispatch email (UHY pilot brief, "The annual
 // cycle"). Every date in the email comes from one computed record; fees come from playbook data;
-// wording comes from the firm's template (seed/uhy/dispatch-template.json). Statutory rules here
+// wording comes from the firm's template (the installation's DISPATCH_TEMPLATE). Statutory rules here
 // need company-secretary verification.
 import type { PlaybookDef } from "@/domain/playbook-types";
 import type { Lang } from "@/db/schema";

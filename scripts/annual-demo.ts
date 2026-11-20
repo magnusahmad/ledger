@@ -11,6 +11,7 @@ import { firm } from "@/db/schema";
 import { createStaffUser } from "@/lib/auth";
 import { importCsa } from "@/integrations/csa/import";
 import { SqlCsaSource } from "@/integrations/csa/sql-source";
+import { csaRecords } from "@/integrations/csa/records";
 import { syncCases, listCases, recordRegistryCheck, markPrepared, confirmPayment } from "@/annual/cases";
 import { kvSet } from "@/domain/kv";
 import { PDFDocument, StandardFonts } from "pdf-lib";
@@ -95,7 +96,7 @@ const scripted = new ScriptedLlm()
     changes: [{ changeType: "officer_particulars", subject: "CHAN Tai Man", detail: "New residential address: Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.", effectiveDate: null, quote: "His new address is Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.", source: "email" }],
     signedPapers: [], documents: [],
   });
-await readPendingReplies({ ...ctx, llm: scripted });
+await readPendingReplies({ ...ctx, llm: scripted }, csaRecords());
 const done = await review.repliesToReview(ruby, byCode("F1001").id);
 const full = await review.replyForReview(ruby, done[0].reply.id);
 await review.openSource(ruby, full.reply.id);
@@ -103,6 +104,6 @@ await review.answerCharges(ruby, full.items.find((i) => i.kind === "charges")!.i
 await review.decideItem(ruby, full.items.find((i) => i.kind === "change")!.id, { action: "accept" });
 await review.finishReview(ruby, full.reply.id);
 
-await kvSet(ctx, "annual.health", { lastCycleAt: new Date().toISOString(), csaBackupTakenAt: backup.toISOString(), csaImportedAt: new Date().toISOString(), lastMailSyncAt: new Date().toISOString(), lastStatusWriteAt: null, errors: {} });
+await kvSet(ctx, "annual.health", { lastCycleAt: new Date().toISOString(), recordsAsAt: backup.toISOString(), recordsImportedAt: new Date().toISOString(), lastMailSyncAt: new Date().toISOString(), lastStatusWriteAt: null, errors: {} });
 console.log(`Seeded ${cs.length} annual-return cases. Sign in as ruby@firm.example / demo password 123`);
 await closePools();

@@ -1,12 +1,12 @@
 // Reads UHY's DN ("Debit Note") workbook: its client list and annual-cycle tracker, one company per
-// row. Columns are found by header name (seed/uhy/dn-columns.json), never by position; missing and
+// row. Columns are found by header name (clients/uhy/data/dn-columns.json), never by position; missing and
 // unknown columns are reported. A value that doesn't parse is reported against its row and column
 // and the field is left empty, never guessed. The file is read into memory and never written.
 // discoverWorkbook describes any workbook's headers and value shapes without returning any values,
 // for the first look at a real file.
 import { readFile } from "node:fs/promises";
 import ExcelJS from "exceljs";
-import dnColumns from "../../../seed/uhy/dn-columns.json";
+import dnColumns from "../data/dn-columns.json";
 
 export type Tick = "yes" | "no" | "not_recorded";
 export type MonthDay = { month: number; day: number };

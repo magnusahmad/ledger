@@ -16,7 +16,7 @@ export default async function AnnualCases() {
   return (
     <>
       <h1>Due in the next two months</h1>
-      <p className="sub">{health?.csaBackupTakenAt ? `From CSA as at ${fmt(health.csaBackupTakenAt, true)}. Changes made in CSA since then appear after the next backup.` : "Waiting for the first copy of CSA."}</p>
+      <p className="sub">{health?.recordsAsAt ? `From CSA as at ${fmt(health.recordsAsAt, true)}. Changes made in CSA since then appear after the next backup.` : "Waiting for the first copy of CSA."}</p>
       {problems.length > 0 && <div className="banner amber" style={{ marginTop: 18 }}>Something needs attention: {problems.join(" ")}</div>}
       {waiting.length > 0 && <div className="banner blue" style={{ marginTop: 18 }}><Link href="/annual/mail">{waiting.length === 1 ? "1 email needs" : `${waiting.length} emails need`} you to choose its company</Link></div>}
       {open.length === 0 ? <p className="empty" style={{ marginTop: 24 }}>Nothing due.</p> : (
