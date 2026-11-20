@@ -1,4 +1,4 @@
-// CWCCPA mail room demo: the morning's post goes through the copier, every letter is read,
+// Mail room demo: the morning's post goes through the copier, every letter is read,
 // matched, filed to the firm's server and drafted to the client, with staff approving each.
 // Fictional letters only. Run with the mail room server up (npm run mailroom:dev), then:
 //   npm run mailroom:reset && REC_BASE=http://localhost:3100 npx tsx scripts/record-demos/demo-mailroom.ts
@@ -13,7 +13,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 /** An Explorer-like view of the firm's X: drive: each client folder, and any letters filed today. */
 function finderStage(title: string, today: string) {
-  const top = path.join(SERVER, "CWCHK Client Folder");
+  const top = path.join(SERVER, "XYZ Client Folder");
   const clients = readdirSync(top).filter((f) => !f.startsWith(".")).sort();
   const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = path.join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
   const rel = (from: string, f: string) => path.relative(from, path.dirname(f)).split(path.sep).filter(Boolean).map((x) => `${esc(x)}\\`).join("");
@@ -68,10 +68,10 @@ const ON_SCAN = { x: 310, y: 470, w: 430 };    // the empty lower half of the le
 const SIDE = { x: 24, y: 150, w: 270 };        // left of the centred letter, focus view
 
 // ---- Opening ----
-await r.goto(r.stage("server-before.html", finderStage("X:\\CWCHK Client Folder", today)));
-await r.title("CWCCPA · Mail room", "Post in, filed and drafted", "Scan the post as usual. Each letter is read, matched to its client, filed on your server and drafted to the client. Staff approve every one.");
+await r.goto(r.stage("server-before.html", finderStage("X:\\XYZ Client Folder", today)));
+await r.title("AO1 Systems", "Mail room automation", "Batch-scan the day’s post. Letters are read, matched to the client, filed on the office server and attached to emails drafted in Outlook.");
 await r.hideTitle();
-await r.say("Your X: drive, as it is", "Each client keeps its folder, named with its client code. Nothing is migrated.", RIGHT);
+await r.say("Zero migration", "Each client keeps its folder, named with its client code. Nothing is migrated.", RIGHT);
 
 // ---- The scan arrives ----
 await r.goto("/mailroom");
@@ -93,7 +93,7 @@ await r.say("The morning's letters", "Every letter in the scan. The red 限 mark
 await r.hideRing();
 const panel = p.locator(".mr-panel");
 await r.ring(panel.locator("h1"), panel.locator(".mr-why"));
-await r.say("Matched, not guessed", "It found the IRD file number on the letter and matched it to ABC Trading Limited in your client list.", ON_SCAN);
+await r.say("Client ID matched", "It found the IRD file number on the letter and matched it to ABC Trading Limited in your client list.", ON_SCAN);
 await r.ring(panel.locator(".mr-action"));
 await r.say("What the client must do", "HK$48,200 by 28 November, read straight off the demand note.", ON_SCAN);
 await r.ring(panel.locator(".mr-files"));
@@ -108,7 +108,7 @@ await r.scrollTop();
 await r.click(panel.locator("[data-approve] button"));
 await p.waitForURL(/l=/);
 await p.locator(".mr-pages canvas").first().waitFor({ timeout: 30_000 });
-await r.say("Approved", "Filed on the server and saved as a draft in Outlook. Nothing is sent.", ON_SCAN);
+await r.say("Approved", "Letter filed on the server and client message saved as a draft in Outlook.", ON_SCAN);
 
 // ---- Focus mode and the keyboard ----
 await r.caption("Faster", "Hide the list and work from the keyboard: the letter in front, the decision underneath.", SIDE);
@@ -165,17 +165,14 @@ await r.cut(async () => {
 });
 
 // ---- Summary ----
-await r.ring(p.locator(".mr-stats"));
-await r.say("Done", "Twelve letters filed, ten client emails waiting in drafts. The time per letter is fast here because this is a demo; the side-by-side weeks measure it on your real post.", { x: 700, y: 180, w: 440 });
-await r.hideRing();
 
 // ---- The proof: server and Outlook ----
-await r.goto(r.stage("server-after.html", finderStage("X:\\CWCHK Client Folder", today)));
+await r.goto(r.stage("server-after.html", finderStage("X:\\XYZ Client Folder", today)));
 await r.say("On your X: drive", "Each letter in its client’s folder: tax letters in the tax folder. Undo takes back any filing.", RIGHT);
 const drafts = readdirSync(path.join(ROOT, "Outlook drafts")).filter((f) => f.endsWith(".eml")).map((f) => path.join(ROOT, "Outlook drafts", f));
 const abc = drafts.find((f) => readFileSync(f, "utf8").includes("david.chan@")) ?? drafts[0];
 await r.goto(r.stage("draft.html", await draftStage(abc)));
 await r.say("In Outlook", "Each email opens as an unsent draft with the scan attached. Staff read it and press Send.", RIGHT);
 await r.hideCaption();
-await r.title("CWCCPA · Mail room", "Two weeks side by side first", "We run alongside your team and measure accuracy and time per letter before anyone relies on it.");
+await r.title("AO1 Systems · Mailroom automation", "Reduce staff time on inbound mail by up to 90%", "We run alongside your team, testing accuracy and time savings before going live.");
 await r.finish("demos/cwccpa/mailroom-demo.mp4");

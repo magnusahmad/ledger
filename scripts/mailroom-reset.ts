@@ -26,7 +26,7 @@ async function main() {
   await runMigrations(url.toString());
 
   const ctx = makeRuntimeCtx();
-  await ctx.db.insert(firm).values({ id: ctx.firmId, legalName: "CWC CPA Limited", invoicePrefix: "CWC" }).onConflictDoNothing();
+  await ctx.db.insert(firm).values({ id: ctx.firmId, legalName: "XYZ CPA Limited", invoicePrefix: "XYZ" }).onConflictDoNothing();
   await ctx.db.delete(mailroomLetter).where(eq(mailroomLetter.firmId, ctx.firmId));
   await ctx.db.delete(mailroomBatch).where(eq(mailroomBatch.firmId, ctx.firmId));
   const mr = makeMailroom(ctx);
@@ -35,10 +35,10 @@ async function main() {
   await ctx.db.delete(kv).where(and(eq(kv.firmId, ctx.firmId), eq(kv.key, "mailroom.clientSync")));
   // A mock X: drive laid out like CWCCPA's: the client folders, and its Excel client list under Admin.
   const csv = readFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.csv"), "utf8");
-  const base = path.join(mr.serverRoot, "CWCHK Client Folder");
+  const base = path.join(mr.serverRoot, "XYZ Client Folder");
   for (const c of csvRows(csv, CSV_COLUMNS)) await mkdir(path.join(base, `${c.code}-${c.name}`, `${c.code}-Tax Folder`), { recursive: true });
   await mkdir(path.join(mr.serverRoot, "Admin"), { recursive: true });
-  await copyFile(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.xlsx"), path.join(mr.serverRoot, "Admin", "CWC client list.xlsx"));
+  await copyFile(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.xlsx"), path.join(mr.serverRoot, "Admin", "XYZ client list.xlsx"));
   await mkdir(path.join(mr.serverRoot, mr.rules.unsortedFolder), { recursive: true });
   await ctx.db.delete(mailroomClient).where(eq(mailroomClient.firmId, ctx.firmId));
   const sync = await syncClients(ctx, mr, mr.clientSources ?? []);

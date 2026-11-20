@@ -122,7 +122,7 @@ function Proposal({ letter, label, today, edit, display }: { letter: Letter; lab
         {!junk && <Link className="mr-link" href={`${base}&change=client`}>Not this client</Link>}
       </div>
       <details key={letter.id} className="mr-details" open={edit}>
-        <summary>{junk ? "Change where it goes" : "The email, and changes"}</summary>
+        <summary>{junk ? "Change where it goes" : "Show email draft"}</summary>
         {edit ? <EditForm letter={letter} /> : (
           <dl className="mr-dl">
             {letter.emailBody && <div><dt>Email to {letter.client?.contactName ?? letter.emailTo}, saved as a draft with the scan attached</dt><dd><div className="mr-mail"><b>{letter.emailSubject}</b>{"\n\n"}{letter.emailBody}</div></dd></div>}

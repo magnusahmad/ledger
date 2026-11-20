@@ -37,8 +37,8 @@ describe("Where the letter goes, as shown to staff", () => {
   });
 
   it("at a firm on a Windows share, the path reads the way staff know it, from the drive letter", () => {
-    expect(filingLine("CWCHK Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder", "x.pdf", { root: "X:\\", separator: "\\" }))
-      .toEqual({ path: "X:\\CWCHK Client Folder\\FL1401A1-ABC Trading Limited\\FL1401A1-Tax Folder", file: "x.pdf" });
+    expect(filingLine("XYZ Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder", "x.pdf", { root: "X:\\", separator: "\\" }))
+      .toEqual({ path: "X:\\XYZ Client Folder\\FL1401A1-ABC Trading Limited\\FL1401A1-Tax Folder", file: "x.pdf" });
   });
 
   it("a letter with no folder yet says so instead of showing an empty path", () => {

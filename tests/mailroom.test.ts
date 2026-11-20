@@ -66,9 +66,9 @@ beforeEach(async () => {
   await resetDb();
   ctx = makeCtx({ now: "2026-10-30T01:12:00Z" });
   ctx.firmId = "firm_cwc";
-  await ctx.db.insert(firm).values({ id: "firm_cwc", legalName: "CWC CPA Limited", invoicePrefix: "CWC" });
+  await ctx.db.insert(firm).values({ id: "firm_cwc", legalName: "XYZ CPA Limited", invoicePrefix: "XYZ" });
   tmp = await mkdtemp(path.join(os.tmpdir(), "mailroom-"));
-  mr = { drafts: new MemoryDraftBox(), serverRoot: path.join(tmp, "server"), scanDir: path.join(tmp, "scans"), rules: RULES, fromAddress: "mail@cwccpa.example", firmName: "CWC CPA" };
+  mr = { drafts: new MemoryDraftBox(), serverRoot: path.join(tmp, "server"), scanDir: path.join(tmp, "scans"), rules: RULES, fromAddress: "mail@xyzcpa.example", firmName: "XYZ CPA" };
   await mkdir(mr.serverRoot, { recursive: true });
   await importClients(ctx, CLIENTS_CSV);
 });
@@ -197,16 +197,16 @@ describe("CWCCPA's server layout (seed/mailroom/rules.json, from the folder exam
   const cwc = JSON.parse(readFileSync(path.join(process.cwd(), "seed/mailroom/rules.json"), "utf8")) as FilingRules;
   const client = { folder: "FL1401A1-ABC Trading Limited", code: "FL1401A1" };
 
-  it("a tax letter goes in the client's tax folder: CWCHK Client Folder/<code>-<name>/<code>-Tax Folder", () => {
-    expect(fileTarget(cwc, read(), client, "2026-10-30").folder).toBe("CWCHK Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder");
+  it("a tax letter goes in the client's tax folder: XYZ Client Folder/<code>-<name>/<code>-Tax Folder", () => {
+    expect(fileTarget(cwc, read(), client, "2026-10-30").folder).toBe("XYZ Client Folder/FL1401A1-ABC Trading Limited/FL1401A1-Tax Folder");
   });
 
   it("a letter that isn't about tax goes in the client's own folder, not a subfolder we made up", () => {
-    expect(fileTarget(cwc, read({ type: "cr_annual_return" }), client, "2026-10-30").folder).toBe("CWCHK Client Folder/FL1401A1-ABC Trading Limited");
+    expect(fileTarget(cwc, read({ type: "cr_annual_return" }), client, "2026-10-30").folder).toBe("XYZ Client Folder/FL1401A1-ABC Trading Limited");
   });
 
   it("junk and letters for non-clients stay out of the client folders", () => {
-    expect(fileTarget(cwc, read({ type: "junk", sender: "Pacific Office Supplies" }), null, "2026-10-30").folder.startsWith("CWCHK Client Folder/FL")).toBe(false);
+    expect(fileTarget(cwc, read({ type: "junk", sender: "Pacific Office Supplies" }), null, "2026-10-30").folder.startsWith("XYZ Client Folder/FL")).toBe(false);
   });
 
   it("importing the client index with client codes names each folder <code>-<name>, as the firm does", async () => {
@@ -383,7 +383,7 @@ describe("Undo and corrections", () => {
 
 describe("Email drafts for Outlook", () => {
   it("an .eml draft opens in Outlook as an unsent message with the scan attached", async () => {
-    const box = new EmlDraftBox(path.join(tmp, "drafts"), "mail@cwccpa.example");
+    const box = new EmlDraftBox(path.join(tmp, "drafts"), "mail@xyzcpa.example");
     const ref = await box.save({ to: ["david@abc.example"], subject: "Letter", text: "Hello", attachments: [{ filename: "a.pdf", mime: "application/pdf", content: Buffer.from("%PDF") }] });
     const eml = await readFile(path.join(tmp, "drafts", ref), "utf8");
     expect(eml).toMatch(/^X-Unsent: 1/m);

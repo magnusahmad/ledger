@@ -1,5 +1,5 @@
 {
-  "clientFolder": "CWCHK Client Folder/{client}",
+  "clientFolder": "XYZ Client Folder/{client}",
   "unsortedFolder": "_Mail room unsorted",
   "display": { "root": "X:\\", "separator": "\\" },
   "types": {

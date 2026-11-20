@@ -4,11 +4,11 @@
 //   demos/cwccpa/specimen-abc-ird-demand.pdf   one letter, for the live demo
 //   seed/mailroom/cwccpa-demo-clients.csv   the firm's client index for the demo
 //   seed/mailroom/cwccpa-demo-clients.xlsx  the same, as the firm's Excel client list
-// Every company, person and number here is invented. Each page is marked SPECIMEN.
+// Every company, person and number here is invented. Each page's footer says the letter is fictional.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import ExcelJS from "exceljs";
-import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 type Letter = {
   sender: string; senderAddr: string[]; refs: [string, string][]; to: string[]; title: string;
@@ -153,7 +153,6 @@ async function drawLetter(doc: PDFDocument, l: Letter, font: PDFFont, bold: PDFF
     }
     p.drawText(`Page ${i + 1} of ${l.pages.length}`, { x: 56, y: 40, size: 8.5, font, color: grey });
     p.drawText("Fictional letter for demonstration only", { x: 360, y: 40, size: 8.5, font, color: grey });
-    p.drawText("SPECIMEN", { x: 150, y: 330, size: 92, font: bold, color: rgb(0.85, 0.85, 0.87), rotate: degrees(35), opacity: 0.45 });
   });
 }
 
@@ -161,7 +160,7 @@ async function main() {
   const doc = await PDFDocument.create();
   const fixed = new Date("2026-10-26T00:00:00Z");
   doc.setCreationDate(fixed); doc.setModificationDate(fixed);
-  doc.setTitle("CWCCPA mail room demo letter pack (fictional)");
+  doc.setTitle("Mail room demo letter pack (fictional)");
   const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold);
   for (const l of LETTERS) await drawLetter(doc, l, font, bold);
   const out = path.join(process.cwd(), "demos/cwccpa");

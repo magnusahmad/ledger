@@ -1,0 +1,16 @@
+{
+  "type": "ird_enquiry",
+  "sender": "Inland Revenue Department",
+  "addressee": "Eastpoint Logistics Limited",
+  "identifiers": {
+    "irdFileNo": "61/22446688",
+    "brNo": null,
+    "crNo": null,
+    "mpfNo": null
+  },
+  "summaryEn": "The Inland Revenue Department is requesting information and supporting documents regarding freight charges, related-party payments, and depreciation allowances for the 2024/25 Profits Tax Return.",
+  "actionNeeded": "Reply in writing with the requested information and documents by 27 November 2026.",
+  "dueDate": "2026-11-27",
+  "amountHkd": null,
+  "taxYear": "2024-25"
+}

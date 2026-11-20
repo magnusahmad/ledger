@@ -16,7 +16,7 @@ import { applyClients, clientsFromFolders, mapRows, mergeSources, readExcel, syn
 import { writeFile } from "node:fs/promises";
 
 const RULES: FilingRules = {
-  clientFolder: "CWCHK Client Folder/{client}", unsortedFolder: "_Mail room unsorted",
+  clientFolder: "XYZ Client Folder/{client}", unsortedFolder: "_Mail room unsorted",
   types: { ird_demand_note: { label: "IRD demand note", folder: "{codePrefix}Tax Folder", file: "{date} IRD demand note {taxYear}" } },
   fallback: { label: "Letter", folder: "", file: "{date} {sender} letter" },
 };
@@ -41,9 +41,9 @@ beforeEach(async () => {
   await resetDb();
   ctx = makeCtx({ now: "2026-11-02T02:00:00Z" });
   ctx.firmId = "firm_cwc";
-  await ctx.db.insert(firm).values({ id: "firm_cwc", legalName: "CWC CPA Limited", invoicePrefix: "CWC" });
+  await ctx.db.insert(firm).values({ id: "firm_cwc", legalName: "XYZ CPA Limited", invoicePrefix: "XYZ" });
   tmp = await mkdtemp(path.join(os.tmpdir(), "mailroom-clients-"));
-  mr = { drafts: new MemoryDraftBox(), serverRoot: path.join(tmp, "server"), scanDir: path.join(tmp, "scans"), rules: RULES, fromAddress: "mail@cwccpa.example", firmName: "CWC CPA" };
+  mr = { drafts: new MemoryDraftBox(), serverRoot: path.join(tmp, "server"), scanDir: path.join(tmp, "scans"), rules: RULES, fromAddress: "mail@xyzcpa.example", firmName: "XYZ CPA" };
   await mkdir(mr.serverRoot, { recursive: true });
 });
 afterEach(async () => { await rm(tmp, { recursive: true, force: true }); });
@@ -140,7 +140,7 @@ describe("Letters that arrived before their client was known", () => {
     expect(l.matchKind).toBe("ask");
     const r = await applyClients(ctx, mr, mergeSources([{ source: "X: folders", rows: [{ code: "PH2001A1", name: "Peak Harbour Investments Limited", irdFileNo: "61/99887766", contactName: "Ms Lee", contactEmail: "lee@peak.example", language: "en" }] }]), { deactivateMissing: false });
     expect(r.rematched).toBe(1);
-    expect(await getLetter(ctx, l.id)).toMatchObject({ status: "proposed", matchKind: "matched", matchReason: "IRD file number 61/99887766", folder: "CWCHK Client Folder/PH2001A1-Peak Harbour Investments Limited/PH2001A1-Tax Folder", emailTo: "lee@peak.example" });
+    expect(await getLetter(ctx, l.id)).toMatchObject({ status: "proposed", matchKind: "matched", matchReason: "IRD file number 61/99887766", folder: "XYZ Client Folder/PH2001A1-Peak Harbour Investments Limited/PH2001A1-Tax Folder", emailTo: "lee@peak.example" });
   });
 
   it("a letter staff have already decided is left alone by a sync", async () => {

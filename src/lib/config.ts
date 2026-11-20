@@ -41,8 +41,8 @@ const Env = z.object({
   MAILROOM_RULES: z.string().default("seed/mailroom/rules.json"),
   /** Where the firm keeps client records, master first ({server} = the server root). */
   MAILROOM_CLIENT_SOURCES: z.string().default("seed/mailroom/client-sources.json"),
-  MAILROOM_FIRM_NAME: z.string().default("CWC CPA"),
-  MAILROOM_FROM: z.string().default("mail@cwccpa.example"),
+  MAILROOM_FIRM_NAME: z.string().default("XYZ CPA"),
+  MAILROOM_FROM: z.string().default("mail@xyzcpa.example"),
   /** 1: save live model answers for the mail room as replayable fixtures (fictional letters only). */
   MAILROOM_RECORD: z.enum(["0", "1"]).default("0"),
   /** 0: never answer from recordings, so every scan goes to the live model (live demos). */

@@ -2,14 +2,14 @@
   {
     "kind": "excel",
     "name": "Client list (Excel)",
-    "path": "{server}/Admin/CWC client list.xlsx",
+    "path": "{server}/Admin/XYZ client list.xlsx",
     "sheet": "Clients",
     "columns": { "code": "Client Code", "name": "Company Name", "nameZh": "Chinese Name", "brNo": "BR No.", "irdFileNo": "IRD File No.", "crNo": "CR No.", "mpfNo": "MPF ER No.", "contactName": "Contact", "contactEmail": "Email", "language": "Language" }
   },
   {
     "kind": "folders",
     "name": "X: client folders",
-    "path": "{server}/CWCHK Client Folder",
+    "path": "{server}/XYZ Client Folder",
     "pattern": "^([A-Z]{2}\\d{4}[A-Z]\\d)-(.+)$"
   }
 ]

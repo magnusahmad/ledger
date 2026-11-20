@@ -92,7 +92,7 @@
 .mr-bar-main b { font-size: 18px; font-weight: 600; letter-spacing: -.015em; }
 .mr-bar-main .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13.5px; }
 .mr-bar-path { font-size: 13.5px; overflow-wrap: anywhere; }
-.mr-bar-dock form .row { margin: 0; }
+[data-approve] form .row { margin: 0 !important; } /* ActionForm adds a 12px top margin when it holds the hidden letter id */
 @media (max-width: 900px) {
   .mr-shell, .mr-shell.list-open { grid-template-columns: minmax(0, 1fr); }
   .mr-list, .list-open .mr-list, .mr-show, .mr-keys, .mr-bar-dock { display: none; }
