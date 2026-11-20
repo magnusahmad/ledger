@@ -5,7 +5,9 @@
 // change. Add cases (from recorded defects, rewritten as fiction); never edit an expectation to fit
 // a model's answer. Rule set by the owner on 19 November, after the first run: when someone who is both
 // an officer and a member changes name or address, that is two changes, one for each register (four
-// cases updated; a passport number is an officer's detail only). Not covered yet: image-only scans, which need a rendered fixture.
+// cases updated; a passport number is an officer's detail only). On 20 November the owner decided the
+// year of a date written without one is the model's judgement from context; three cases around the
+// turn of the year were added before the run that first used that rule. Not covered yet: image-only scans, which need a rendered fixture.
 import type { Expected } from "./ar-reply-score";
 
 export type CaseAttachment =
@@ -13,6 +15,8 @@ export type CaseAttachment =
   | { filename: string; kind: "unreadable"; mime: string };
 export type ReplyCase = {
   id: string; lang: "en" | "tc" | "sc"; note: string; from: string; fromName: string; subject?: string; text: string;
+  /** When the email was sent, if not the usual 25 November 2026 (for dates whose year depends on it). */
+  receivedAt?: string;
   earlier?: { direction: "in" | "out"; text: string }[]; attachments?: CaseAttachment[]; expect: Expected;
 };
 
@@ -107,6 +111,12 @@ export const AR_REPLY_CASES: ReplyCase[] = [
   { id: "en-two-changes", lang: "en", note: "Two separate changes in one reply.", ...from,
     text: "Dear Ruby,\n\nTwo updates. First, Ms WONG Mei Ling was appointed a director on 1 November 2026. Second, Mr Lee resigned as director on the same day. No mortgages or charges.\n\nMs Chan",
     expect: { ...none, changes: [{ types: ["director_appointed"], subject: "wong", effectiveDate: "2026-11-01" }, { types: ["director_ceased"], subject: "lee", effectiveDate: "2026-11-01" }] } },
+  { id: "en-year-turn-past", lang: "en", note: "Sent in January: '31 December' without a year is last year's.", ...from, receivedAt: "2027-01-05T03:00:00.000Z",
+    text: "Dear Ruby,\n\nHappy new year. Sorry this is late. No mortgages or charges. I should have told you earlier that Mr Lee resigned as director on 31 December.\n\nMs Chan",
+    expect: { ...none, changes: [{ types: ["director_ceased"], subject: "lee", effectiveDate: "2026-12-31" }] } },
+  { id: "en-year-turn-future", lang: "en", note: "Sent in December: a director who 'will join on 2 January' joins next year.", ...from, receivedAt: "2026-12-20T03:00:00.000Z",
+    text: "Dear Ruby,\n\nNo charges. For your planning, Ms WONG Mei Ling will join the board as a director on 2 January.\n\nMs Chan",
+    expect: { ...none, changes: [{ types: ["director_appointed"], subject: "wong", effectiveDate: "2027-01-02" }] } },
 
   // ---- Traditional Chinese
   { id: "tc-plain-none", lang: "tc", note: "無押記、無變更。", from: "finance@alpha.example", fromName: "陳小姐",
@@ -137,6 +147,9 @@ export const AR_REPLY_CASES: ReplyCase[] = [
   { id: "tc-director-died", lang: "tc", note: "董事離世。", from: "finance@alpha.example", fromName: "陳小姐",
     text: "Ruby 你好，\n\n很遺憾通知你，李小明先生已於2026年10月2日離世。我們稍後會安排其股份的處理。公司沒有任何按揭或押記。\n\n陳小姐",
     expect: { ...none, changes: [{ types: ["director_ceased"], subject: "lee|李小明", effectiveDate: "2026-10-02" }] } },
+  { id: "tc-year-turn-past", lang: "tc", note: "一月發出：「12月15日」沒有年份，指去年。", from: "finance@alpha.example", fromName: "陳小姐", receivedAt: "2027-01-04T03:00:00.000Z",
+    text: "Ruby 你好，\n\n新年快樂。公司沒有按揭或押記。李小明先生已於12月15日辭任董事，之前忘了通知你。\n\n陳小姐",
+    expect: { ...none, changes: [{ types: ["director_ceased"], subject: "lee|李小明", effectiveDate: "2026-12-15" }] } },
 
   // ---- Simplified Chinese
   { id: "sc-plain-none", lang: "sc", note: "无押记、无变更。", from: "admin@alpha.example", fromName: "李先生",

@@ -62,6 +62,6 @@ export const reading = (o: Partial<ReplyReading> = {}): ReplyReading => ({
   changes: [], signedPapers: [], documents: [], ...o,
 });
 
-export const resignation = { changeType: "director_ceased" as const, subject: "LEE Siu Ming", detail: "Resigned as director", effectiveDate: "2026-10-31", quote: "Mr Lee resigned as director on 31 October", source: "email" };
+export const resignation = { changeType: "director_ceased" as const, subject: "LEE Siu Ming", detail: "Resigned as director", effectiveDate: "2026-10-31", quote: "Mr Lee resigned as director on 31 October", source: "email", yearAssumed: false };
 
 export const caseRow = async (ctx: TestCtx, id: string) => (await ctx.db.select().from(arCase).where(eq(arCase.id, id)))[0];

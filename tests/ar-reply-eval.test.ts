@@ -5,10 +5,10 @@
 import { describe, it, expect } from "vitest";
 import { scoreReply, summarise } from "../eval/ar-reply-score";
 import { AR_REPLY_CASES } from "../eval/ar-reply-cases";
-import { ReplyReadingZ, resolveReading, type ReplyReading } from "@/annual/reply-types";
+import { ReplyReadingZ, type ReplyReading } from "@/annual/reply-types";
 
 const reading = (o: Partial<ReplyReading> = {}): ReplyReading => ReplyReadingZ.parse({ about: "this_return", summary: "s", charges: { answer: "none", details: null, quote: null }, changes: [], signedPapers: [], documents: [], ...o });
-const lee = { changeType: "director_ceased" as const, subject: "LEE Siu Ming", detail: "Resigned as director", effectiveDate: "2026-10-31", quote: null, source: "email" };
+const lee = { changeType: "director_ceased" as const, subject: "LEE Siu Ming", detail: "Resigned as director", effectiveDate: "2026-10-31", quote: null, source: "email", yearAssumed: false };
 const want = { about: "this_return" as const, charges: "none" as const, changes: [{ types: ["director_ceased" as const], subject: "lee", effectiveDate: "2026-10-31" }], signedPapers: [] };
 
 describe("scoring a reading against the expected answer", () => {
@@ -55,11 +55,6 @@ describe("scoring a reading against the expected answer", () => {
     expect(scoreReply({ ...w, signedPapers: [] }, reading({ signedPapers: [{ document: "annual_return", filename: "a.pdf", quote: null }] })).problems.map((p) => p.kind)).toEqual(["extra"]);
   });
 
-  it("a date read without a year is scored after the year of the email is applied, as in production", () => {
-    const got = resolveReading(reading({ changes: [{ ...lee, effectiveDate: "--10-31" }] }), new Date("2026-11-25T03:00:00Z"));
-    expect(scoreReply(want, got).pass).toBe(true);
-  });
-
   it("the summary counts cases and each kind of problem", () => {
     const s = summarise([{ id: "a", score: scoreReply(want, reading({ changes: [lee] })) }, { id: "b", score: scoreReply(want, reading()) }, { id: "c", score: null }]);
     expect(s).toMatchObject({ cases: 3, passed: 1, failedToRead: 1, missed: 1, extra: 0, wrong: 0 });
@@ -86,6 +81,12 @@ describe("the frozen set", () => {
   it("an address change for someone who is both director and member is expected once per register", () => {
     const c = AR_REPLY_CASES.find((x) => x.id === "en-director-address")!;
     expect(c.expect.changes.map((x) => x.types.join()).sort()).toEqual(["member_particulars", "officer_particulars"]);
+  });
+
+  it("includes replies around the turn of the year, where the year of a date has to be judged from context", () => {
+    const turn = AR_REPLY_CASES.filter((c) => c.receivedAt && c.expect.changes.some((x) => x.effectiveDate && x.effectiveDate.slice(0, 4) !== c.receivedAt!.slice(0, 4)));
+    expect(turn.some((c) => c.expect.changes.some((x) => x.effectiveDate! < c.receivedAt!))).toBe(true); // last year's date, read in January
+    expect(turn.some((c) => c.expect.changes.some((x) => x.effectiveDate! > c.receivedAt!))).toBe(true); // next year's date, read in December
   });
 
   it("every case names only fictional example addresses", () => {

@@ -10,7 +10,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { OpenRouterLlm } from "../src/integrations/llm/openrouter";
 import { jsonSchemaOf } from "../src/agent/call";
 import { buildReplyPrompt, type ReplyInput } from "../src/annual/reply-reader";
-import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, resolveReading, type ReplyReading } from "../src/annual/reply-types";
+import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, type ReplyReading } from "../src/annual/reply-types";
 import { AR_REPLY_CASES, CASE_COMPANY, DISPATCH, type ReplyCase } from "../eval/ar-reply-cases";
 import { scoreReply, summarise, type Score } from "../eval/ar-reply-score";
 
@@ -31,10 +31,10 @@ async function inputFor(c: ReplyCase): Promise<ReplyInput> {
     else attachments.push({ filename: a.filename, mime: a.mime, bytes: 1024 });
   }
   return {
-    today: CASE_COMPANY.today, caseKind: "AR", companyName: CASE_COMPANY.companyName, year: CASE_COMPANY.year, madeUpDate: CASE_COMPANY.madeUpDate,
+    today: (c.receivedAt ?? `${CASE_COMPANY.today}T03:00:00.000Z`).slice(0, 10), caseKind: "AR", companyName: CASE_COMPANY.companyName, year: CASE_COMPANY.year, madeUpDate: CASE_COMPANY.madeUpDate,
     particulars: CASE_COMPANY.particulars,
     earlier: [{ direction: "out" as const, text: DISPATCH }, ...(c.earlier ?? [])].map((e, i) => ({ ...e, at: `2026-11-2${1 + i}T02:00:00.000Z`, from: e.direction === "out" ? "ruby@firm.example" : c.from, subject: "Alpha Trading Limited - 2026 Annual Return" })),
-    message: { from: c.from, fromName: c.fromName, subject: c.subject ?? "RE: Alpha Trading Limited - 2026 Annual Return", receivedAt: "2026-11-25T03:00:00.000Z", text: c.text },
+    message: { from: c.from, fromName: c.fromName, subject: c.subject ?? "RE: Alpha Trading Limited - 2026 Annual Return", receivedAt: c.receivedAt ?? "2026-11-25T03:00:00.000Z", text: c.text },
     attachments,
   };
 }
@@ -59,7 +59,7 @@ async function main() {
         const res = await llm.complete({ agent: REPLY_TASK, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], schema, schemaName: REPLY_TASK });
         answeredBy = res.model;
         const p = ReplyReadingZ.safeParse(res.json);
-        if (p.success) reading = resolveReading(p.data, new Date("2026-11-25T03:00:00.000Z")); else error = p.error.message.slice(0, 300);
+        if (p.success) reading = p.data; else error = p.error.message.slice(0, 300);
       } catch (e) { error = (e as Error).message.replaceAll(key, "[redacted]").slice(0, 300); }
     }
     const score = reading ? scoreReply(c.expect, reading) : null;

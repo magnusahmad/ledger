@@ -13,7 +13,7 @@ import { callAgent } from "@/agent/call";
 import { particularsFromCsa } from "@/integrations/csa/nar1";
 import { arPlaybook } from "./cases";
 import { annualReturnDates } from "./dispatch";
-import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, resolveReading, type ReplyReading } from "./reply-types";
+import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, type ReplyReading } from "./reply-types";
 
 export const MAX_ATTEMPTS = 3;
 const MAX_FILES = 4;
@@ -25,7 +25,8 @@ export const REPLY_SYSTEM = `You read one email that a client sent to a Hong Kon
 
 Report only what the NEW EMAIL and its attachments say. Staff check every point against the email, so:
 - Copy the client's exact words into "quote" (the original language, no paraphrase). Use null if the point comes only from an attachment you cannot quote.
-- Never guess. A date goes in effectiveDate only if the email gives it: YYYY-MM-DD when the client wrote the year, --MM-DD (for example --10-31) when the client wrote only the day and month. Do not add a year yourself. Otherwise null.
+- Never invent a date. effectiveDate is a full date (YYYY-MM-DD) only if the email gives the day and month; otherwise null.
+- A date written without a year: work out the year from context and set yearAssumed to true. Use the date the NEW EMAIL was sent, the tense and words such as "last month", "already", "will" or "next January". Something reported as having happened falls on or before the email's date (an email sent in January saying a director "resigned on 31 December" means last December); something planned falls after it. If the context does not settle the year, leave effectiveDate null. yearAssumed is false whenever the client wrote the year or there is no date.
 - Text quoted from earlier emails (after "From:", ">" or "wrote:") is not new. The EARLIER EMAILS are context only.
 - Write summary and detail in plain English, whatever language the client used.
 
@@ -103,7 +104,8 @@ export function itemsFromReading(r: ReplyReading, o: { caseKind: "AR" | "AGM"; e
   const q = (quote: string | null, source = "email") => (source === "email" ? quoteFound(o.emailText, quote) : null);
   return [
     ...(o.caseKind === "AR" ? [{ kind: "charges" as const, proposed: { ...r.charges, quoteFound: q(r.charges.quote) } }] : []),
-    ...r.changes.map((c) => ({ kind: "change" as const, proposed: { ...c, quoteFound: q(c.quote, c.source) } })),
+    // The year of a year-less date is the model's judgement, stored here once and shown to staff as assumed.
+    ...r.changes.map((c) => ({ kind: "change" as const, proposed: { ...c, yearAssumed: !!c.effectiveDate && c.yearAssumed, quoteFound: q(c.quote, c.source) } })),
     ...r.signedPapers.map((s) => ({ kind: "signed_papers" as const, proposed: { ...s } })),
     ...r.documents.map((d) => ({ kind: "document" as const, proposed: { ...d } })),
   ];
@@ -153,7 +155,7 @@ export async function readReply(ctx: Ctx, mailId: string) {
     const tx = { ...ctx, db: db as unknown as Ctx["db"] };
     if (prev) await tx.db.update(arReply).set({ ...base, status: "read", about: reading.about, summary: reading.summary, model, error: null }).where(eq(arReply.id, id));
     else await tx.db.insert(arReply).values({ id, ...base, status: "read", about: reading.about, summary: reading.summary, model, error: null });
-    const items = itemsFromReading(resolveReading(reading, mail.receivedAt), { caseKind: input.caseKind, emailText: mail.text });
+    const items = itemsFromReading(reading, { caseKind: input.caseKind, emailText: mail.text });
     if (items.length) await tx.db.insert(arReplyItem).values(items.map((it) => ({ id: ctx.ids.next("ari"), firmId: ctx.firmId, replyId: id, caseId: mail.caseId!, mailId, kind: it.kind, origin: "model" as const, proposed: it.proposed })));
   });
   return (await ctx.db.query.arReply.findFirst({ where: eq(arReply.id, id) }))!;

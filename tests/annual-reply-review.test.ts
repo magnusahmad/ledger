@@ -80,7 +80,7 @@ describe("reviewing what the model read", () => {
   });
 
   it("accepting a date whose year Clerk assumed keeps that mark with the record", async () => {
-    const { ctx, reply, change } = await read({ model: { changes: [{ ...resignation, effectiveDate: "--10-31" }] } });
+    const { ctx, reply, change } = await read({ model: { changes: [{ ...resignation, effectiveDate: "2026-10-31", yearAssumed: true }] } });
     await R.openSource(ctx, reply.id);
     await R.decideItem(ctx, change!.id, { action: "accept" });
     expect((await item(ctx, change!.id)).final).toMatchObject({ effectiveDate: "2026-10-31", yearAssumed: true });
