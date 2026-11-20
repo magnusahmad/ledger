@@ -55,12 +55,18 @@ export async function decideItem(ctx: Ctx, itemId: string, d: Decision) {
   mustHaveOpened(ctx, reply);
   if (item.kind === "charges") throw new Error("Enter the charges answer yourself; it can't be accepted with one click");
   if (item.status !== "proposed") throw new Error("This has already been decided");
-  const final = d.action === "edit" ? (VALUE_SCHEMA[item.kind].parse(d.value) as Record<string, unknown>) : d.action === "accept" ? strip(item.proposed!) : null;
+  const final = d.action === "edit" ? staffValue(item.kind, d.value) : d.action === "accept" ? strip(item.proposed!) : null;
   await tx(ctx, async (c) => {
     await c.db.update(arReplyItem).set({ status: d.action === "accept" ? "accepted" : d.action === "edit" ? "edited" : "rejected", final, decidedBy: ctx.userId, decidedAt: ctx.clock.now() }).where(eq(arReplyItem.id, item.id));
     if (d.action !== "accept") await defect(c, d.action === "edit" ? "edited" : "rejected", reply, item.id, item.proposed, final);
     if (final && item.kind === "signed_papers") await event(c, reply.caseId, "signed_scan_noted", { itemId: item.id, mailId: reply.mailId });
   });
+}
+/** A value staff typed, checked; the first problem is given in plain words (a date needs its year). */
+function staffValue(kind: ReplyItemKind, v: Record<string, unknown>): Record<string, unknown> {
+  const p = VALUE_SCHEMA[kind].safeParse(v);
+  if (!p.success) throw new Error(p.error.issues[0].code === "custom" ? p.error.issues[0].message : "Fill in what changed");
+  return p.data as Record<string, unknown>;
 }
 const strip = (v: Record<string, unknown>) => { const { quoteFound: _q, ...rest } = v; void _q; return rest; };
 
@@ -101,7 +107,7 @@ export async function addMissed(ctx: Ctx, replyId: string, o: { kind: ReplyItemK
     const v = chargesValue(o.value as { answer: string; details?: string | null });
     if (v.answer === "not_answered") throw new Error("Choose the charges answer");
     value = v;
-  } else value = VALUE_SCHEMA[o.kind].parse(o.value) as Record<string, unknown>;
+  } else value = staffValue(o.kind, o.value);
   const id = ctx.ids.next("ari");
   await tx(ctx, async (c) => {
     await c.db.insert(arReplyItem).values({ id, firmId: ctx.firmId, replyId: reply.id, caseId: reply.caseId, mailId: reply.mailId, kind: o.kind, origin: "staff", proposed: null, final: value, status: "added", decidedBy: ctx.userId, decidedAt: ctx.clock.now() });

@@ -53,12 +53,12 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           <h2>The client reported {changes.length === 1 ? "a change" : `${changes.length} changes`}</h2>
           <p>Update CSA first. After CSA&apos;s next copy, prepare the return again and it goes back to the client for signature.</p>
           {changes.map((i) => {
-            const v = i.final as Record<string, string | null>;
+            const v = i.final as Record<string, string | null> & { yearAssumed?: boolean };
             const filing = changeFiling(String(v.changeType), playbooks);
             return (
               <div key={i.id} className="an-change">
                 <b>{changeLabel(String(v.changeType))}{v.subject ? `: ${v.subject}` : ""}</b>
-                <div className="small">{v.detail}{v.effectiveDate ? ` Effective ${fmt(v.effectiveDate)}.` : " No date given."}</div>
+                <div className="small">{v.detail}{v.effectiveDate ? ` Effective ${fmt(v.effectiveDate)}${v.yearAssumed ? " (the client gave no year)" : ""}.` : " No date given."}</div>
                 {filing && <div className="small muted">Usually needs its own filing: {filing.form} ({filing.name}). Check with the company secretary.</div>}
                 <details className="an-more an-inner"><summary>It doesn&apos;t affect this return</summary>
                   <ActionForm action={A.settleChangeAction.bind(null, i.id)} submit="Save" tone="secondary"><label className="an-field">Why not<textarea name="reason" placeholder="For example: effective after the made-up date" /></label></ActionForm>

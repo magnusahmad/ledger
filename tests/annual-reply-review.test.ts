@@ -67,6 +67,26 @@ describe("reviewing what the model read", () => {
     expect(d.finalValue).toMatchObject({ effectiveDate: "2026-10-30" });
   });
 
+  it("staff can't record a date without a year: a correction or an addition needs the full date", async () => {
+    const { ctx, reply, change } = await read();
+    await R.openSource(ctx, reply.id);
+    await expect(R.decideItem(ctx, change!.id, { action: "edit", value: { ...resignation, effectiveDate: "10-31" } })).rejects.toThrow(/year/i);
+    await expect(R.decideItem(ctx, change!.id, { action: "edit", value: { ...resignation, effectiveDate: "--10-31" } })).rejects.toThrow(/year/i);
+    await expect(R.addMissed(ctx, reply.id, { kind: "change", value: { ...resignation, effectiveDate: "31/10" } })).rejects.toThrow(/year/i);
+    await expect(R.decideItem(ctx, change!.id, { action: "edit", value: { ...resignation, effectiveDate: "2026-02-30" } })).rejects.toThrow(/date/i);
+    expect((await item(ctx, change!.id)).status).toBe("proposed");
+    await R.decideItem(ctx, change!.id, { action: "edit", value: { ...resignation, effectiveDate: "" } }); // no date at all is allowed
+    expect((await item(ctx, change!.id)).final).toMatchObject({ effectiveDate: null });
+  });
+
+  it("accepting a date whose year Clerk assumed keeps that mark with the record", async () => {
+    const { ctx, reply, change } = await read({ model: { changes: [{ ...resignation, effectiveDate: "--10-31" }] } });
+    await R.openSource(ctx, reply.id);
+    await R.decideItem(ctx, change!.id, { action: "accept" });
+    expect((await item(ctx, change!.id)).final).toMatchObject({ effectiveDate: "2026-10-31", yearAssumed: true });
+    expect(await defects(ctx)).toHaveLength(0);
+  });
+
   it("rejecting a proposal records a 'rejected' defect and the change holds nothing", async () => {
     const { ctx, reply, change, caseId } = await read();
     await R.openSource(ctx, reply.id);

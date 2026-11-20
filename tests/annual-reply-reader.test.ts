@@ -88,6 +88,40 @@ describe("reading a client reply", () => {
     expect(quoteFound("a  b\nc", "A b c")).toBe(true);
   });
 
+  it("a date the client wrote without a year takes the year the email arrived, is fixed when the email is read, and is marked as assumed", async () => {
+    const { ctx, caseId } = await setupSentCase();
+    await addInbound(ctx, caseId, { text: "Mr Lee resigned on 31 October.", receivedAt: "2026-11-05T01:30:00Z" });
+    ctx.llm.on("ar_reply", reading({ changes: [{ ...resignation, effectiveDate: "--10-31" }, { ...resignation, changeType: "registered_office", effectiveDate: "2026-09-01" }] }));
+    await readPendingReplies(ctx);
+    const stored = async () => (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change").map((i) => i.proposed as { changeType: string; effectiveDate: string | null; yearAssumed?: boolean });
+    expect((await stored()).find((c) => c.changeType === "director_ceased")).toMatchObject({ effectiveDate: "2026-10-31", yearAssumed: true });
+    expect((await stored()).find((c) => c.changeType === "registered_office")).toMatchObject({ effectiveDate: "2026-09-01", yearAssumed: false });
+    // Looked at again the next year, the date is what was stored, not worked out afresh.
+    ctx.clock.set("2027-02-01T02:00:00Z");
+    await readPendingReplies(ctx);
+    expect((await stored()).find((c) => c.changeType === "director_ceased")).toMatchObject({ effectiveDate: "2026-10-31" });
+    expect(ctx.llm.callsFor("ar_reply")).toHaveLength(1);
+  });
+
+  it("the assumed year is the year in Hong Kong when the email arrived, not when it was read", async () => {
+    const { ctx, caseId } = await setupSentCase();
+    await addInbound(ctx, caseId, { text: "New director from 2 January.", receivedAt: "2026-12-31T17:00:00Z" }); // 1 January 2027, 01:00 in Hong Kong
+    ctx.clock.set("2027-03-01T02:00:00Z");
+    ctx.llm.on("ar_reply", reading({ changes: [{ ...resignation, changeType: "director_appointed", effectiveDate: "01-02" }] }));
+    await readPendingReplies(ctx);
+    const [c] = (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change");
+    expect(c.proposed).toMatchObject({ effectiveDate: "2027-01-02", yearAssumed: true });
+  });
+
+  it("a day and month that don't exist are left empty, never turned into another date", async () => {
+    const { ctx, caseId } = await setupSentCase();
+    await addInbound(ctx, caseId, { text: "From 30 February." });
+    ctx.llm.on("ar_reply", reading({ changes: [{ ...resignation, effectiveDate: "--02-30" }] }));
+    await readPendingReplies(ctx);
+    const [c] = (await ctx.db.select().from(arReplyItem)).filter((i) => i.kind === "change");
+    expect(c.proposed).toMatchObject({ effectiveDate: null, yearAssumed: false });
+  });
+
   it("a failed reading is recorded and retried, and is never treated as 'no changes'", async () => {
     const { ctx, caseId } = await setupSentCase();
     await addInbound(ctx, caseId);

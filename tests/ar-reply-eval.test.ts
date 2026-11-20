@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { scoreReply, summarise } from "../eval/ar-reply-score";
 import { AR_REPLY_CASES } from "../eval/ar-reply-cases";
-import { ReplyReadingZ, type ReplyReading } from "@/annual/reply-types";
+import { ReplyReadingZ, resolveReading, type ReplyReading } from "@/annual/reply-types";
 
 const reading = (o: Partial<ReplyReading> = {}): ReplyReading => ReplyReadingZ.parse({ about: "this_return", summary: "s", charges: { answer: "none", details: null, quote: null }, changes: [], signedPapers: [], documents: [], ...o });
 const lee = { changeType: "director_ceased" as const, subject: "LEE Siu Ming", detail: "Resigned as director", effectiveDate: "2026-10-31", quote: null, source: "email" };
@@ -53,6 +53,11 @@ describe("scoring a reading against the expected answer", () => {
     expect(scoreReply(w, reading({ signedPapers: [{ document: "annual_return", filename: "a.pdf", quote: null }] })).pass).toBe(true);
     expect(scoreReply(w, reading()).problems.map((p) => p.kind)).toEqual(["missed"]);
     expect(scoreReply({ ...w, signedPapers: [] }, reading({ signedPapers: [{ document: "annual_return", filename: "a.pdf", quote: null }] })).problems.map((p) => p.kind)).toEqual(["extra"]);
+  });
+
+  it("a date read without a year is scored after the year of the email is applied, as in production", () => {
+    const got = resolveReading(reading({ changes: [{ ...lee, effectiveDate: "--10-31" }] }), new Date("2026-11-25T03:00:00Z"));
+    expect(scoreReply(want, got).pass).toBe(true);
   });
 
   it("the summary counts cases and each kind of problem", () => {

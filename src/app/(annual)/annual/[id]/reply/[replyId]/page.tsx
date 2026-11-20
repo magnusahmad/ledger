@@ -91,7 +91,7 @@ export default async function ReplyReview({ params }: { params: Promise<{ id: st
         return (
           <section key={i.id} className="an-step">
             <h2>{title}</h2>
-            <p>{i.kind === "change" ? <>{String(v.detail)}{v.effectiveDate ? ` Effective ${fmt(String(v.effectiveDate))}.` : " No date given."}</> : i.kind === "document" ? String(v.description ?? "") : "A scan by email. The case still waits for the signed original."}{v.filename || (v.source && v.source !== "email") ? ` From ${v.filename ?? v.source}.` : ""}</p>
+            <p>{i.kind === "change" ? <>{String(v.detail)}{v.effectiveDate ? ` Effective ${fmt(String(v.effectiveDate))}.` : " No date given."}{v.yearAssumed && <span className="an-flag" style={{ marginLeft: 6 }}>The client gave no year: {String(v.effectiveDate).slice(0, 4)} assumed</span>}</> : i.kind === "document" ? String(v.description ?? "") : "A scan by email. The case still waits for the signed original."}{v.filename || (v.source && v.source !== "email") ? ` From ${v.filename ?? v.source}.` : ""}</p>
             {p.quote && <blockquote className="an-quote">{String(p.quote)}{p.quoteFound === false && <span className="an-flag">These words aren&apos;t in the email text</span>}</blockquote>}
             {i.status !== "proposed" ? <p className="an-done">{DONE[i.status]} · {who(i.decidedBy)}</p> : canDecide ? <>
               <div className="row">

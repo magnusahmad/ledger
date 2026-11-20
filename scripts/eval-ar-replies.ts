@@ -10,7 +10,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { OpenRouterLlm } from "../src/integrations/llm/openrouter";
 import { jsonSchemaOf } from "../src/agent/call";
 import { buildReplyPrompt, type ReplyInput } from "../src/annual/reply-reader";
-import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, type ReplyReading } from "../src/annual/reply-types";
+import { PROMPT_VERSION, REPLY_TASK, ReplyReadingZ, resolveReading, type ReplyReading } from "../src/annual/reply-types";
 import { AR_REPLY_CASES, CASE_COMPANY, DISPATCH, type ReplyCase } from "../eval/ar-reply-cases";
 import { scoreReply, summarise, type Score } from "../eval/ar-reply-score";
 
@@ -59,7 +59,7 @@ async function main() {
         const res = await llm.complete({ agent: REPLY_TASK, messages: [{ role: "system", content: prompt.system }, { role: "user", content: prompt.user }], schema, schemaName: REPLY_TASK });
         answeredBy = res.model;
         const p = ReplyReadingZ.safeParse(res.json);
-        if (p.success) reading = p.data; else error = p.error.message.slice(0, 300);
+        if (p.success) reading = resolveReading(p.data, new Date("2026-11-25T03:00:00.000Z")); else error = p.error.message.slice(0, 300);
       } catch (e) { error = (e as Error).message.replaceAll(key, "[redacted]").slice(0, 300); }
     }
     const score = reading ? scoreReply(c.expect, reading) : null;
