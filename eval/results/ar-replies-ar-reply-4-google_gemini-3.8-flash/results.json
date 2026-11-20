@@ -1,0 +1,1272 @@
+{
+  "meta": {
+    "ranAt": "2026-11-20T04:26:58.555Z",
+    "model": "google/gemini-3.8-flash",
+    "reasoning": "low",
+    "promptVersion": "ar-reply-4",
+    "cases": 41,
+    "passed": 41,
+    "failedToRead": 0,
+    "missed": 0,
+    "extra": 0,
+    "wrong": 0,
+    "medianMs": 3554,
+    "maxMs": 9134
+  },
+  "results": [
+    {
+      "id": "en-plain-none",
+      "lang": "en",
+      "note": "Plain answer: no charges, nothing changed.",
+      "ms": 3442,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and that no particulars have changed since last year.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "The company has no mortgages or charges."
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-correct-no-charges-answer",
+      "lang": "en",
+      "note": "'All correct' does not answer the charges question.",
+      "ms": 3537,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Ms Chan confirmed that all details in the annual return are correct and stated that Mr Chan will sign it this week and post it back.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-has-charges-statement",
+      "lang": "en",
+      "note": "A mortgage, with a bank statement attached.",
+      "ms": 5013,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has a mortgage loan with Example Bank taken out in August 2026, with an outstanding balance of HK$3,000,000 as at 31 October, attached a loan statement, and reported no other changes.",
+        "charges": {
+          "answer": "has_charges",
+          "details": "Mortgage loan with Example Bank taken out in August 2026; outstanding amount was HK$3,000,000 at 31 October 2026.",
+          "quote": "Yes, the company has a mortgage loan with Example Bank, taken out in August 2026. The outstanding amount was HK$3,000,000 at 31 October."
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": [
+          {
+            "docType": "bank_statement",
+            "filename": "statement-oct.pdf",
+            "description": "Mortgage loan statement from Example Bank Limited as at 31 October 2026 showing an outstanding balance of HKD 3,000,000.00"
+          }
+        ]
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-buried-resignation",
+      "lang": "en",
+      "note": "A director's resignation buried in a long, chatty email.",
+      "ms": 4290,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirms no mortgages or charges and reports that director LEE Siu Ming stepped down from the board on 31 October 2026 while retaining his shares.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "We don't have any mortgages or charges, the bank facility we talked about in the summer never went ahead."
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Stepped down from the board on 31 October 2026 due to moving to Vancouver, while retaining his shares.",
+            "quote": "Mr Lee stepped down from the board at the end of last month (31 October) because he is moving to Vancouver, though he is keeping his shares.",
+            "source": "email",
+            "effectiveDate": "2026-10-31",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-new-director",
+      "lang": "en",
+      "note": "A new director with a date.",
+      "ms": 3840,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and reported the appointment of Ms Wong Mei Ling as a director on 1 November 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No charges to report."
+        },
+        "changes": [
+          {
+            "changeType": "director_appointed",
+            "subject": "Ms WONG Mei Ling",
+            "detail": "Ms WONG Mei Ling was appointed as a director on 1 November 2026.",
+            "quote": "Ms WONG Mei Ling joined the board as a director on 1 November 2026.",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-office-move",
+      "lang": "en",
+      "note": "Registered office moved; charges not mentioned.",
+      "ms": 3414,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client informed that the company's registered office changed to Room 808, 8/F, Sample Tower, 8 Sample Street, Hong Kong on 1 November and asked to update the annual return.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [
+          {
+            "changeType": "registered_office",
+            "subject": "Registered office",
+            "detail": "The company's registered office changed to Room 808, 8/F, Sample Tower, 8 Sample Street, Hong Kong.",
+            "quote": "We moved on 1 November. The company's registered office is now Room 808, 8/F, Sample Tower, 8 Sample Street, Hong Kong.",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-director-address",
+      "lang": "en",
+      "note": "A director's home address changed, no date given.",
+      "ms": 4233,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirmed no mortgages or charges and reported a change of residential address for director and member Mr CHAN Tai Man.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No mortgages or charges."
+        },
+        "changes": [
+          {
+            "changeType": "officer_particulars",
+            "subject": "CHAN Tai Man",
+            "detail": "Director's address changed to Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "quote": "Mr Chan has moved house. His address is now Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          },
+          {
+            "changeType": "member_particulars",
+            "subject": "CHAN Tai Man",
+            "detail": "Member's address changed to Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "quote": "Mr Chan has moved house. His address is now Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-share-transfer",
+      "lang": "en",
+      "note": "Shares transferred between the two members.",
+      "ms": 3504,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed there are no mortgages or charges and reported a transfer of 20 shares from Mr Lee to Mr Chan effective 5 October 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No charges."
+        },
+        "changes": [
+          {
+            "changeType": "shares_transferred",
+            "subject": "LEE Siu Ming to CHAN Tai Man",
+            "detail": "Mr Lee transferred 20 shares to Mr Chan on 5 October 2026, resulting in Mr Chan holding 80 shares and Mr Lee holding 20 shares.",
+            "quote": "Mr Lee transferred 20 of his shares to Mr Chan on 5 October 2026, so Mr Chan now holds 80 and Mr Lee 20.",
+            "source": "email",
+            "effectiveDate": "2026-10-05",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-other-topic",
+      "lang": "en",
+      "note": "About something else entirely.",
+      "ms": 2670,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "other",
+        "summary": "The client is requesting a copy of last year's audit report for a bank account review.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-question-about-return",
+      "lang": "en",
+      "note": "A question about the return: about it, but no answers.",
+      "ms": 2905,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client is asking which page Mr Chan needs to sign and whether electronic signature is acceptable or if it must be a wet-ink signature.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-signed-attached",
+      "lang": "en",
+      "note": "Signed return attached as a scan, charges answered.",
+      "ms": 5568,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Ms Chan provided the signed annual return, confirmed the original is sent by post today, and confirmed that the company has no mortgages or charges.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "The company has no mortgages or charges."
+        },
+        "changes": [],
+        "signedPapers": [
+          {
+            "document": "annual_return",
+            "filename": "AR-signed.pdf",
+            "quote": "Signed annual return attached, original in the post today."
+          }
+        ],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-quoted-old-text",
+      "lang": "en",
+      "note": "New text says nothing; the quoted thread below mentions an old office move.",
+      "ms": 2675,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client acknowledged receipt of the 2026 Annual Return and stated that she will revert shortly.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-confirms-existing",
+      "lang": "en",
+      "note": "Restating what is already on record is not a change.",
+      "ms": 3075,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirmed that the directors and registered office remain unchanged and stated there are no mortgages or charges.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No mortgages or charges."
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-attachment-shows-change",
+      "lang": "en",
+      "note": "The email says no changes; the attached notice shows the office moved.",
+      "ms": 4014,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Ms Chan confirmed there are no mortgages or charges and claimed no changes, but attached a notice showing a change of registered office address effective 1 November 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "no charges"
+        },
+        "changes": [
+          {
+            "changeType": "registered_office",
+            "subject": "Alpha Trading Limited",
+            "detail": "Registered office changed to Room 808, 8/F, Sample Tower, 8 Sample Street, Hong Kong.",
+            "quote": null,
+            "source": "notice.pdf",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": [
+          {
+            "docType": "other",
+            "filename": "notice.pdf",
+            "description": "Notice of change of registered office address effective 1 November 2026."
+          }
+        ]
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-second-message",
+      "lang": "en",
+      "note": "Second of two replies: only what the new email adds.",
+      "ms": 6097,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Ms Chan informed that director Lee Siu Ming renewed his passport in September with a new passport number, and provided a copy of the new passport.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [
+          {
+            "changeType": "officer_particulars",
+            "subject": "LEE Siu Ming",
+            "detail": "Director Lee Siu Ming renewed his passport, new passport number X0000000 issued on 12 September 2026.",
+            "quote": "Mr Lee renewed his passport in September, so his passport number has changed.",
+            "source": "email",
+            "effectiveDate": "2026-09-12",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": [
+          {
+            "docType": "id_document",
+            "filename": "lee-passport.pdf",
+            "description": "Copy of new passport for LEE Siu Ming (Passport No: X0000000, Date of issue: 12 SEP 2026)"
+          }
+        ]
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-name-change",
+      "lang": "en",
+      "note": "Company name changed.",
+      "ms": 3433,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirms there are no charges, reports that the company changed its name to Alpha Global Trading Limited on 3 November 2026, and asks whether the annual return has been prepared using the new name.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No charges."
+        },
+        "changes": [
+          {
+            "changeType": "company_name",
+            "subject": "Alpha Trading Limited",
+            "detail": "The company changed its name to Alpha Global Trading Limited.",
+            "quote": "The company changed its name to Alpha Global Trading Limited on 3 November 2026.",
+            "source": "email",
+            "effectiveDate": "2026-11-03",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-unsigned-draft-back",
+      "lang": "en",
+      "note": "The draft sent back with a correction is not a signed paper.",
+      "ms": 4732,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client returned the draft annual return unsigned, requesting an update to Mr Lee's residential address before re-issuing for signature.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [
+          {
+            "changeType": "officer_particulars",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Residential address updated to Flat 9, 9/F, Harbour Mansion, 9 Harbour Street, Kowloon.",
+            "quote": "Mr Lee's residential address on page 4 is out of date. He now lives at Flat 9, 9/F, Harbour Mansion, 9 Harbour Street, Kowloon.",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          },
+          {
+            "changeType": "member_particulars",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Address updated to Flat 9, 9/F, Harbour Mansion, 9 Harbour Street, Kowloon.",
+            "quote": "Mr Lee's residential address on page 4 is out of date. He now lives at Flat 9, 9/F, Harbour Mansion, 9 Harbour Street, Kowloon.",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-allotment",
+      "lang": "en",
+      "note": "New shares issued.",
+      "ms": 4258,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Ms Chan confirmed that the company has no mortgages or charges and reported an allotment of 100 new ordinary shares to Mr Chan on 12 October 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "The company has no charges."
+        },
+        "changes": [
+          {
+            "changeType": "shares_allotted",
+            "subject": "CHAN Tai Man",
+            "detail": "100 new ordinary shares were issued to Mr Chan at HK$1 each, bringing total issued share capital to 200 shares.",
+            "quote": "We issued 100 new ordinary shares to Mr Chan on 12 October 2026 at HK$1 each, so the issued share capital is now 200 shares.",
+            "source": "email",
+            "effectiveDate": "2026-10-12",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-word-attachment",
+      "lang": "en",
+      "note": "A Word attachment the model isn't given: only the email text is read.",
+      "ms": 2941,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and stated that updated details are in the attached Word file.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No mortgages or charges."
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": [
+          {
+            "docType": "other",
+            "filename": "updated-details.docx",
+            "description": "Word file containing updated company details"
+          }
+        ]
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-two-changes",
+      "lang": "en",
+      "note": "Two separate changes in one reply.",
+      "ms": 3653,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirmed there are no mortgages or charges, and reported that Ms WONG Mei Ling was appointed as director and Mr LEE Siu Ming resigned as director, both on 1 November 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No mortgages or charges."
+        },
+        "changes": [
+          {
+            "changeType": "director_appointed",
+            "subject": "WONG Mei Ling",
+            "detail": "Ms WONG Mei Ling was appointed as a director on 1 November 2026.",
+            "quote": "Ms WONG Mei Ling was appointed a director on 1 November 2026.",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          },
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming",
+            "detail": "Mr Lee resigned as director on 1 November 2026.",
+            "quote": "Mr Lee resigned as director on the same day.",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-year-turn-past",
+      "lang": "en",
+      "note": "Sent in January: '31 December' without a year is last year's.",
+      "ms": 3401,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirms no mortgages or charges and reports that director Mr Lee resigned on 31 December 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No mortgages or charges."
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Resigned as director on 31 December 2026.",
+            "quote": "Mr Lee resigned as director on 31 December.",
+            "source": "email",
+            "effectiveDate": "2026-12-31",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "en-year-turn-future",
+      "lang": "en",
+      "note": "Sent in December: a director who 'will join on 2 January' joins next year.",
+      "ms": 4075,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed there are no mortgages or charges and advised that Ms WONG Mei Ling will be appointed as a director on 2 January 2027.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "No charges."
+        },
+        "changes": [
+          {
+            "changeType": "director_appointed",
+            "subject": "Ms WONG Mei Ling",
+            "detail": "Ms WONG Mei Ling will join the board as a director on 2 January 2027.",
+            "quote": "Ms WONG Mei Ling will join the board as a director on 2 January.",
+            "source": "email",
+            "effectiveDate": "2027-01-02",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-plain-none",
+      "lang": "tc",
+      "note": "無押記、無變更。",
+      "ms": 2460,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and that there have been no changes to the company particulars.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司並無任何按揭或押記"
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-director-resigned",
+      "lang": "tc",
+      "note": "董事辭任，附日期。",
+      "ms": 3554,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges, and reported that Mr Lee Siu Ming resigned as director on 31 October 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有按揭或押記"
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Resigned as director on 31 October 2026.",
+            "quote": "李小明先生已於2026年10月31日辭任董事一職",
+            "source": "email",
+            "effectiveDate": "2026-10-31",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-has-charges",
+      "lang": "tc",
+      "note": "有按揭貸款。",
+      "ms": 3632,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client reports that the company took out a mortgage loan of HKD 2,000,000 from Sample Bank in August 2026 secured by the company's property, and confirms that other particulars remain unchanged.",
+        "charges": {
+          "answer": "has_charges",
+          "details": "Mortgage loan of HKD 2,000,000 borrowed from Sample Bank in August 2026, secured by company property",
+          "quote": "公司於2026年8月向樣本銀行借入按揭貸款港幣200萬元，以公司物業作抵押。"
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-office-move",
+      "lang": "tc",
+      "note": "註冊辦事處搬遷。",
+      "ms": 5330,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirmed no mortgages or charges and reported a change of registered office address effective 1 November 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有任何押記。"
+        },
+        "changes": [
+          {
+            "changeType": "registered_office",
+            "subject": "Alpha Trading Limited",
+            "detail": "Registered office changed to Room 808, 8/F, Example Building, 8 Example Street, Hong Kong",
+            "quote": "公司的註冊辦事處已於2026年11月1日遷往香港樣本街8號樣本大廈8樓808室",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-correct-no-charges-answer",
+      "lang": "tc",
+      "note": "「資料正確」並沒有回答押記問題。",
+      "ms": 2661,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the particulars in the annual return have been checked and are correct, and stated that Mr Chan will sign and return the document this week.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-other-topic",
+      "lang": "tc",
+      "note": "與周年申報表無關。",
+      "ms": 2923,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "other",
+        "summary": "The client is asking about the renewal fee for next year's Business Registration certificate and whether the firm can handle it on their behalf.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-signed-no-attachment",
+      "lang": "tc",
+      "note": "說已簽署並寄出，但沒有附件：不算收到簽署文件。",
+      "ms": 2819,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the annual return has been signed by Mr. Chan and the original copy was sent by post today. She also confirmed that the company has no mortgages or charges.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有按揭或押記。"
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-director-address",
+      "lang": "tc",
+      "note": "董事住址變更。",
+      "ms": 4381,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and reported a change of residential address for CHAN Tai Man.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有押記"
+        },
+        "changes": [
+          {
+            "changeType": "officer_particulars",
+            "subject": "CHAN Tai Man (陳大文)",
+            "detail": "Director CHAN Tai Man moved last month to Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "quote": "陳大文先生上月搬家，新住址為香港花園道5號花園閣5樓5室，請更新。",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          },
+          {
+            "changeType": "member_particulars",
+            "subject": "CHAN Tai Man (陳大文)",
+            "detail": "Member CHAN Tai Man moved last month to Flat 5, 5/F, Garden Court, 5 Garden Road, Hong Kong.",
+            "quote": "陳大文先生上月搬家，新住址為香港花園道5號花園閣5樓5室，請更新。",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-share-transfer",
+      "lang": "tc",
+      "note": "股份轉讓。",
+      "ms": 3596,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and reported a transfer of 20 ordinary shares from LEE Siu Ming to CHAN Tai Man on 5 October 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司並無按揭或押記。"
+        },
+        "changes": [
+          {
+            "changeType": "shares_transferred",
+            "subject": "LEE Siu Ming (李小明) to CHAN Tai Man (陳大文)",
+            "detail": "Transfer of 20 ordinary shares from LEE Siu Ming to CHAN Tai Man.",
+            "quote": "李小明先生已於2026年10月5日將其20股普通股轉讓予陳大文先生。",
+            "source": "email",
+            "effectiveDate": "2026-10-05",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-director-died",
+      "lang": "tc",
+      "note": "董事離世。",
+      "ms": 3625,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client reports that director Lee Siu Ming passed away on 2 October 2026, notes that his shares will be dealt with later, and confirms the company has no mortgages or charges.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有任何按揭或押記。"
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Director Lee Siu Ming passed away on 2 October 2026.",
+            "quote": "李小明先生已於2026年10月2日離世。",
+            "source": "email",
+            "effectiveDate": "2026-10-02",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "tc-year-turn-past",
+      "lang": "tc",
+      "note": "一月發出：「12月15日」沒有年份，指去年。",
+      "ms": 9134,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and reported that director Lee Siu Ming resigned on 15 December.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司沒有按揭或押記"
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Director Lee Siu Ming resigned from the board on 15 December 2026.",
+            "quote": "李小明先生已於12月15日辭任董事",
+            "source": "email",
+            "effectiveDate": "2026-12-15",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-plain-none",
+      "lang": "sc",
+      "note": "无押记、无变更。",
+      "ms": 3616,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "Client confirmed that the company has no mortgages or charges and that company particulars have not changed.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司没有任何按揭或押记"
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-has-charges-partial",
+      "lang": "sc",
+      "note": "有抵押贷款，详情稍后提供。",
+      "ms": 2800,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company currently has a bank loan secured by inventory and will provide the specific amount and bank statement later, noting that there are no other changes.",
+        "charges": {
+          "answer": "has_charges",
+          "details": "The company has a bank loan secured by inventory; amount and statement to follow.",
+          "quote": "公司目前有一笔以存货作抵押的银行贷款，具体金额和银行对账单我稍后发给你。"
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-new-director",
+      "lang": "sc",
+      "note": "新任董事。",
+      "ms": 3475,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and reported that Ms Wong Mei Ling was appointed as a director on 1 November 2026, inquiring what details are required from her.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司没有按揭或押记。"
+        },
+        "changes": [
+          {
+            "changeType": "director_appointed",
+            "subject": "王美玲 (Wong Mei Ling)",
+            "detail": "Ms Wong Mei Ling was appointed as a director of the company on 1 November 2026.",
+            "quote": "王美玲女士已于2026年11月1日获委任为公司董事",
+            "source": "email",
+            "effectiveDate": "2026-11-01",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-office-signed",
+      "lang": "sc",
+      "note": "办事处搬迁，并附已签署的申报表。",
+      "ms": 6070,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client returned the signed annual return (AR-signed.pdf), stated that the original will be mailed today, confirmed that the company has no mortgages or charges, and reported a change of registered office effective 15 October 2026.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司没有任何按揭或押记。"
+        },
+        "changes": [
+          {
+            "changeType": "registered_office",
+            "subject": "Alpha Trading Limited",
+            "detail": "Registered office changed to Room 808, 8/F, Example Building, 8 Example Street, Hong Kong (香港样本街8号样本大厦8楼808室) effective 15 October 2026.",
+            "quote": "公司注册办事处已于2026年10月15日迁至香港样本街8号样本大厦8楼808室。",
+            "source": "email",
+            "effectiveDate": "2026-10-15",
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [
+          {
+            "document": "annual_return",
+            "filename": "AR-signed.pdf",
+            "quote": "周年申报表已签署，扫描件见附件"
+          }
+        ],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-fee-question",
+      "lang": "sc",
+      "note": "询问申报表费用：与申报表有关，但没有回答。",
+      "ms": 3356,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client is inquiring about the registration fee for this annual return and the late filing penalty fees.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-mixed-language",
+      "lang": "sc",
+      "note": "中英夹杂。",
+      "ms": 3092,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed there are no mortgages or charges and reported that director Lee Siu Ming resigned on 31 October 2026, while his shareholding remains unchanged.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "no charges"
+        },
+        "changes": [
+          {
+            "changeType": "director_ceased",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Resigned as director on 31 October 2026.",
+            "quote": "Mr Lee Siu Ming 已经在 10月31日 resign 了 director",
+            "source": "email",
+            "effectiveDate": "2026-10-31",
+            "yearAssumed": true
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-other-topic",
+      "lang": "sc",
+      "note": "与周年申报表无关。",
+      "ms": 3004,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "other",
+        "summary": "The client inquired about assistance with preparing documents for opening another bank account in Hong Kong and asked about the fees.",
+        "charges": {
+          "answer": "not_answered",
+          "details": null,
+          "quote": null
+        },
+        "changes": [],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    },
+    {
+      "id": "sc-member-address",
+      "lang": "sc",
+      "note": "股东地址变更。",
+      "ms": 4865,
+      "score": {
+        "pass": true,
+        "problems": []
+      },
+      "reading": {
+        "about": "this_return",
+        "summary": "The client confirmed that the company has no mortgages or charges and notified a change of address for Lee Siu Ming, who is both a director and a member.",
+        "charges": {
+          "answer": "none",
+          "details": null,
+          "quote": "公司没有押记"
+        },
+        "changes": [
+          {
+            "changeType": "officer_particulars",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Address changed to Flat 9, 9/F, Harbour Building, 9 Harbour Street, Kowloon.",
+            "quote": "股东李小明的地址已更改为九龙海港街9号海港大厦9楼9室",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          },
+          {
+            "changeType": "member_particulars",
+            "subject": "LEE Siu Ming (李小明)",
+            "detail": "Address changed to Flat 9, 9/F, Harbour Building, 9 Harbour Street, Kowloon.",
+            "quote": "股东李小明的地址已更改为九龙海港街9号海港大厦9楼9室",
+            "source": "email",
+            "effectiveDate": null,
+            "yearAssumed": false
+          }
+        ],
+        "signedPapers": [],
+        "documents": []
+      },
+      "model": "google/gemini-3.8-flash"
+    }
+  ]
+}
