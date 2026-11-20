@@ -22,12 +22,13 @@ async function provideContact(existing: { email?: string; phone?: string }, inco
   return { p, t, before: t.checklist.find(e => e.key === "contactInfo") };
 }
 
-it("a client providing an existing email and a missing mobile number enriches the contact without a false conflict", async () => {
+it("an email on file without a mobile number leaves the email-and-mobile item open, and the client adding the mobile completes it without a false conflict", async () => {
   const { p, t, before } = await provideContact({ email: "jane.doe@example.com" }, "jane.doe@example.com / +852 9123 4567");
-  expect(before).toMatchObject({ status: "on_file", value: "jane.doe@example.com" });
+  // Decision 52: the item needs both channels. The email on file is kept, but the item stays outstanding.
+  expect(before).toMatchObject({ status: "needed", value: "jane.doe@example.com" });
   expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "jane.doe@example.com", phone: "+852 9123 4567" });
   expect(await pendingProposals(ctx, { taskId: t.id, kind: "conflict" })).toHaveLength(0);
-  expect((await getTask(ctx, t.id)).checklist.find(e => e.key === "contactInfo")?.value).toBe("jane.doe@example.com / +852 9123 4567");
+  expect((await getTask(ctx, t.id)).checklist.find(e => e.key === "contactInfo")).toMatchObject({ status: "received", value: "jane.doe@example.com / +852 9123 4567" });
   expect(ctx.mail.sent()).toHaveLength(0);
 });
 

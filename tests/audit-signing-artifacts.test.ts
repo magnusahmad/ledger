@@ -48,7 +48,7 @@ async function evidencePdf(text: string) {
   return Buffer.from(await pdf.save());
 }
 async function pack(approve = true) {
-  const person = await createPerson(ctx, { nameEn: "Artifact Audit Appointee", nameZh: "測試簽署董事", email: "artifact.appointee@audit.example", idNumber: "K987654(3)", residentialAddress: "Fictional audit home", correspondenceAddress: "Fictional audit office" });
+  const person = await createPerson(ctx, { nameEn: "Artifact Audit Appointee", nameZh: "測試簽署董事", email: "artifact.appointee@audit.example", phone: "+852 9123 0055", idNumber: "K987654(3)", residentialAddress: "Fictional audit home", correspondenceAddress: "Fictional audit office" });
   const req = await startManualRequest(ctx, { clientId: "cli_c1", confirm: true, items: [{ playbookId: "hk.appointDirector", person: { personId: person.id }, fields: { effDate: "2026-10-02" } }] });
   expect(ctx.mail.sent()).toHaveLength(0); await approveProposal(ctx, req.proposalId!);
   const taskId = req.taskIds[0]; const request = await getRequest(ctx, req.requestId);

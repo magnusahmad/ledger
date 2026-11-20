@@ -24,7 +24,7 @@ beforeEach(async () => {
   await ctx.db.update(client).set({ docLang: "tc" }).where(eq(client.id, "cli_c1"));
 });
 async function preparedPack(rotate = false) {
-  const p = await createPerson(ctx, { nameEn: "Fictional Appointee", nameZh: "虛構獲委任董事", email: "fictional.appointee@audit.example", idNumber: "K987654(3)", residentialAddress: "Fictional home", correspondenceAddress: "Fictional office" });
+  const p = await createPerson(ctx, { nameEn: "Fictional Appointee", nameZh: "虛構獲委任董事", email: "fictional.appointee@audit.example", phone: "+852 9123 0011", idNumber: "K987654(3)", residentialAddress: "Fictional home", correspondenceAddress: "Fictional office" });
   const req = await startManualRequest(ctx, { clientId: "cli_c1", confirm: true, items: [{ playbookId: "hk.appointDirector", person: { personId: p.id }, fields: { effDate: "2026-09-29" } }] });
   await approveProposal(ctx, req.proposalId!);
   const taskId = req.taskIds[0], request = await getRequest(ctx, req.requestId);
