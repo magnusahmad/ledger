@@ -1,4 +1,4 @@
-// Imports CSA's records (UHY pilot). Everything is read and validated before anything is written,
+// Imports CSA's records (annual pilot). Everything is read and validated before anything is written,
 // in one transaction, so a failed import leaves the last good snapshot in use. Companies become
 // clients (updated in place, flagged when missing, never deleted); contact emails become contacts
 // for the mail gate; officers, members and capital stay in the read-only snapshot (csa_row).

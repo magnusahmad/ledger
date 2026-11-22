@@ -1,4 +1,4 @@
-// The one action a case asks for next (UHY pilot screens show one primary action per case).
+// The one action a case asks for next (the pilot's screens show one primary action per case).
 import type { ArStage } from "@/db/schema";
 
 export type NextStep = "review_reply" | "settle_changes" | "registry_check" | "prepare" | "compare" | "confirm_payment" | "draft" | "wait_sent" | "signed_received" | "filed" | "registered";

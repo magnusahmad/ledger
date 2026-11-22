@@ -1,4 +1,4 @@
-// Email relevance gate (UHY deploy gap, Gap 5). Runs on message metadata before anything is stored:
+// Email relevance gate (pilot deploy gap, Gap 5). Runs on message metadata before anything is stored:
 // folder, Exchange's spam verdict, automated and bulk mail, calendar items and internal-only mail are
 // skipped; a message is kept only when it belongs to a dispatch thread or comes from (or goes to) a
 // contact of a company in the annual-return cycle. Everything here is deterministic; the model never

@@ -2,8 +2,8 @@
 // CWCCPA's format, e.g. FL1401A1; every code here is invented):
 //   demos/cwccpa/letter-pack.pdf     print this, feed it through the firm's copier (or drop it in)
 //   demos/cwccpa/specimen-abc-ird-demand.pdf   one letter, for the live demo
-//   seed/mailroom/cwccpa-demo-clients.csv   the firm's client index for the demo
-//   seed/mailroom/cwccpa-demo-clients.xlsx  the same, as the firm's Excel client list
+//   seed/mailroom/demo-clients.csv   the firm's client index for the demo
+//   seed/mailroom/demo-clients.xlsx  the same, as the firm's Excel client list
 // Every company, person and number here is invented. Each page's footer says the letter is fictional.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -177,9 +177,9 @@ async function main() {
   const ws = wb.addWorksheet("Clients");
   ws.addRow(["Client Code", "Company Name", "Chinese Name", "BR No.", "IRD File No.", "CR No.", "MPF ER No.", "Contact", "Email", "Language"]);
   for (const [name, zh, br, ird, cr, mpf, code, contact, email, lang] of CLIENTS.slice(1)) ws.addRow([code, name, zh, br, ird, cr, mpf, contact, email, lang.toUpperCase()]);
-  writeFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.xlsx"), Buffer.from(await wb.xlsx.writeBuffer()));
+  writeFileSync(path.join(process.cwd(), "seed/mailroom/demo-clients.xlsx"), Buffer.from(await wb.xlsx.writeBuffer()));
   const csv = CLIENTS.map((r) => r.map((c) => (/[",]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c)).join(",")).join("\n") + "\n";
-  writeFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.csv"), csv);
+  writeFileSync(path.join(process.cwd(), "seed/mailroom/demo-clients.csv"), csv);
   console.log(`${LETTERS.length} letters, ${doc.getPageCount()} pages -> demos/cwccpa/letter-pack.pdf`);
 }
 

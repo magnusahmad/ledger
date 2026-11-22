@@ -34,11 +34,11 @@ async function main() {
   for (const d of [mr.scanDir, mr.serverRoot]) await mkdir(d, { recursive: true });
   await ctx.db.delete(kv).where(and(eq(kv.firmId, ctx.firmId), eq(kv.key, "mailroom.clientSync")));
   // A mock X: drive laid out like CWCCPA's: the client folders, and its Excel client list under Admin.
-  const csv = readFileSync(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.csv"), "utf8");
+  const csv = readFileSync(path.join(process.cwd(), "seed/mailroom/demo-clients.csv"), "utf8");
   const base = path.join(mr.serverRoot, "XYZ Client Folder");
   for (const c of csvRows(csv, CSV_COLUMNS)) await mkdir(path.join(base, `${c.code}-${c.name}`, `${c.code}-Tax Folder`), { recursive: true });
   await mkdir(path.join(mr.serverRoot, "Admin"), { recursive: true });
-  await copyFile(path.join(process.cwd(), "seed/mailroom/cwccpa-demo-clients.xlsx"), path.join(mr.serverRoot, "Admin", "XYZ client list.xlsx"));
+  await copyFile(path.join(process.cwd(), "seed/mailroom/demo-clients.xlsx"), path.join(mr.serverRoot, "Admin", "XYZ client list.xlsx"));
   await mkdir(path.join(mr.serverRoot, mr.rules.unsortedFolder), { recursive: true });
   await ctx.db.delete(mailroomClient).where(eq(mailroomClient.firmId, ctx.firmId));
   const sync = await syncClients(ctx, mr, mr.clientSources ?? []);

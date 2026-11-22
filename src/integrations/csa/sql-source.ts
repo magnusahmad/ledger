@@ -1,6 +1,6 @@
 // Reads CSA's records from the restored, read-only copy of its own backup (never the live database).
 // The SQL for each entity lives in the installation's mapping file, written once against CSA's real
-// tables (for example clients/uhy/ops/csa-mapping.example.json); each query returns columns named as below.
+// tables (the installation's CSA_MAPPING_FILE; each client keeps an example with its ops scripts); each query returns columns named as below.
 import { z } from "zod";
 
 const day = z.preprocess((v) => (v instanceof Date ? v.toISOString().slice(0, 10) : typeof v === "string" ? v.slice(0, 10) : v), z.string().regex(/^\d{4}-\d{2}-\d{2}$/));

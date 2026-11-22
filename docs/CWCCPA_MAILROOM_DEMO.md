@@ -4,7 +4,7 @@ How to run the inbound-mail demo for CWCCPA. Product decision: [DECISIONS.md](DE
 
 ## Before the visit
 
-1. `npm run mailroom:pack` builds `demos/cwccpa/letter-pack.pdf` (12 fictional letters, 17 pages, each footed "Fictional letter for demonstration only") and the client index `seed/mailroom/cwccpa-demo-clients.csv`. Print the pack.
+1. `npm run mailroom:pack` builds `demos/cwccpa/letter-pack.pdf` (12 fictional letters, 17 pages, each footed "Fictional letter for demonstration only") and the client index `seed/mailroom/demo-clients.csv`. Print the pack.
 2. `npm run mailroom:reset` creates or empties the `clerk_cwc` database, loads the client index and makes a mock server under `storage/cwccpa/mailroom/` (`Scans`, `Server`, `Outlook drafts`). `Server` stands for their X: drive: `XYZ Client Folder\<code>-<name>\<code>-Tax Folder` for each client, with fictional client codes. The demo is anonymised as XYZ CPA; the firm's real top folder is `CWCHK Client Folder`, so set `clientFolder` in `seed/mailroom/rules.json` (and the folder source in `client-sources.json`) back to that for their installation.
 3. `npm run mailroom:dev` starts the screen at http://localhost:3100/mailroom and the scan-folder worker.
 

@@ -1,4 +1,4 @@
-// Annual-return and AGM cases (UHY pilot brief, "The annual cycle"). Steps run in order and each
+// Annual-return and AGM cases (annual pilot brief, "The annual cycle"). Steps run in order and each
 // records the person who did it. Creating a draft is not sending: a case reaches "sent" only when
 // the sent email is seen in the mailbox or staff record it. "Registered" writes the filing, so the
 // deadline engine treats the period as done.

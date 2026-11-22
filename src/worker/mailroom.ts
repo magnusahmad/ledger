@@ -1,4 +1,4 @@
-// Mail room worker for a CWCCPA-style installation: watches the copier's scan folder and reads
+// Mail room worker for a mail-room-only installation: watches the copier's scan folder and reads
 // new batches. It runs nothing else (no mailbox, bank or reminder polling).
 import { makeRuntimeCtx } from "@/lib/runtime";
 import { withLease } from "@/domain/kv";

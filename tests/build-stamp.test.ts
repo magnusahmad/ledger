@@ -2,7 +2,7 @@
 // build it is. The stamp is written where git is available (scripts/build-stamp.mjs) and travels
 // with the copy; the health check reports it with the client profile, modules and model in use.
 import { describe, it, expect } from "vitest";
-import { makeStamp } from "../scripts/build-stamp.mjs";
+import { makeStamp, sameFile } from "../scripts/build-stamp.mjs";
 import { buildReport, type BuildStamp } from "@/lib/build";
 import { loadConfig } from "@/lib/config";
 import type { Installation } from "@/lib/installation";
@@ -50,5 +50,17 @@ describe("build report", () => {
 
   it("a build that was never stamped reports an unknown commit, not a made-up one", () => {
     expect(buildReport(loadConfig({}), null)).toMatchObject({ commit: null, installation: null });
+  });
+});
+
+describe("starting the stamp script", () => {
+  it("on Windows the script recognises itself whatever the case of the drive letter or folders it was started with", () => {
+    expect(sameFile("c:\\clerk\\app\\scripts\\build-stamp.mjs", "C:\\Clerk\\app\\scripts\\build-stamp.mjs", "win32")).toBe(true);
+    expect(sameFile("C:\\Clerk\\app\\scripts\\other.mjs", "C:\\Clerk\\app\\scripts\\build-stamp.mjs", "win32")).toBe(false);
+  });
+
+  it("elsewhere file names differing only in case are different files", () => {
+    expect(sameFile("/srv/app/Scripts/build-stamp.mjs", "/srv/app/scripts/build-stamp.mjs", "linux")).toBe(false);
+    expect(sameFile("/srv/app/scripts/build-stamp.mjs", "/srv/app/scripts/build-stamp.mjs", "linux")).toBe(true);
   });
 });

@@ -3,7 +3,7 @@
 param(
   [Parameter(Mandatory=$true)] [string] $RunAs,          # e.g. UHYASK\svc-clerk (needs read access to the backup share)
   [string] $ReaderAccount = $RunAs,
-  [string] $Script = 'C:\Clerk\scripts\csa-restore.ps1'
+  [string] $Script = 'C:\Clerk\app\clients\uhy\ops\csa-restore.ps1'
 )
 $cred = Get-Credential -UserName $RunAs -Message 'Password for the account that runs the CSA restore'
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Script`" -ReaderAccount `"$ReaderAccount`""

@@ -1,4 +1,4 @@
-// Reads a client's reply on an annual-return or AGM case with the product model (UHY pilot brief,
+// Reads a client's reply on an annual-return or AGM case with the product model (annual pilot brief,
 // "Reply"; DECISIONS.md #56 and #64). The model only proposes: its reading is stored as items for
 // staff to accept, edit or reject (src/annual/reply-review.ts) and nothing on the case changes here.
 // PDFs and images go to the model with the email; any other attachment is listed as not read, so an

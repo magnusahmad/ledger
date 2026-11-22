@@ -16,16 +16,18 @@ function sourceFiles(dir: string): string[] {
     return /\.(ts|tsx)$/.test(f) ? [p] : [];
   });
 }
-/** Comments may cite a client's brief (that is how a reader learns why code exists); code may not. */
+/** Imports are checked on code alone, so a comment that mentions the folder is not an import. */
 const withoutComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const clientFolders = () => readdirSync(path.join(root, "clients")).filter((f) => statSync(path.join(root, "clients", f)).isDirectory());
-const files = sourceFiles(path.join(root, "src")).map((p) => ({ rel: path.relative(root, p), code: withoutComments(readFileSync(p, "utf8")) }));
+const files = sourceFiles(path.join(root, "src")).map((p) => { const text = readFileSync(p, "utf8"); return { rel: path.relative(root, p), text, code: withoutComments(text) }; });
 
 describe("the core and the client layer", () => {
-  it("core code names no client: no client id or alias appears in src outside comments", () => {
+  // Comments count too: core code is shipped to every client's machine (scripts/release.mjs), so a
+  // comment naming one client would be read on another's.
+  it("core code names no client: no client id or alias appears anywhere in src, comments included", () => {
     const names = Object.values(installations).flatMap((i) => [i.id, ...(i.aliases ?? [])]);
     expect(names.length).toBeGreaterThan(0);
-    const found = files.flatMap((f) => names.filter((n) => new RegExp(n, "i").test(f.code)).map((n) => `${f.rel} names "${n}"`));
+    const found = files.flatMap((f) => names.filter((n) => new RegExp(n, "i").test(f.text)).map((n) => `${f.rel} names "${n}"`));
     expect(found).toEqual([]);
   });
 

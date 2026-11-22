@@ -1,4 +1,4 @@
-// Preparing papers and drafting the dispatch email (UHY pilot brief, "The annual cycle"). The NAR1 is
+// Preparing papers and drafting the dispatch email (annual pilot brief, "The annual cycle"). The NAR1 is
 // generated from the installation's records source and filed to the firm's share; the email is drafted in the preparer's own team
 // mailbox, in the contact's language, with the case's computed dates. Nothing is sent: staff review
 // and send from Outlook, and the sync sees it in Sent Items.

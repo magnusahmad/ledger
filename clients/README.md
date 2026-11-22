@@ -51,6 +51,10 @@ An installation names its client with `INSTALLATION_PROFILE=<id>`. The profile s
 
 Client tests run with the rest of the suite (`npm test`).
 
+## What goes to a client's machine
+
+Only a release bundle: `npm run release -- <id> --zip` writes `dist/clerk-<id>-<commit>.zip` from the current commit. It holds the core, that client's profile, data, code and ops scripts, and a stamp naming the commit. It holds no other client's folder, no tests, evaluations, demos or internal documents, and its client registry lists that client alone. Never copy the repository or a working folder to a client's machine. `tests/release-bundle.test.ts` checks the contents and that a bundle names no other client.
+
 ## Which build a client is on
 
 `npm run build:stamp` writes `build.json` (commit, branch, uncommitted changes, version, latest migration). It runs before every `npm run build`. On a machine without git, the copy keeps the stamp it came with, so stamp before copying.

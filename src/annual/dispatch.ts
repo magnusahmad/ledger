@@ -1,4 +1,4 @@
-// Annual-return dates, Registry fees and the client dispatch email (UHY pilot brief, "The annual
+// Annual-return dates, Registry fees and the client dispatch email (annual pilot brief, "The annual
 // cycle"). Every date in the email comes from one computed record; fees come from playbook data;
 // wording comes from the firm's template (the installation's DISPATCH_TEMPLATE). Statutory rules here
 // need company-secretary verification.

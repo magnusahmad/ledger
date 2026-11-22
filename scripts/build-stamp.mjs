@@ -28,6 +28,15 @@ export function makeStamp({ git, version, migrations, now, existing }) {
   return { product: "clerk", version, commit, branch, dirty, schema, stampedAt: now.toISOString() };
 }
 
+/**
+ * Whether two paths name the same file. Windows file names ignore case, so a drive letter typed in
+ * lower case must still match; elsewhere case matters.
+ * @param {string} a @param {string} b @param {string} [platform]
+ */
+export function sameFile(a, b, platform = process.platform) {
+  return platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
+}
+
 function main() {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
   const file = path.join(root, "build.json");
@@ -43,4 +52,4 @@ function main() {
   console.log(`Build stamp: Clerk ${stamp.version}, ${what}, schema ${stamp.schema}`);
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
+if (process.argv[1] && sameFile(path.resolve(process.argv[1]), fileURLToPath(import.meta.url))) main();

@@ -1,8 +1,8 @@
-// Writing results back into the firm's own systems (UHY pilot brief, "Principles"): papers into the client
+// Writing results back into the firm's own systems (annual pilot brief, "Principles"): papers into the client
 // folders on its share under the firm's naming convention (the installation's FILING_RULES), never overwriting;
 // and a status workbook plus review log on the share, regenerated from the database, so staff keep
 // the record without the app. The log starts with a byte-order mark so Excel shows Chinese correctly.
-import { mkdir, open, rename, writeFile } from "node:fs/promises";
+import { mkdir, open, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import ExcelJS from "exceljs";
 import { asc, eq } from "drizzle-orm";
@@ -44,10 +44,18 @@ const STEP_LABEL: Record<string, string> = {
 };
 const csv = (s: unknown) => { const t = s === null || s === undefined ? "" : String(s); return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
 
-async function atomicWrite(file: string, data: Buffer | string) {
+/** Replaces a file in one step. Windows refuses to replace a file that is open (staff keep the
+ *  workbook open in Excel), so that case is reported in plain words and the old file stays. */
+export async function atomicWrite(file: string, data: Buffer | string, move: (from: string, to: string) => Promise<void> = rename) {
   const tmp = `${file}.${process.pid}.tmp`;
   await writeFile(tmp, data);
-  await rename(tmp, file);
+  try { await move(tmp, file); }
+  catch (e) {
+    await rm(tmp, { force: true });
+    if (["EBUSY", "EPERM", "EACCES"].includes((e as NodeJS.ErrnoException).code ?? ""))
+      throw new Error(`"${path.basename(file)}" is open on someone's computer, so it couldn't be updated. It will be updated after it is closed.`);
+    throw e;
+  }
 }
 
 /** Regenerates "Clerk annual returns.xlsx" and "Clerk review log.csv" in `dir`. */

@@ -20,9 +20,12 @@ if (-not (Test-Path "$Root\certs\server.crt")) { throw "Copy server.crt and serv
 
 Step 'Stamping the build'
 # build.json says which commit this copy is; the health check reports it. Without git here, the copy
-# keeps the stamp it came with (run `npm run build:stamp` in the repository before copying it over).
+# keeps the stamp it came with (the release script in the repository writes it into the bundle).
 if (Test-Path (Join-Path $Source '.git')) { Push-Location $Source; try { node scripts\build-stamp.mjs } finally { Pop-Location } }
-elseif (-not (Test-Path (Join-Path $Source 'build.json'))) { Write-Warning 'This copy has no build.json, so the health check cannot say which build it is. Run "npm run build:stamp" in the repository before copying it here.' }
+elseif (-not (Test-Path (Join-Path $Source 'build.json'))) { Write-Warning 'This copy has no build.json, so the health check cannot say which build it is. Cut the copy with the release script in the repository, which writes build.json.' }
+
+Step 'Stopping the services (an upgrade replaces files they hold open)'
+foreach ($n in 'clerk-web', 'clerk-worker') { if (Get-Service $n -ErrorAction SilentlyContinue) { Stop-Service $n -Force -ErrorAction SilentlyContinue } }
 
 Step 'Copying the app'
 foreach ($d in "$Root\app", "$Root\deploy", 'C:\ProgramData\Clerk\logs', 'C:\ProgramData\Clerk\csa') { if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d | Out-Null } }
@@ -33,11 +36,14 @@ if (-not (Test-Path "$Root\app\.env.production")) { Copy-Item "$PSScriptRoot\env
 Step 'Installing packages and building (needs outbound HTTPS)'
 Push-Location "$Root\app"
 try {
-  npm ci --no-audit --no-fund; if ($LASTEXITCODE) { throw 'npm ci failed' }
+  # npm.cmd, not npm: in PowerShell plain "npm" is npm.ps1, which a machine that blocks scripts refuses.
+  # --include=dev because the worker and the migrations run through tsx, a development package, and
+  # a window where NODE_ENV is already "production" would otherwise leave it out.
+  npm.cmd ci --include=dev --no-audit --no-fund; if ($LASTEXITCODE) { throw 'npm ci failed' }
   foreach ($line in Get-Content .env.production) { if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process') } }
   foreach ($kv in (Get-ClerkSecrets).GetEnumerator()) { [Environment]::SetEnvironmentVariable($kv.Key, $kv.Value, 'Process') }
   $env:NODE_ENV = 'production'
-  npm run build; if ($LASTEXITCODE) { throw 'build failed' }
+  npm.cmd run build; if ($LASTEXITCODE) { throw 'build failed' }
   node node_modules\tsx\dist\cli.mjs scripts\migrate.ts; if ($LASTEXITCODE) { throw 'migration failed' }
 } finally { Pop-Location }
 
@@ -51,10 +57,19 @@ Step 'Installing services'
 $cred = Get-Credential -UserName $ServiceAccount -Message 'Password for the Clerk service account'
 foreach ($n in 'clerk-web', 'clerk-worker', 'clerk-caddy') {
   $exe = "$Root\deploy\services\$n.exe"
+  # Remove the old service before replacing its program file: Windows won't overwrite one that is running.
+  if ((Get-Service $n -ErrorAction SilentlyContinue) -and (Test-Path $exe)) { & $exe stop | Out-Null; & $exe uninstall | Out-Null }
   Copy-Item "$Root\deploy\services\WinSW-x64.exe" $exe -Force
-  if (Get-Service $n -ErrorAction SilentlyContinue) { & $exe stop | Out-Null; & $exe uninstall | Out-Null }
-  if ($n -eq 'clerk-caddy') { & $exe install } else { & $exe install --username $cred.UserName --password $cred.GetNetworkCredential().Password }
+  & $exe install
+  if ($n -ne 'clerk-caddy') {
+    # The account is set through Windows itself, because WinSW's own options for it differ between versions.
+    $svc = Get-CimInstance Win32_Service -Filter "Name='$n'"
+    $r = Invoke-CimMethod -InputObject $svc -MethodName Change -Arguments @{ StartName = $cred.UserName; StartPassword = $cred.GetNetworkCredential().Password }
+    if ($r.ReturnValue -ne 0) { throw "Could not set the account for $n (Windows returned $($r.ReturnValue)). Check the account name and its password." }
+  }
   & $exe start
+  Start-Sleep -Seconds 3
+  if ((Get-Service $n).Status -ne 'Running') { Write-Warning "$n is not running. If the System event log shows error 1069, give $ServiceAccount the 'Log on as a service' right (README.md section 2), then run: Start-Service $n" }
 }
 
 Step 'Firewall: HTTPS from the office network only'
@@ -64,4 +79,4 @@ New-NetFirewallRule -DisplayName 'Clerk HTTPS' -Direction Inbound -Protocol TCP 
 Step 'Health'
 Start-Sleep -Seconds 20
 try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3000/api/health).Content } catch { Write-Warning "Health check not ready yet: $($_.Exception.Message). Logs: C:\ProgramData\Clerk\logs" }
-"Installed. Next: npm run firm:init and npm run user:add (README.md)."
+"Installed. Next: create the firm and the staff accounts (README.md section 4)."

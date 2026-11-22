@@ -6,7 +6,7 @@ import type { MailroomRead } from "@/db/schema";
 export type FilingRule = { label: string; folder: string; file: string; noEmail?: boolean; unsorted?: boolean };
 export type FilingRules = {
   clientFolder: string; unsortedFolder: string; types: Record<string, FilingRule>; fallback: FilingRule;
-  /** How staff write paths on their server (CWCCPA: X:\ with backslashes). Display only. */
+  /** How staff write paths on their server (e.g. X:\ with backslashes). Display only. */
   display?: { root: string; separator: string };
 };
 

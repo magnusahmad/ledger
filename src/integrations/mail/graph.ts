@@ -1,4 +1,4 @@
-// Microsoft 365 mail through Microsoft Graph, app-only (UHY deploy gap, Gap 4). Access is limited to
+// Microsoft 365 mail through Microsoft Graph, app-only (pilot deploy gap, Gap 4). Access is limited to
 // the team mailboxes by Exchange RBAC for Applications with the "Application Mail.ReadWrite" role,
 // which can read and create drafts but cannot send. This client has no send method either.
 import { createSign, randomUUID } from "node:crypto";

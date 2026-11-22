@@ -1,4 +1,4 @@
-// Staff review of what the model read in a client's reply (UHY pilot brief, "Reply" and "AI accuracy
+// Staff review of what the model read in a client's reply (annual pilot brief, "Reply" and "AI accuracy
 // and oversight"; DECISIONS.md #56 and #64). Each point is accepted, edited or rejected one at a time
 // by a person who has opened the email; there is no "accept all". The charges answer is always
 // entered by staff, with the model's reading beside it. Every edit, rejection and addition is a

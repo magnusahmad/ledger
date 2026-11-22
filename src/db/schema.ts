@@ -704,7 +704,7 @@ export const mailDelivery = pgTable("mail_delivery", {
 export const mailroomClient = pgTable("mailroom_client", {
   id: text("id").primaryKey(), firmId: firmId(),
   name: text("name").notNull(), nameZh: text("name_zh"),
-  /** The firm's own client code (CWCCPA: e.g. FL1401A1), part of each client's folder name. */
+  /** The firm's own client code (e.g. FL1401A1), part of each client's folder name. */
   code: text("code"),
   brNo: text("br_no"), irdFileNo: text("ird_file_no"), crNo: text("cr_no"), mpfNo: text("mpf_no"),
   /** The client's folder name on the firm's server, under the rules' client folder. */
@@ -758,7 +758,7 @@ export const mailroomLetter = pgTable("mailroom_letter", {
   createdAt: createdAt(),
 }, (t) => [uniqueIndex("mailroom_letter_seq_uq").on(t.firmId, t.batchId, t.seq)]);
 
-// ---------- Annual returns and AGMs (UHY pilot, DECISIONS.md #55) ----------
+// ---------- Annual returns and AGMs (annual pilot, DECISIONS.md #55) ----------
 export const AR_STAGES = ["due", "prepared", "payment_confirmed", "draft_ready", "sent", "signed_received", "filed", "registered"] as const;
 export type ArStage = (typeof AR_STAGES)[number];
 
@@ -828,7 +828,7 @@ export const arMailScan = pgTable("ar_mail_scan", {
   skipped: jsonb("skipped").$type<Record<string, number>>().notNull().default({}),
 }, (t) => [uniqueIndex("ar_mail_scan_uq").on(t.firmId, t.day, t.mailbox)]);
 
-// ---------- Client replies read by the model (UHY pilot, DECISIONS.md #56 and #64) ----------
+// ---------- Client replies read by the model (annual pilot, DECISIONS.md #56 and #64) ----------
 export type ReplyItemKind = "charges" | "change" | "signed_papers" | "document";
 export type ReplyItemStatus = "proposed" | "accepted" | "edited" | "rejected" | "added";
 
@@ -867,7 +867,7 @@ export const arReplyItem = pgTable("ar_reply_item", {
   createdAt: createdAt(),
 }, (t) => [index("ar_reply_item_reply_idx").on(t.replyId), index("ar_reply_item_case_idx").on(t.caseId)]);
 
-/** Every time a person changes, removes or adds to a model output (UHY pilot brief, "AI accuracy and oversight"). */
+/** Every time a person changes, removes or adds to a model output (annual pilot brief, "AI accuracy and oversight"). */
 export const aiDefect = pgTable("ai_defect", {
   id: text("id").primaryKey(), firmId: firmId(),
   task: text("task").notNull(),
@@ -879,7 +879,7 @@ export const aiDefect = pgTable("ai_defect", {
   by: text("by").notNull(), at: timestamp("at", { withTimezone: true }).notNull(),
 }, (t) => [index("ai_defect_task_idx").on(t.firmId, t.task, t.at)]);
 
-// ---------- CSA snapshot (UHY pilot) ----------
+// ---------- CSA snapshot (annual pilot) ----------
 // A read-only copy of CSA's current records from its restored backup. Officers, members and shares
 // stay here rather than in the effective-dated registers: a snapshot of today's holdings is not a
 // history, and writing it as dated register entries would invent one.
