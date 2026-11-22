@@ -47,6 +47,24 @@ describe("Upload portal", () => {
     expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com", phone: "+852 9123 0007" });
   });
 
+  it.each([
+    ["mobile number", { email: "meiwah.wong@example.com" }, "+852 9123 0007"],
+    ["email", { phone: "+852 9123 0007" }, "meiwah.wong@example.com"],
+  ])("a client typing only the missing %s on the upload link completes the email-and-mobile item using the half already on file", async (_part, onFile, typed) => {
+    const { req, t, p } = await appointment("cli_c1", "WONG Mei Wah", onFile);
+    expect(t.checklist.find((e) => e.key === "contactInfo")?.status).toBe("needed");
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: typed });
+    expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com", phone: "+852 9123 0007" });
+    expect((await getTask(ctx, t.id)).checklist.find((e) => e.key === "contactInfo")).toMatchObject({ status: "received", value: "meiwah.wong@example.com / +852 9123 0007" });
+  });
+
+  it("a different email typed on the upload link never replaces the email on file, and the task shows what the client typed", async () => {
+    const { req, t, p } = await appointment("cli_c1", "WONG Mei Wah", { email: "meiwah.wong@example.com" });
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: "someone.else@example.com / +852 9123 0007" });
+    expect(await getPersonProtected(ctx, p.id)).toMatchObject({ email: "meiwah.wong@example.com" });
+    expect((await getTask(ctx, t.id)).checklist.find((e) => e.key === "contactInfo")?.value).toBe("someone.else@example.com / +852 9123 0007");
+  });
+
   it("an uploaded ID copy ticks the item for that task's person only", async () => {
     ctx.llm.on("extract", noExtraction);
     const a = await appointment("cli_c1", "WONG Ka Man");
@@ -119,12 +137,25 @@ describe("Upload portal", () => {
 });
 
 describe("CDD and screening", () => {
-  async function toScreen(name: string, clientId = "cli_c1") {
-    const r = await appointment(clientId, name, { idNumber: "K987654(3)", residentialAddress: "x", correspondenceAddress: "y", email: "a@b.example", phone: "+852 1" });
+  // Email and mobile are both required before collection is complete (decision 52), so the appointee has both.
+  async function toScreen(name: string, clientId = "cli_c1", contact: Record<string, string> = { email: "a@b.example", phone: "+852 9123 0001" }) {
+    const r = await appointment(clientId, name, { idNumber: "K987654(3)", residentialAddress: "x", correspondenceAddress: "y", ...contact });
     const { tickItem } = await import("@/domain/step-hooks");
     for (const k of ["idCopy", "addrProof", "selfie"]) await tickItem(ctx, r.t.id, k, null);
     return r;
   }
+
+  it("screening waits while the appointee has an email but no mobile number, and runs once both are supplied", async () => {
+    const { req, t, p } = await toScreen("WONG Ka Man", "cli_c1", { email: "a@b.example" });
+    let cur = await getTask(ctx, t.id);
+    expect(cur._steps[cur.stepIndex].kind).toBe("collect");
+    expect(cur.checklist.find((e) => e.key === "contactInfo")).toMatchObject({ status: "needed", value: "a@b.example" });
+    expect(await ctx.db.select().from(screeningResult).where(eq(screeningResult.personId, p.id))).toHaveLength(0);
+    await portalSubmitField(ctx, req.uploadToken, { taskId: t.id, key: "contactInfo", value: "a@b.example, +852 9123 0001" });
+    cur = await getTask(ctx, t.id);
+    expect(cur._steps[cur.stepIndex].kind).not.toBe("collect");
+    expect(await ctx.db.select().from(screeningResult).where(eq(screeningResult.personId, p.id))).toHaveLength(1);
+  });
 
   it("a clear screening creates the CDD record with a risk-based review date and moves on", async () => {
     const { t, p } = await toScreen("WONG Ka Man");

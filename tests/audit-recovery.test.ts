@@ -95,7 +95,7 @@ it("REC03 a lost mail response after provider acceptance cannot duplicate a clie
 
 it("REC04 retrying a partial signing send preserves the delivered link and sends only the missing invitation", async () => {
   const req = await createRequest(ctx, { clientId: "cli_c1" });
-  const person = await createPerson(ctx, { nameEn: "Recovery Appointee", email: "appointee@audit.example", idNumber: "K987654(3)", residentialAddress: "Audit home", correspondenceAddress: "Audit office" });
+  const person = await createPerson(ctx, { nameEn: "Recovery Appointee", email: "appointee@audit.example", phone: "+852 9123 0004", idNumber: "K987654(3)", residentialAddress: "Audit home", correspondenceAddress: "Audit office" });
   const t = await startTask(ctx, { requestId: req.id, clientId: "cli_c1", playbookId: "hk.appointDirector", personId: person.id, extracted: { effDate: { value: "2026-09-29" } } });
   await markStepState(ctx, t.id, "send", { sent: true }); ctx.llm.on("extract", { fields: [], documents: [], conflicts: [] });
   const pdf = await PDFDocument.create(); pdf.addPage(); const bytes = Buffer.from(await pdf.save());
