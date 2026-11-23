@@ -30,7 +30,12 @@ async function main() {
   if (!cmd || !file) { console.error("Usage: sources.ts discover-dn|discover-access|check-dn <file or folder> [--sheet name] [--max-age-days n] [--out dir]"); process.exit(2); }
   if (cmd === "discover-dn" || (cmd === "discover-access" && /\.xlsx?$/i.test(file))) {
     const d = await discoverWorkbook(file);
-    for (const s of d.sheets) console.log(`Sheet "${s.name}": header row ${s.headerRow ?? "not found"}, ${s.dataRows} data rows, ${s.columns.length} columns`);
+    for (const s of d.sheets) {
+      console.log(`Sheet "${s.name}": header row ${s.headerRow ?? "not found"}, ${s.dataRows} data rows, ${s.columns.length} columns`);
+      const f = s.formatting;
+      console.log(`  formatting: ${f.struckCells} struck-through cells (${f.struckRows} whole rows), ${f.hiddenRows} hidden rows, ${f.notes} notes`);
+      console.log(`  text colours: ${JSON.stringify(f.fontColours)}; cell colours: ${JSON.stringify(f.fillColours)}`);
+    }
     await save(`${cmd}-${base(file)}.json`, d);
   } else if (cmd === "discover-access") {
     const copy = await findAccessCopy(file, { now: new Date(), maxAgeDays: opt("max-age-days") ? Number(opt("max-age-days")) : undefined });
@@ -41,6 +46,7 @@ async function main() {
     await save(`discover-access-${base(file)}.json`, d);
   } else if (cmd === "check-dn") {
     const r = await readDnWorkbook(file, { sheet: opt("sheet") });
+    const live = r.rows.filter((x) => !x.struck);
     const byField: Record<string, { count: number; rows: number[]; errors: string[] }> = {};
     for (const p of r.rows.flatMap((x) => x.problems)) {
       const b = (byField[p.field] ??= { count: 0, rows: [], errors: [] });
@@ -49,8 +55,14 @@ async function main() {
     const summary = {
       sheet: r.sheet, headerRow: r.headerRow, companies: r.rows.length, skippedRows: r.skippedRows,
       missingColumns: r.missingColumns, unknownColumns: r.unknownColumns, duplicateColumns: r.duplicateColumns,
-      withYearEnd: r.rows.filter((x) => x.yearEnd).length, withAgmMonth: r.rows.filter((x) => x.agmMonth).length,
-      withContactEmail: r.rows.filter((x) => x.contactEmails.length).length,
+      struckThrough: r.rows.filter((x) => x.struck).length,
+      // Everything below counts live companies only (code and name not struck through).
+      live: live.length, withIncorporationDate: live.filter((x) => x.incorporatedOn).length,
+      withYearEnd: live.filter((x) => x.yearEnd).length, withAgmMonth: live.filter((x) => x.agmMonth).length,
+      withContactEmail: live.filter((x) => x.contactEmails.length).length,
+      noAgm: live.reduce<Record<string, number>>((a, x) => { if (x.noAgm) { const k = x.noAgm.where ? `${x.noAgm.status} (${x.noAgm.where})` : x.noAgm.status; a[k] = (a[k] ?? 0) + 1; } return a; }, {}),
+      neitherAgmMonthNorStatus: live.filter((x) => !x.agmMonth && !x.noAgm).length,
+      notesByField: live.reduce<Record<string, number>>((a, x) => { for (const f of Object.keys(x.notes)) a[f] = (a[f] ?? 0) + 1; return a; }, {}),
       duplicateCodes: Object.entries(r.rows.reduce<Record<string, number>>((a, x) => ({ ...a, [x.code]: (a[x.code] ?? 0) + 1 }), {})).filter(([, n]) => n > 1).length,
       problemsByField: byField,
     };
@@ -58,4 +70,5 @@ async function main() {
     await save(`check-dn-${base(file)}.json`, summary);
   } else { console.error(`Unknown command ${cmd}`); process.exit(2); }
 }
-main().catch((e) => { console.error(e instanceof Error ? e.message : e); process.exit(1); });
+// The message and where in the code it happened (code locations only, never cell values).
+main().catch((e) => { console.error(e instanceof Error ? `${e.message}\n${(e.stack ?? "").split("\n").slice(1, 5).join("\n")}` : e); process.exit(1); });

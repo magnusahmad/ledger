@@ -22,7 +22,7 @@ function tables(over: Record<string, Record<string, unknown>[]> = {}) {
     ],
     officers: [
       { csaId: "O1", companyCsaId: "C1", role: "director", kind: "individual", nameEn: "CHAN Tai Man", nameZh: "陳大文", correspondenceAddress: "Unit 1, 1/F, Example Building, 1 Example Road, Kowloon", email: "tm@alpha.example", idNumber: "A1234563", appointedOn: "2015-11-20", ceasedOn: null },
-      { csaId: "O2", companyCsaId: "C1", role: "secretary", kind: "corporate", nameEn: "Fictional Secretaries Limited", nameZh: null, correspondenceAddress: "Suite 9, 9/F, Firm Tower, 9 Firm Road, Kowloon", email: "cosec@firm.example", idNumber: null, brNumber: "11112222", appointedOn: "2015-11-20", ceasedOn: null },
+      { csaId: "O2", companyCsaId: "C1", role: "secretary", kind: "corporate", nameEn: "Fictional Secretaries Limited", nameZh: null, correspondenceAddress: "Suite 9, 9/F, Firm Tower, 9 Firm Road, Kowloon", email: "cosec@firm.example", idNumber: null, brNumber: "11112222", appointedOn: "2015-11-20", ceasedOn: null, tcspLicence: "TC001234" },
       { csaId: "O3", companyCsaId: "C1", role: "director", kind: "individual", nameEn: "LEE Former", nameZh: null, correspondenceAddress: "x", email: null, idNumber: null, appointedOn: "2015-11-20", ceasedOn: "2020-01-01" },
       { csaId: "O4", companyCsaId: "C2", role: "director", kind: "corporate", nameEn: "Holding Co Ltd", nameZh: null, correspondenceAddress: "BVI", email: null, idNumber: null, appointedOn: "2019-03-01", ceasedOn: null },
     ],
@@ -117,6 +117,8 @@ describe("annual-return facts from the CSA snapshot", () => {
     if (!r.ok) return;
     expect(r.input.directors.map((d) => d.nameEn)).toEqual(["CHAN Tai Man"]);
     expect(r.input.secretary).toMatchObject({ corporate: true, nameEn: "Fictional Secretaries Limited", brNumber: "11112222" });
+    // A corporate secretary that is a licensed company service provider must show its licence number.
+    expect(r.input.secretary?.tcspLicence).toBe("TC001234");
     expect(r.input.members).toEqual([{ className: "Ordinary", totalInClass: 10000, rows: [
       { nameEn: "CHAN Tai Man", nameZh: "陳大文", corporate: false, address: "Unit 1, 1/F, Example Building, 1 Example Road, Kowloon", shares: 9000 },
       { nameEn: "Parent Holdings Limited", nameZh: null, corporate: true, address: "PO Box 1, Road Town, BVI", shares: 1000 },

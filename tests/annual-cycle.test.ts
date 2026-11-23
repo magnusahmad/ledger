@@ -67,6 +67,16 @@ describe("pilot background cycle", () => {
     expect((await readHealth(ctx))?.errors.records).toMatch(/disk full/);
   });
 
+  it("a restore status file written by Windows PowerShell, which starts with a byte-order mark, is still read", async () => {
+    const ctx = makeCtx({ now: "2026-11-05T05:00:00Z" });
+    await ctx.db.insert(firm).values({ id: ctx.firmId, legalName: "Firm", invoicePrefix: "F" });
+    const d = await deps();
+    await writeFile(d.restoreStatus, "\uFEFF" + JSON.stringify({ ok: true, backupTakenAt: "2026-11-05T02:13:00.000Z" }));
+    const h = await runAnnualCycle(ctx, d);
+    expect(h.errors.records).toBeUndefined();
+    expect(h.recordsAsAt).toBe("2026-11-05T02:13:00.000Z");
+  });
+
   it("a failing mail sync is recorded and doesn't stop the status files", async () => {
     const ctx = makeCtx({ now: "2026-11-05T05:00:00Z" });
     await ctx.db.insert(firm).values({ id: ctx.firmId, legalName: "Firm", invoicePrefix: "F" });

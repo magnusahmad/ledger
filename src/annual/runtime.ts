@@ -15,7 +15,8 @@ import type { FilingRules } from "./writeback";
 import type { DispatchTemplate } from "./dispatch";
 
 const list = (s: string) => s.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
-const json = <T>(file: string | undefined): T | null => (file ? (JSON.parse(readFileSync(path.resolve(file), "utf8")) as T) : null);
+// A file edited on Windows may start with a byte-order mark, which JSON.parse rejects.
+const json = <T>(file: string | undefined): T | null => (file ? (JSON.parse(readFileSync(path.resolve(file), "utf8").replace(/^\uFEFF/, "")) as T) : null);
 
 export function graphFromConfig(c: Config): GraphMail | null {
   if (!c.GRAPH_TENANT_ID || !c.GRAPH_CLIENT_ID) return null;

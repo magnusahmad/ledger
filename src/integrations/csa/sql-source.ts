@@ -18,6 +18,8 @@ export const CsaCompanyZ = z.object({
 export const CsaOfficerZ = z.object({
   csaId: str, companyCsaId: str, role: z.enum(["director", "alternate", "secretary"]), kind: z.enum(["individual", "corporate"]),
   nameEn: str, nameZh: optStr, correspondenceAddress: optStr, email: optStr, idNumber: optStr, brNumber: optStr.default(null),
+  /** A corporate secretary's TCSP licence number, which the annual return must show. */
+  tcspLicence: optStr.default(null),
   appointedOn: optDay, ceasedOn: optDay,
 });
 export const CsaMemberZ = z.object({

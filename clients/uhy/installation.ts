@@ -14,6 +14,7 @@ const uhy: Installation = {
     FIRM_EMAIL_DOMAINS: "uhy-ask.com",
     FILING_RULES: "clients/uhy/data/filing-rules.json",
     DISPATCH_TEMPLATE: "clients/uhy/data/dispatch-template.json",
+    CSA_MAPPING_FILE: "clients/uhy/data/csa-mapping.json",
   },
 };
 

@@ -1,5 +1,5 @@
 {
-  "_note": "UHY's DN (Debit Note) workbook columns, from an anonymised sample (6 October). Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. Kinds: text, usDate (m/d/yyyy), yearEnd (Chinese month-day such as 12月31日), month (AGM month), tick (Wingdings ü/û or a check mark), mark (tick or date), emails. To be confirmed against the authoritative workbook on site. Done, Sent, Received, By., Scan and File track the AGM only (Coe, 18 and 19 November); the annual return is tracked in a separate workbook built from a CSA list. required AFS is the year end of the audited accounts this year's AGM papers need.",
+  "_note": "UHY's DN (Debit Note) workbook columns, rewritten on 23 November 2026 from the real file (2025 COSEC DN NEW); the October sample was misleading. Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. A header that appears twice (Remarks) is told apart by nth. The sheet is a working notebook, so the reader takes what the pilot needs and keeps anything else a cell holds as a note against that field; only an impossible date is reported as a problem. Kinds: text; date (a date cell, or day-first text such as 24/08/2022); yearEnd (a date cell, 31/Dec, 12月31日, or a formula holding that text); month (an English month name); tick (ü yes, û no); mark (a tick, 'done', or a day-first date: the AGM tracker); afs (a date, x for none, or a range such as 31/12/2025-26 whose last year end is kept); sentOn (a date, or X for not sent); emails. statuses are what staff write across the AGM block when no AGM is handled: <jurisdiction>-不用處理 for a company incorporated elsewhere, 不用處理 alone, dereg中, N/A. ignore lists columns the pilot does not use (debit-note billing). Done, Allan check, Sent, By., Received, Scan, File and the second Remarks all track the AGM (Coe, 18 and 19 November); the annual return is tracked elsewhere. required AFS is the year end of the audited accounts this year's AGM papers need.",
   "columns": [
     {
       "field": "code",
@@ -26,6 +26,14 @@
       ]
     },
     {
+      "field": "groupCode",
+      "kind": "text",
+      "optional": true,
+      "headers": [
+        "Group Code"
+      ]
+    },
+    {
       "field": "lastDn",
       "kind": "text",
       "headers": [
@@ -34,7 +42,7 @@
     },
     {
       "field": "serviceUntil",
-      "kind": "usDate",
+      "kind": "date",
       "headers": [
         "Debit Note Service Until"
       ]
@@ -46,6 +54,23 @@
         "New DN",
         "New DN (2026)",
         "New DN (2027)"
+      ]
+    },
+    {
+      "field": "incorporatedOn",
+      "kind": "date",
+      "optional": true,
+      "headers": [
+        "Incorp. Date",
+        "Incorporation Date"
+      ]
+    },
+    {
+      "field": "lastAgmDate",
+      "kind": "date",
+      "optional": true,
+      "headers": [
+        "Last AGM Date"
       ]
     },
     {
@@ -108,7 +133,7 @@
     },
     {
       "field": "requiredAfs",
-      "kind": "usDate",
+      "kind": "afs",
       "headers": [
         "required AFS"
       ]
@@ -118,6 +143,14 @@
       "kind": "mark",
       "headers": [
         "Done"
+      ]
+    },
+    {
+      "field": "agmAllanCheck",
+      "kind": "mark",
+      "optional": true,
+      "headers": [
+        "Allan check"
       ]
     },
     {
@@ -154,6 +187,15 @@
       "kind": "mark",
       "headers": [
         "File"
+      ]
+    },
+    {
+      "field": "agmRemarks",
+      "kind": "text",
+      "optional": true,
+      "nth": 2,
+      "headers": [
+        "Remarks"
       ]
     },
     {
@@ -200,7 +242,7 @@
     },
     {
       "field": "feeEmailSentOn",
-      "kind": "usDate",
+      "kind": "sentOn",
       "headers": [
         "Send $ email"
       ]
@@ -246,6 +288,30 @@
       "headers": [
         "ND2A 轉comsec"
       ]
+    }
+  ],
+  "ignore": [
+    "RO=RK",
+    "Com Kit",
+    "Services",
+    "DN issuing Month",
+    "Mailing Date",
+    "Bank Charge",
+    "Postage",
+    "EMAIL"
+  ],
+  "statuses": [
+    {
+      "match": "^(?:([A-Za-z][A-Za-z .]*?)\\s*-\\s*)?不用處理$",
+      "status": "not_handled"
+    },
+    {
+      "match": "^dereg中$",
+      "status": "deregistering"
+    },
+    {
+      "match": "^n/?a$",
+      "status": "not_applicable"
     }
   ]
 }

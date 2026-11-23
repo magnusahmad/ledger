@@ -20,7 +20,8 @@ export function csaRecords(o: CsaRecordsOptions = {}): RecordsSource {
     asAt: async (ctx) => (await latestImport(ctx))?.backupTakenAt ?? null,
     async refresh(ctx) {
       if (!o.restoreStatusFile || !o.open) return null;
-      const s = JSON.parse(await readFile(o.restoreStatusFile, "utf8")) as { ok: boolean; backupTakenAt: string | null; error?: string };
+      // Windows PowerShell writes the status file with a byte-order mark, which JSON.parse rejects.
+      const s = JSON.parse((await readFile(o.restoreStatusFile, "utf8")).replace(/^\uFEFF/, "")) as { ok: boolean; backupTakenAt: string | null; error?: string };
       if (!s.ok) throw new Error(`The last CSA restore failed: ${s.error ?? "unknown error"}. The previous copy is still in use.`);
       const last = await latestImport(ctx);
       if (!s.backupTakenAt || (last && last.backupTakenAt.toISOString() >= new Date(s.backupTakenAt).toISOString())) return null;
