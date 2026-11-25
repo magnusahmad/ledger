@@ -32,6 +32,8 @@ export interface ClientListSource {
 export type ClientListDifference = { code: string; nameEn: string | null; kind: "leftOut" | "yearEnd" | "incorporatedOn" | "nameMismatch" | "notInList" | "notInRecords"; records: string | null; list: string | null };
 export type ClientListReport = {
   label: string; version: string; appliedAt: string;
+  /** The build that applied it: a new build reads the list again, since how it is applied may have changed. */
+  build?: string | null;
   counts: { entries: number; live: number; leftOut: number; matched: number; yearEndsFilled: number; contactsAdded: number };
   problems: string[]; differences: ClientListDifference[];
 };
@@ -63,9 +65,10 @@ export const leftOutOfClientList = (c: { jurisdictionData: unknown }) => (c.juri
 
 /** Reads the list and applies it. Returns null when the list has not changed (force reads it anyway:
  *  a newer copy of the records brings back the records' own year ends, which the list must replace again). */
-export async function applyClientList(ctx: Ctx, src: ClientListSource, o: { force?: boolean } = {}): Promise<ClientListReport | null> {
+export async function applyClientList(ctx: Ctx, src: ClientListSource, o: { force?: boolean; build?: string | null } = {}): Promise<ClientListReport | null> {
   const prev = await readClientListReport(ctx);
-  const read = await src.read(o.force ? null : prev?.version ?? null);
+  const build = o.build ?? prev?.build ?? null;
+  const read = await src.read(o.force || build !== (prev?.build ?? null) ? null : prev?.version ?? null);
   if (!read) return null;
   const clients = await ctx.db.select().from(clientT).where(eq(clientT.firmId, ctx.firmId));
   const listKey = (c: { code: string | null }) => { const k = key(c.code); return k ? key(src.codeKey?.(k) ?? k) : ""; };
@@ -76,6 +79,13 @@ export async function applyClientList(ctx: Ctx, src: ClientListSource, o: { forc
   const counts = { entries: read.entries.length, live: 0, leftOut: 0, matched: 0, yearEndsFilled: 0, contactsAdded: 0 };
 
   await ctx.db.transaction(async (db) => {
+    /** Takes back what the list did to a company it no longer speaks for: its mark, and the year end it replaced. */
+    const unmark = async (c: (typeof clients)[number]) => {
+      const data = c.jurisdictionData as Record<string, unknown> & { fromRecords?: { fyeMonth: number | null; fyeDay: number | null } };
+      if (!data.clientList) return;
+      const { clientList: _gone, ...rest } = data; void _gone;
+      await db.update(clientT).set({ ...(data.fromRecords ? { fyeMonth: data.fromRecords.fyeMonth, fyeDay: data.fromRecords.fyeDay } : {}), jurisdictionData: rest }).where(and(eq(clientT.id, c.id), eq(clientT.firmId, ctx.firmId)));
+    };
     for (const e of read.entries) {
       const k = key(e.code);
       if (e.live) counts.live++; else counts.leftOut++;
@@ -84,7 +94,7 @@ export async function applyClientList(ctx: Ctx, src: ClientListSource, o: { forc
       for (const c of sameCode) {
       seen.add(c.id);
       // Same code, another company's name: nothing is applied, and staff are shown both names.
-      if (!sameCompanyName(c.nameEn, e.nameEn)) { differences.push({ code: key(c.code), nameEn: c.nameEn, kind: "nameMismatch", records: c.nameEn, list: e.nameEn }); continue; }
+      if (!sameCompanyName(c.nameEn, e.nameEn)) { differences.push({ code: key(c.code), nameEn: c.nameEn, kind: "nameMismatch", records: c.nameEn, list: e.nameEn }); await unmark(c); continue; }
       counts.matched++;
       const code = key(c.code);
       const data = c.jurisdictionData as Record<string, unknown> & { fromRecords?: { fyeMonth: number | null; fyeDay: number | null } };
@@ -114,12 +124,11 @@ export async function applyClientList(ctx: Ctx, src: ClientListSource, o: { forc
       const k = key(c.code);
       if (!k || seen.has(c.id)) continue;
       differences.push({ code: k, nameEn: c.nameEn, kind: "notInList", records: c.nameEn, list: null });
-      const data = c.jurisdictionData as Record<string, unknown>;
-      if (data.clientList) { const { clientList: _gone, ...rest } = data; void _gone; await db.update(clientT).set({ jurisdictionData: rest }).where(and(eq(clientT.id, c.id), eq(clientT.firmId, ctx.firmId))); }
+      await unmark(c);
     }
   });
   differences.sort((a, b) => a.kind.localeCompare(b.kind) || a.code.localeCompare(b.code));
-  const report: ClientListReport = { label: src.label, version: read.version, appliedAt: ctx.clock.now().toISOString(), counts, problems: read.problems, differences };
+  const report: ClientListReport = { label: src.label, version: read.version, appliedAt: ctx.clock.now().toISOString(), build, counts, problems: read.problems, differences };
   await kvSet(ctx, KEY, report);
   return report;
 }

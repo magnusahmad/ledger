@@ -123,6 +123,26 @@ describe("the firm's client list", () => {
     expect(r!.counts.matched).toBe(0);
   });
 
+  it("a company matched on its code alone by an earlier build has that undone once the names are seen to differ", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    // What the earlier build left behind: marked as no longer a client, with the list's year end.
+    await ctx.db.update(client).set({ fyeMonth: 3, fyeDay: 31, jurisdictionData: { fromRecords: { fyeMonth: 12, fyeDay: 31 }, clientList: { live: false, reason: "struck", agmMonth: null, noAgm: null } } }).where(eq(client.id, "cl_a"));
+    await applyClientList(ctx, list([entry({ code: "A001", nameEn: "Zebra Trading Limited", live: false, leftOutReason: "struck", yearEnd: { month: 3, day: 31 } })]));
+    const after = await get(ctx, "cl_a");
+    expect(after).toMatchObject({ fyeMonth: 12, fyeDay: 31 });
+    expect((after.jurisdictionData as { clientList?: unknown }).clientList).toBeUndefined();
+    await syncCases(ctx, { withinDays: 60 });
+    expect((await listCases(ctx)).map((c) => c.clientCode)).toContain("A001");
+  });
+
+  it("a new build reads the list again even though the list itself has not changed", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    const src = list([entry({ code: "A001", agmMonth: 5 })], "v1");
+    await applyClientList(ctx, src, { build: "aaa" });
+    expect(await applyClientList(ctx, src, { build: "aaa" })).toBeNull();
+    expect(await applyClientList(ctx, src, { build: "bbb" })).not.toBeNull();
+  });
+
   it("a name that differs only in case, punctuation, the company suffix or a note in brackets is the same company", async () => {
     const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
     const r = await applyClientList(ctx, list([entry({ code: "A001", nameEn: "ALPHA LTD. *(formerly Old Name Limited)" }), entry({ code: "B002", nameEn: "Beta Co., Limited" })]));

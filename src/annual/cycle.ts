@@ -12,6 +12,7 @@ import { writeStatusFiles } from "./writeback";
 import { readPendingReplies } from "./reply-reader";
 import type { RecordsSource } from "./records";
 import { applyClientList, type ClientListSource } from "./client-list";
+import { readBuildStamp } from "@/lib/build";
 
 export type CycleDeps = {
   /** Where the company's current particulars come from (records.ts). */
@@ -51,7 +52,7 @@ export async function runAnnualCycle(ctx: Ctx, d: CycleDeps): Promise<Health> {
   h.clientListReadAt = prev?.clientListReadAt ?? null;
   await step("clientList", async () => {
     if (!d.clientList) return;
-    if (await applyClientList(ctx, d.clientList, { force: newRecords })) h.clientListReadAt = ctx.clock.now().toISOString();
+    if (await applyClientList(ctx, d.clientList, { force: newRecords, build: readBuildStamp()?.commit ?? null })) h.clientListReadAt = ctx.clock.now().toISOString();
   });
   await step("cases", () => syncCases(ctx, { withinDays: d.withinDays }));
   await step("mail", async () => {
