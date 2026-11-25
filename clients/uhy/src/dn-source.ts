@@ -3,7 +3,8 @@
 // The AGM workbook is a copy where this year's AGMs are tracked; only its visible columns are read,
 // because its hidden ones no longer sit against their own companies (DECISIONS.md #67). Both are read
 // from .xlsx copies made on the pilot machine; the originals on the share are never opened.
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import path from "node:path";
 import type { ClientListEntry, ClientListRead, ClientListSource } from "@/annual/client-list";
 import { readDnWorkbook, type DnRow } from "./dn";
 
@@ -32,7 +33,21 @@ export function mergeWorkbooks(dn: DnRow[], agm: DnRow[]): { entries: ClientList
   return { entries, problems };
 }
 
-export function dnClientList(o: { dnFile: string; agmFile?: string | null }): ClientListSource {
+/** The copy job has run within this many days, or its copies may be out of date. */
+const COPY_MAX_AGE_DAYS = 3;
+
+/** What the copy job (ops/dn-copy.ps1) recorded about its last run, beside the copies. A failed or
+ *  stalled job is an error on every cycle until fixed; copies made by hand have no record and are read. */
+async function checkCopyJob(dir: string, now: Date) {
+  let s: { ok: boolean; finishedAt: string; error?: string | null };
+  try { s = JSON.parse((await readFile(path.join(dir, "copy-status.json"), "utf8")).replace(/^\uFEFF/, "")); } catch { return; }
+  if (!s.ok) throw new Error(`The scheduled copy of the workbooks failed, so Clerk is not reading them: ${s.error ?? "no reason recorded"}`);
+  const last = new Date(s.finishedAt);
+  if (now.getTime() - last.getTime() > COPY_MAX_AGE_DAYS * 86_400_000)
+    throw new Error(`The scheduled copy of the workbooks has not run since ${last.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "Asia/Hong_Kong" })}, so the copies may be out of date. Check the "Clerk workbook copy" task on this machine.`);
+}
+
+export function dnClientList(o: { dnFile: string; agmFile?: string | null; now?: () => Date }): ClientListSource {
   const stamp = async (file: string, what: string) => {
     try { const s = await stat(file); return `${s.mtimeMs}:${s.size}`; }
     catch { throw new Error(`${what} is not at ${file}. Check the copy job that converts it, or correct the setting.`); }
@@ -40,6 +55,7 @@ export function dnClientList(o: { dnFile: string; agmFile?: string | null }): Cl
   return {
     label: "the DN workbook",
     async read(since): Promise<ClientListRead | null> {
+      await checkCopyJob(path.dirname(o.dnFile), (o.now ?? (() => new Date()))());
       const version = [await stamp(o.dnFile, "The DN workbook copy"), o.agmFile ? await stamp(o.agmFile, "The AGM workbook copy") : "-"].join("|");
       if (version === since) return null;
       const dn = await readDnWorkbook(o.dnFile);

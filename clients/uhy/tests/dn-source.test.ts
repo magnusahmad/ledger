@@ -3,7 +3,7 @@
 // The AGM workbook's visible columns hold this year's AGM month (DECISIONS.md #67). Companies are
 // matched by client code, and by name where a code is missing from one workbook. Fictional companies.
 import { describe, it, expect } from "vitest";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import ExcelJS from "exceljs";
@@ -86,5 +86,63 @@ describe("reading the two workbook copies", () => {
 
   it("a copy that is not where the settings say fails with its path, so the health page says what to fix", async () => {
     await expect(dnClientList({ dnFile: "/nonexistent/clerk-test/dn.xlsx" }).read(null)).rejects.toThrow(/DN workbook copy is not at .*dn\.xlsx/);
+  });
+});
+
+// The copies are made by a scheduled job on the pilot machine (ops/dn-copy.ps1), which records how
+// its last run went beside them. The workbooks are renamed each year, so the job will one day stop
+// finding one: that has to reach the health page with the path it looked for, not leave Clerk
+// quietly reading last week's copy.
+describe("the scheduled copy of the workbooks", () => {
+  const dir = () => mkdtemp(path.join(tmpdir(), "dn-copy-"));
+  const book = async (file: string) => { const wb = new ExcelJS.Workbook(); wb.addWorksheet("Sheet1").addRows([["CODE", "Company Name"], ["X101", "Harbour Lantern Limited"]]); await wb.xlsx.writeFile(file); return file; };
+  const status = (d: string, o: object) => writeFile(path.join(d, "copy-status.json"), JSON.stringify(o));
+
+  it("a copy job that failed is reported with its own message, and the old copy is not read as if it were current", async () => {
+    const d = await dir(); const dnFile = await book(path.join(d, "dn.xlsx"));
+    await status(d, { ok: false, finishedAt: "2026-12-05T01:00:00Z", error: "The DN workbook was not found at \\\\SERVER\\Share\\2025 DN.xls." });
+    await expect(dnClientList({ dnFile, now: () => new Date("2026-12-05T02:00:00Z") }).read(null)).rejects.toThrow(/copy of the workbooks failed.*was not found at/i);
+  });
+
+  it("a copy job that has not run for four days is reported, because the copies may be out of date", async () => {
+    const d = await dir(); const dnFile = await book(path.join(d, "dn.xlsx"));
+    await status(d, { ok: true, finishedAt: "2026-12-01T01:00:00Z", error: null });
+    await expect(dnClientList({ dnFile, now: () => new Date("2026-12-05T02:00:00Z") }).read(null)).rejects.toThrow(/has not run since 1 December/);
+  });
+
+  it("a recent successful copy is read, and so are copies made by hand with no job yet", async () => {
+    const d = await dir(); const dnFile = await book(path.join(d, "dn.xlsx"));
+    expect((await dnClientList({ dnFile, now: () => new Date("2026-12-05T02:00:00Z") }).read(null))!.entries.length).toBe(1);
+    await status(d, { ok: true, finishedAt: "2026-12-04T10:00:00Z", error: null });
+    expect((await dnClientList({ dnFile, now: () => new Date("2026-12-05T02:00:00Z") }).read(null))!.entries.length).toBe(1);
+  });
+
+  const root = path.resolve(__dirname, "../../..");
+  const code = async (f: string) => (await readFile(path.join(root, f), "utf8")).split("\n").filter((l) => !l.trim().startsWith("#")).join("\n");
+
+  it("the copy job only copies the originals on the share; it converts and reads its own copies", async () => {
+    const ps = await code("clients/uhy/ops/dn-copy.ps1");
+    // The one thing done to a source path is Copy-Item; LibreOffice is given the local copy.
+    expect(ps).toMatch(/Copy-Item -LiteralPath \$s\.Source/);
+    expect(ps).not.toMatch(/soffice[^\n]*\$s\.Source/);
+    expect(ps).not.toMatch(/(Remove-Item|Move-Item|Set-Content|Out-File)[^\n]*\$s\.Source/);
+  });
+
+  it("the copy job writes fixed file names, so a workbook renamed for the new year changes one setting and nothing else", async () => {
+    const ps = await code("clients/uhy/ops/dn-copy.ps1");
+    expect(ps).toMatch(/'dn'/); expect(ps).toMatch(/'agm'/);
+    expect(await code("deploy/windows/env.production.example")).not.toMatch(/COSEC/);
+  });
+
+  it("the copy job keeps the last good copy when a run fails, and records the failure without a byte-order mark", async () => {
+    const ps = await code("clients/uhy/ops/dn-copy.ps1");
+    expect(ps).toMatch(/\[IO\.File\]::WriteAllText\(\$StatusFile,[^\n]*UTF8Encoding \$false/);
+    // Converted into a working folder first; the copy Clerk reads is replaced only by a finished file.
+    expect(ps.indexOf("Move-Item")).toBeGreaterThan(ps.indexOf("soffice"));
+  });
+
+  it("the job's scripts are plain ASCII, and the task points at the script where the installer puts it", async () => {
+    for (const f of ["clients/uhy/ops/dn-copy.ps1", "clients/uhy/ops/register-dn-copy.ps1"]) expect(/[^\x00-\x7F]/.test(await readFile(path.join(root, f), "utf8")), f).toBe(false);
+    expect(await code("clients/uhy/ops/register-dn-copy.ps1")).toMatch(/C:\\Clerk\\app\\clients\\uhy\\ops\\dn-copy\.ps1/);
   });
 });
