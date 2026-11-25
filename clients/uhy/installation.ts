@@ -2,6 +2,7 @@
 // Machine paths (the F: share, the CSA copy, storage) and secrets are set on the pilot machine:
 // deploy/windows/env.production.example and secrets.ps1.
 import type { Installation } from "../../src/lib/installation";
+import { workbookCode } from "./src/codes";
 
 const uhy: Installation = {
   id: "uhy",
@@ -20,6 +21,7 @@ const uhy: Installation = {
   // loaded only when the list is read, so nothing else pays for it.
   clientList: (s) => (s.CLIENT_LIST_FILE ? {
     label: "the DN workbook",
+    codeKey: workbookCode,
     read: async (since) => (await import("./src/dn-source")).dnClientList({ dnFile: s.CLIENT_LIST_FILE!, agmFile: s.AGM_TRACKER_FILE ?? null }).read(since),
   } : null),
 };

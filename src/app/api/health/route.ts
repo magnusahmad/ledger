@@ -18,5 +18,5 @@ export async function GET() {
   const problems = productionProblems(ctx.config);
   const recordsAgeHours = h?.recordsAsAt ? Math.round((Date.now() - new Date(h.recordsAsAt).getTime()) / 3600_000) : null;
   const ok = db && !problems.length && !!h && !Object.keys(h.errors).length;
-  return NextResponse.json({ ok, db, build: buildReport(ctx.config, readBuildStamp()), configProblems: problems, recordsAgeHours, lastCycleAt: h?.lastCycleAt ?? null, lastMailSyncAt: h?.lastMailSyncAt ?? null, lastStatusWriteAt: h?.lastStatusWriteAt ?? null, errors: h?.errors ?? {} }, { status: ok ? 200 : 503 });
+  return NextResponse.json({ ok, db, build: buildReport(ctx.config, readBuildStamp()), configProblems: problems, recordsAgeHours, lastCycleAt: h?.lastCycleAt ?? null, clientListReadAt: h?.clientListReadAt ?? null, lastMailSyncAt: h?.lastMailSyncAt ?? null, lastStatusWriteAt: h?.lastStatusWriteAt ?? null, errors: h?.errors ?? {} }, { status: ok ? 200 : 503 });
 }

@@ -12,7 +12,7 @@ import { syncCases, listCases } from "@/annual/cases";
 import { runAnnualCycle, type CycleDeps } from "@/annual/cycle";
 import type { RecordsSource } from "@/annual/records";
 
-const entry = (o: Partial<ClientListEntry> & { code: string }): ClientListEntry => ({ nameEn: `${o.code} Limited`, live: true, leftOutReason: null, incorporatedOn: null, yearEnd: null, agmMonth: null, noAgm: null, contactEmails: [], ...o });
+const entry = (o: Partial<ClientListEntry> & { code: string }): ClientListEntry => ({ nameEn: null, live: true, leftOutReason: null, incorporatedOn: null, yearEnd: null, agmMonth: null, noAgm: null, contactEmails: [], ...o });
 const list = (entries: ClientListEntry[], version = "v1"): ClientListSource => ({ label: "the client workbook", read: async (since) => (since === version ? null : { version, entries, problems: [] }) });
 
 async function seed(ctx: ReturnType<typeof makeCtx>) {
@@ -100,6 +100,34 @@ describe("the firm's client list", () => {
     expect(r!.differences).toContainEqual(expect.objectContaining({ code: "B002", kind: "notInList" }));
     expect(r!.differences).toContainEqual(expect.objectContaining({ code: "Z999", kind: "notInRecords" }));
     expect(r!.differences.find((d) => d.code === "Y888")).toBeUndefined();
+  });
+
+  // Found on the first real run: one firm's records write a client code with letters after it that
+  // its client list leaves off, so half its companies were not matched. How the two line up is the
+  // list's to say. And a shared code is not proof: the name has to agree too.
+  it("a company is matched through the list's own way of reading the records' codes", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    await ctx.db.update(client).set({ code: "A001K" }).where(eq(client.id, "cl_a"));
+    const src = { ...list([entry({ code: "A001", nameEn: "Alpha Limited", agmMonth: 5 })]), codeKey: (code: string) => code.replace(/[A-Z]+$/, "") };
+    const r = await applyClientList(ctx, src);
+    expect(r!.counts.matched).toBe(1);
+    expect(((await get(ctx, "cl_a")).jurisdictionData as { clientList: { agmMonth: number } }).clientList.agmMonth).toBe(5);
+  });
+
+  it("a company whose code matches but whose name is another company's is left untouched, and is listed for staff", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    const r = await applyClientList(ctx, list([entry({ code: "A001", nameEn: "Zebra Trading Limited", live: false, leftOutReason: "struck", yearEnd: { month: 3, day: 31 } })]));
+    expect(await get(ctx, "cl_a")).toMatchObject({ fyeMonth: 12, fyeDay: 31 });
+    expect(((await get(ctx, "cl_a")).jurisdictionData as { clientList?: unknown }).clientList).toBeUndefined();
+    expect(r!.differences).toContainEqual(expect.objectContaining({ code: "A001", kind: "nameMismatch", records: "Alpha Limited", list: "Zebra Trading Limited" }));
+    expect(r!.counts.matched).toBe(0);
+  });
+
+  it("a name that differs only in case, punctuation, the company suffix or a note in brackets is the same company", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    const r = await applyClientList(ctx, list([entry({ code: "A001", nameEn: "ALPHA LTD. *(formerly Old Name Limited)" }), entry({ code: "B002", nameEn: "Beta Co., Limited" })]));
+    expect(r!.counts.matched).toBe(2);
+    expect(r!.differences.filter((d) => d.kind === "nameMismatch")).toEqual([]);
   });
 
   it("a list that has not changed is not applied again, and the last report is kept", async () => {

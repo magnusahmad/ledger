@@ -8,6 +8,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import ExcelJS from "exceljs";
 import { dnClientList, mergeWorkbooks } from "../src/dn-source";
+import { workbookCode } from "../src/codes";
+import { clientListFromConfig } from "@/annual/runtime";
+import { loadConfig } from "@/lib/config";
 import type { DnRow } from "../src/dn";
 
 const row = (o: Partial<DnRow> & { row: number; code: string }): DnRow => ({
@@ -144,5 +147,23 @@ describe("the scheduled copy of the workbooks", () => {
   it("the job's scripts are plain ASCII, and the task points at the script where the installer puts it", async () => {
     for (const f of ["clients/uhy/ops/dn-copy.ps1", "clients/uhy/ops/register-dn-copy.ps1"]) expect(/[^\x00-\x7F]/.test(await readFile(path.join(root, f), "utf8")), f).toBe(false);
     expect(await code("clients/uhy/ops/register-dn-copy.ps1")).toMatch(/C:\\Clerk\\app\\clients\\uhy\\ops\\dn-copy\.ps1/);
+  });
+});
+
+// CSA writes a client code with one or two letters after it (A0873K, B3066UK) that the DN workbook
+// leaves off (A0873, B3066). Seen on the pilot machine on 25 November, where it left 92 of 193
+// companies unmatched.
+describe("UHY's client codes in CSA and in the workbooks", () => {
+  it("the letters CSA adds after the number are dropped to find the company in the workbook", () => {
+    expect(["A0873K", "B3066UK", "E3056I", "V3057", "a3079t"].map(workbookCode)).toEqual(["A0873", "B3066", "E3056", "V3057", "A3079"]);
+  });
+
+  it("a code of another shape is left as it is", () => {
+    expect(["D000001", "", "X12"].map(workbookCode)).toEqual(["D000001", "", "X12"]);
+  });
+
+  it("the installation's client list reads CSA's codes this way", () => {
+    const src = clientListFromConfig(loadConfig({ INSTALLATION_PROFILE: "uhy", CLIENT_LIST_FILE: "C:\\Clerk\\sources\\dn\\dn.xlsx" }));
+    expect(src!.codeKey!("C3209K")).toBe("C3209");
   });
 });

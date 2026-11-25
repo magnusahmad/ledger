@@ -46,6 +46,18 @@ describe("Windows installer", () => {
     expect(guard).toBeLessThan(ps.indexOf("robocopy"));
   });
 
+  // The service wrapper is downloaded by hand for the first installation and is not part of a bundle.
+  it("an upgrade reuses the service wrapper already on the machine, so a new bundle needs nothing added to it", () => {
+    const ps = code("deploy/windows/install.ps1");
+    const reuse = ps.search(/Copy-Item "\$Root\\deploy\\services\\WinSW-x64\.exe" "\$PSScriptRoot\\services\\WinSW-x64\.exe"/);
+    expect(reuse).toBeGreaterThan(-1);
+    expect(reuse).toBeLessThan(ps.indexOf('throw "Missing $f'));
+  });
+
+  it("the closing health check gives up after a minute, so a slow first response cannot leave the installer waiting for ever", () => {
+    expect(code("deploy/windows/install.ps1")).toMatch(/api\/health -TimeoutSec \d+/);
+  });
+
   it("refuses to install from the installed copy onto itself", () => {
     expect(code("deploy/windows/install.ps1")).toMatch(/-ieq \(Join-Path \$Root 'app'\)[\s\S]{0,120}throw/);
   });

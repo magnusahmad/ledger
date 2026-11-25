@@ -21,6 +21,8 @@ if ($Source -ieq (Join-Path $Root 'app')) { throw "$Source is the installed copy
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node -or -not ((& node --version) -match '^v2[2-9]')) { throw 'Install Node.js 22 LTS first' }
 foreach ($svc in 'postgresql*', 'MSSQL$SQLEXPRESS') { if (-not (Get-Service $svc -ErrorAction SilentlyContinue)) { throw "Service $svc not found; install it first (README.md)" } }
+# On an upgrade the service wrapper from the first installation is reused.
+if (-not (Test-Path "$PSScriptRoot\services\WinSW-x64.exe") -and (Test-Path "$Root\deploy\services\WinSW-x64.exe")) { Copy-Item "$Root\deploy\services\WinSW-x64.exe" "$PSScriptRoot\services\WinSW-x64.exe" }
 foreach ($f in "$Root\caddy\caddy.exe", "$PSScriptRoot\services\WinSW-x64.exe") { if (-not (Test-Path $f)) { throw "Missing $f (README.md)" } }
 if (-not (Test-Path "$Root\certs\server.crt")) { throw "Copy server.crt and server.key from pilot-ca.sh to $Root\certs first" }
 
@@ -84,5 +86,5 @@ New-NetFirewallRule -DisplayName 'Clerk HTTPS' -Direction Inbound -Protocol TCP 
 
 Step 'Health'
 Start-Sleep -Seconds 20
-try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3000/api/health).Content } catch { Write-Warning "Health check not ready yet: $($_.Exception.Message). Logs: C:\ProgramData\Clerk\logs" }
+try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:3000/api/health -TimeoutSec 60).Content } catch { Write-Warning "Health check not ready yet: $($_.Exception.Message). Logs: C:\ProgramData\Clerk\logs" }
 "Installed. Next: create the firm and the staff accounts (README.md section 4)."
