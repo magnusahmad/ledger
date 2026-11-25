@@ -1,11 +1,41 @@
 # UHY-ASK pilot: implementation plan
 
 Owner: Magnus Ahmad
-Last reviewed: 2026-10-20
+Last reviewed: 2026-11-23
 Status: working plan, fast track. Target dates are estimates and move with UHY's and Topone's response times.
 Related: [Pilot brief](UHY_AR_AGM_PILOT.md) (what the pilot does and its acceptance tests), [Decisions](../../../docs/DECISIONS.md) #53–55, [UHY-ASK KB page](../../../crv-kb/research/targets/uhy-ask.md).
 
 This plan says who does what, in order, to get the [pilot brief](UHY_AR_AGM_PILOT.md) running at UHY. Each stage lists what Magnus does, what Claude builds or prepares, what UHY or Topone must do, and how we know the stage is done. Tick items off here as they happen.
+
+## Where we stopped on 23 November, and what is next
+
+Clerk build `43af20c` is installed and running on the pilot machine: sign-in works over HTTPS, and it imports CSA and lists 192 current private Hong Kong companies with their annual-return dates. The reply reader is off. Mailboxes, the F: share and the DN workbook are not connected. What happened and why is in [Decisions](../../../docs/DECISIONS.md) #67; the stages further down this page predate the installation and their tick boxes are out of date.
+
+**Next on the pilot machine**
+- [ ] Run the DN check with the rewritten rules, which now also leave out companies in red or blue text: copy `clients/uhy/src/dn.ts`, `clients/uhy/ops/sources.ts` and `clients/uhy/data/dn-columns.json` to the same places under `C:\Clerk\app`, then `node node_modules\tsx\dist\cli.mjs clients\uhy\ops\sources.ts check-dn "C:\Clerk\sources\dn\2025 COSEC DN NEW.xlsx"`. Watch the count of live companies with neither an AGM month nor a status, how many companies each reason leaves out (`excluded`), and any other text colours on live companies (`otherTextColours`).
+- [x] What the formatting means (Coe, 24 November): a struck-through company is no longer a client; blue text is a client taken on for a one-off service; staff always leave out red and blue; any other colour, or none, is an active client. The reader follows this. Coe did not say what red stands for.
+- [ ] Convert `2026 AGM.xls` to `.xlsx` the same way and run `discover-dn` and `check-dn` on it. Staff track AGMs there, not in the DN workbook (see below), so its AGM columns are the ones to read. Compare its live companies with the DN workbook's.
+- [ ] Test one model call from the pilot machine, which settles whether Hong Kong addresses are refused, before switching the reply reader on.
+- [ ] Install the next bundle (below) when it is ready; after that, schedule the CSA restore and the database backup. Do not schedule the restore on the current build: it cannot read the status file the restore writes.
+- [ ] Register the Microsoft app once, for both the three team mailboxes and staff sign-in, after the sign-in work is built.
+- [ ] Set the F: share path and the status folder in the settings file.
+- [ ] Staff PCs: install `ca.crt`, and get the DNS name `clerk.uhyask.local` from Topone (today it works only on the pilot machine, through its hosts file).
+
+**To build for the next bundle**
+- [ ] The worker fails to start if the settings name a CSA mapping file that does not exist; the installer can be run from the wrong folder; the restore script should write its status file without a byte-order mark.
+- [ ] Annual return: passport details for officers with no Hong Kong ID (about 129); read CSA's last-annual-return date so returns already filed stop showing as overdue; deadline rules for registered non-Hong Kong, public and guarantee companies.
+- [ ] Sign-in with Microsoft 365, keeping one password account as a fallback, with a way to reset that password.
+- [ ] DN workbook and AGM workbook: convert both `.xls` files to `.xlsx` on a schedule with LibreOffice. From `2025 COSEC DN NEW` import which companies are live, the incorporation date (checked against CSA), the year end and the contact emails. From `2026 AGM.xls` import the AGM month and the AGM tracking columns. Where a workbook and CSA differ on a year end or AGM month, the workbook wins and every difference is listed for staff. When the two workbooks disagree on whether a company is live, the DN workbook decides, since the AGM workbook is a copy kept only for AGM tracking (owner, 25 November); the check lists the disagreements.
+- [ ] Client email for the dispatch. Staff look the address up in Outlook each time; the DN workbook's `EMAIL` column is kept for mass announcements and is rarely used (Coe, 24 November). Agreed (owner, 25 November): once the team mailboxes are connected, Clerk suggests the address from past correspondence with that client and staff confirm it once, after which Clerk keeps it. Planned approach, no model involved: when a company comes into its cycle and has no confirmed contact, Clerk searches Sent Items of the three team mailboxes for the company's English name, Chinese name and client code, takes the outside addresses those emails were sent to, and shows them on the case with the date and subject of the email each came from, annual-return emails first, next to any address from the DN workbook or CSA. Staff tick the right ones. Nothing is kept from emails staff do not confirm. No result means staff type the address. If staff change the recipient on the Outlook draft before sending, Clerk offers to update the contact. Build the search first and measure it on the companies due in the next two months: how often the top suggestion is the one staff choose. Only if many cases are unclear, add a model step for those cases, limited to ranking and explaining the addresses the search found: it reads only the emails already matched to that company, code rejects any address not on the list, and it quotes the line it relied on. A model never searches the mailbox freely or supplies an address itself (owner, 25 November).
+
+**Waiting on others**
+- [ ] Coe: whether CSA can back up at the end of each working day. Her reply of 24 November answered the other questions (formatting, client emails, `2026 AGM.xls`) and did not cover this one.
+- [ ] Topone: the DNS name; a plain account for the services in place of `uhyadmin`.
+- [ ] Confirm the firm's registered name, address and phone as entered in Clerk.
+
+**Housekeeping on the Mac**
+- [ ] Move `private/uhy/pilot-ca/ca.key` to the password vault or an encrypted drive.
+- [ ] Delete the old whole-repository zips in `private/dist` and `private/uhy/session`.
 
 ## Fast track: live for the five (decided 20 October)
 

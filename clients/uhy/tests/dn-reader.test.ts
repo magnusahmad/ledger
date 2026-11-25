@@ -224,6 +224,48 @@ describe("the real workbook's conventions (23 November)", () => {
     expect(r.rows.map((x) => [x.code, x.struck])).toEqual([["X801", false], ["X802", true]]);
   });
 
+  // Coe, 24 November: struck through means no longer a client; blue text marks a client taken on for
+  // a one-off service; staff always leave out clients in red and blue. Any other colour, or none, is
+  // an active client.
+  const colour = (row: ExcelJS.Row, argb: string) => { row.getCell(1).font = { color: { argb } }; row.getCell(2).font = { color: { argb } }; };
+
+  it("a company whose code and name are in red text is left out, even when it is not struck through", async () => {
+    const r = await readDnWorkbook(await sheet("real-red.xlsx", (ws) => {
+      add(ws, { CODE: "X811", "Company Name": "Active Limited" });
+      colour(add(ws, { CODE: "X812", "Company Name": "Red Limited" }), "FFFF0000");
+    }));
+    expect(r.rows.map((x) => [x.code, x.excluded])).toEqual([["X811", null], ["X812", "red"]]);
+  });
+
+  it("a company in blue text is a one-off service client and is left out, whichever blue staff used", async () => {
+    const r = await readDnWorkbook(await sheet("real-blue.xlsx", (ws) => {
+      colour(add(ws, { CODE: "X821", "Company Name": "Light Blue Limited" }), "FF00CCFF");
+      colour(add(ws, { CODE: "X822", "Company Name": "Blue Limited" }), "FF0000FF");
+      // Only the name is coloured: staff do not always colour both cells.
+      add(ws, { CODE: "X823", "Company Name": "Name Only Limited" }).getCell(2).font = { color: { argb: "FF00CCFF" } };
+    }));
+    expect(r.rows.map((x) => x.excluded)).toEqual(["blue", "blue", "blue"]);
+  });
+
+  it("a company in any other text colour, or with a coloured cell, is still an active client, and its colour is kept for the check", async () => {
+    const r = await readDnWorkbook(await sheet("real-other-colours.xlsx", (ws) => {
+      colour(add(ws, { CODE: "X831", "Company Name": "Green Limited" }), "FF008000");
+      const yellow = add(ws, { CODE: "X832", "Company Name": "Highlighted Limited" });
+      yellow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+      // Red text elsewhere on the row says nothing about the client.
+      add(ws, { CODE: "X833", "Company Name": "Red Remark Limited", Remarks: "chase payment" }).getCell(7).font = { color: { argb: "FFFF0000" } };
+    }));
+    expect(r.rows.map((x) => [x.excluded, x.textColour])).toEqual([[null, "#008000"], [null, null], [null, null]]);
+  });
+
+  it("a struck-through company is reported as struck through, whatever colour it is also in", async () => {
+    const r = await readDnWorkbook(await sheet("real-struck-red.xlsx", (ws) => {
+      const gone = add(ws, { CODE: "X841", "Company Name": "Gone Red Limited" });
+      gone.getCell(1).font = { strike: true, color: { argb: "FFFF0000" } }; gone.getCell(2).font = { strike: true, color: { argb: "FFFF0000" } };
+    }));
+    expect(r.rows[0]).toMatchObject({ struck: true, excluded: "struck", textColour: "#FF0000" });
+  });
+
   it("the AGM month is a month name; a status written there means no AGM is handled, and says why", async () => {
     const r = await readDnWorkbook(await sheet("real-month.xlsx", (ws) => {
       add(ws, { CODE: "X811", "Company Name": "A Limited", "AGM (Month)": "September " });
@@ -387,6 +429,13 @@ describe("formatting that carries meaning", () => {
     const col = (h: string) => sheet.columns.find((c) => c.header === h)!;
     expect(col("CODE").struck).toBe(1);
     expect(col("Remarks").struck).toBe(2);
+  });
+
+  it("counts text colours by column, so the colours staff put on the code and name can be told from colours elsewhere", async () => {
+    const sheet = (await discoverWorkbook(await formatted())).sheets[0];
+    const col = (h: string) => sheet.columns.find((c) => c.header === h)!;
+    expect(col("Remarks").colours).toEqual({ "#FF0000": 2 });
+    expect(col("CODE").colours).toBeUndefined();
   });
 
   it("counts the text colours and cell colours in use, leaving out plain black text", async () => {

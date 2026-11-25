@@ -46,7 +46,8 @@ async function main() {
     await save(`discover-access-${base(file)}.json`, d);
   } else if (cmd === "check-dn") {
     const r = await readDnWorkbook(file, { sheet: opt("sheet") });
-    const live = r.rows.filter((x) => !x.struck);
+    const live = r.rows.filter((x) => !x.excluded);
+    const tally = (keys: (string | null)[]) => keys.reduce<Record<string, number>>((a, k) => { if (k) a[k] = (a[k] ?? 0) + 1; return a; }, {});
     const byField: Record<string, { count: number; rows: number[]; errors: string[] }> = {};
     for (const p of r.rows.flatMap((x) => x.problems)) {
       const b = (byField[p.field] ??= { count: 0, rows: [], errors: [] });
@@ -56,7 +57,10 @@ async function main() {
       sheet: r.sheet, headerRow: r.headerRow, companies: r.rows.length, skippedRows: r.skippedRows,
       missingColumns: r.missingColumns, unknownColumns: r.unknownColumns, duplicateColumns: r.duplicateColumns,
       struckThrough: r.rows.filter((x) => x.struck).length,
-      // Everything below counts live companies only (code and name not struck through).
+      // Why companies are left out (struck through first, then red or blue text), and the other
+      // text colours on the code or name of companies that stay in.
+      excluded: tally(r.rows.map((x) => x.excluded)), otherTextColours: tally(live.map((x) => x.textColour)),
+      // Everything below counts live companies only: not struck through, and not in red or blue.
       live: live.length, withIncorporationDate: live.filter((x) => x.incorporatedOn).length,
       withYearEnd: live.filter((x) => x.yearEnd).length, withAgmMonth: live.filter((x) => x.agmMonth).length,
       withContactEmail: live.filter((x) => x.contactEmails.length).length,

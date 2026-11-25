@@ -27,10 +27,18 @@ export function statusOf(s: string): NoAgm | null {
   return null;
 }
 
+export type Excluded = "struck" | "red" | "blue";
+const EXCLUDED_COLOURS = dnColumns.excludedTextColours as Record<string, "red" | "blue">;
+
 export type DnRow = {
   row: number; code: string; nameEn: string | null; nameZh: string | null; groupCode: string | null;
-  /** The code or name is struck through in the sheet: taken to mean the company is no longer a client. */
+  /** The code or name is struck through in the sheet: the company is no longer a client. */
   struck: boolean;
+  /** The text colour of the code or name when it is not ordinary black, as "#RRGGBB". */
+  textColour: string | null;
+  /** Why staff leave this company out: struck through (a former client), or in red or blue text
+   *  (blue is a client taken on for a one-off service). Null for an active client. */
+  excluded: Excluded | null;
   lastDn: string | null; serviceUntil: string | null; newDn: string | null; incorporatedOn: string | null; lastAgmDate: string | null;
   significantController: string | null; designatedRep: Tick | null;
   registrySearch: string | null; registrySearchInvoice: string | null; registrySearchDocs: string | null;
@@ -293,7 +301,12 @@ export async function readDnWorkbook(file: string, o: { sheet?: string } = {}): 
     const code = typeof out.code === "string" ? out.code.toUpperCase().replace(/\s+/g, "") : "";
     if (!code) { skippedRows++; continue; }
     out.code = code;
-    out.struck = ["code", "nameEn"].some((f) => { const at = colOf.get(f); return !!at && isStruck(xr.getCell(at.col)); });
+    const identity = ["code", "nameEn"].flatMap((f) => { const at = colOf.get(f); return at ? [xr.getCell(at.col)] : []; });
+    const colours = identity.map(textColour).filter((c): c is string => !!c);
+    out.struck = identity.some(isStruck);
+    // A colour that excludes is the one reported, so a row with a second, harmless colour still shows why.
+    out.textColour = colours.find((c) => EXCLUDED_COLOURS[c]) ?? colours[0] ?? null;
+    out.excluded = out.struck ? "struck" : EXCLUDED_COLOURS[out.textColour as string] ?? null;
     out.noAgm = AGM_BLOCK.map((f) => statuses[f]).find(Boolean) ?? null;
     rows.push(out as DnRow);
   }
@@ -315,7 +328,7 @@ export type WorkbookDiscovery = {
   sheets: { name: string; headerRow: number | null; dataRows: number; formatting: SheetFormatting; columns: DiscoveredColumn[] }[];
 };
 /** patterns: the twelve most common patterns of text the reader has no rule for (see valuePattern). */
-export type DiscoveredColumn = { column: string; header: string; filled: number; struck: number; shapes: Record<string, number>; patterns: Record<string, number> };
+export type DiscoveredColumn = { column: string; header: string; filled: number; struck: number; /** Text colours used in this column, by count. */ colours?: Record<string, number>; shapes: Record<string, number>; patterns: Record<string, number> };
 
 /** The pattern of a piece of text, never the text: digits become 9, letters A or a, Chinese characters
  *  \u4e2d, and a run of the same kind is written once with "+". "\u6bcf\u5e7412\u670831\u65e5" is "\u4e2d+9+\u4e2d9+\u4e2d"; "N/A" is "A/A". */
@@ -337,6 +350,14 @@ type Colour = { argb?: string; theme?: number; indexed?: number } | undefined;
 const colourKey = (c: Colour): string | null => (!c ? null : c.argb ? `#${c.argb.slice(-6).toUpperCase()}` : c.theme !== undefined ? `theme ${c.theme}` : c.indexed !== undefined ? `indexed ${c.indexed}` : null);
 // Black, the default dark theme colour and the two "automatic" palette entries are ordinary text.
 const PLAIN_TEXT = new Set(["#000000", "theme 1", "indexed 8", "indexed 64"]);
+/** A cell's text colour when it is not ordinary black. Mixed colours within one cell count as none. */
+function textColour(cell: ExcelJS.Cell): string | null {
+  const v = cell.value as { richText?: { font?: { color?: Colour } }[] } | null;
+  const own = cell.font?.color as Colour;
+  const keys = v && typeof v === "object" && v.richText?.length ? v.richText.map((r) => colourKey(r.font?.color ?? own)) : [colourKey(own)];
+  const k = keys[0];
+  return k && !PLAIN_TEXT.has(k) && keys.every((x) => x === k) ? k : null;
+}
 function isStruck(cell: ExcelJS.Cell): boolean {
   const v = cell.value as { richText?: { font?: { strike?: boolean } }[] } | null;
   if (v && typeof v === "object" && v.richText?.length) return v.richText.every((r) => !!r.font?.strike);
@@ -390,7 +411,7 @@ export async function discoverWorkbook(file: string): Promise<WorkbookDiscovery>
           c.filled++;
           if (isStruck(cell)) { struck++; c.struck++; formatting.struckCells++; }
           const fc = colourKey(cell.font?.color as Colour);
-          if (fc && !PLAIN_TEXT.has(fc)) count(formatting.fontColours, fc);
+          if (fc && !PLAIN_TEXT.has(fc)) { count(formatting.fontColours, fc); count((c.colours ??= {}), fc); }
           const fill = cell.fill as { type?: string; pattern?: string; fgColor?: Colour } | undefined;
           if (fill?.type === "pattern" && fill.pattern !== "none") count(formatting.fillColours, colourKey(fill.fgColor));
           const shape = valueShape(v, { font: fontOf(cell), numFmt: cell.numFmt, formula: cell.type === ExcelJS.ValueType.Formula });

@@ -1,5 +1,5 @@
 {
-  "_note": "UHY's DN (Debit Note) workbook columns, rewritten on 23 November 2026 from the real file (2025 COSEC DN NEW); the October sample was misleading. Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. A header that appears twice (Remarks) is told apart by nth. The sheet is a working notebook, so the reader takes what the pilot needs and keeps anything else a cell holds as a note against that field; only an impossible date is reported as a problem. Kinds: text; date (a date cell, or day-first text such as 24/08/2022); yearEnd (a date cell, 31/Dec, 12月31日, or a formula holding that text); month (an English month name); tick (ü yes, û no); mark (a tick, 'done', or a day-first date: the AGM tracker); afs (a date, x for none, or a range such as 31/12/2025-26 whose last year end is kept); sentOn (a date, or X for not sent); emails. statuses are what staff write across the AGM block when no AGM is handled: <jurisdiction>-不用處理 for a company incorporated elsewhere, 不用處理 alone, dereg中, N/A. ignore lists columns the pilot does not use (debit-note billing). Done, Allan check, Sent, By., Received, Scan, File and the second Remarks all track the AGM (Coe, 18 and 19 November); the annual return is tracked elsewhere. required AFS is the year end of the audited accounts this year's AGM papers need.",
+  "_note": "UHY's DN (Debit Note) workbook columns, rewritten on 23 November 2026 from the real file (2025 COSEC DN NEW); the October sample was misleading. Headers are matched by name after normalising case, spaces, hyphens and full-width characters; the column position never matters. A header that appears twice (Remarks) is told apart by nth. The sheet is a working notebook, so the reader takes what the pilot needs and keeps anything else a cell holds as a note against that field; only an impossible date is reported as a problem. Kinds: text; date (a date cell, or day-first text such as 24/08/2022); yearEnd (a date cell, 31/Dec, 12月31日, or a formula holding that text); month (an English month name); tick (ü yes, û no); mark (a tick, 'done', or a day-first date: the AGM tracker); afs (a date, x for none, or a range such as 31/12/2025-26 whose last year end is kept); sentOn (a date, or X for not sent); emails. statuses are what staff write across the AGM block when no AGM is handled: <jurisdiction>-不用處理 for a company incorporated elsewhere, 不用處理 alone, dereg中, N/A. ignore lists columns the pilot does not use (debit-note billing). Done, Allan check, Sent, By., Received, Scan, File and the second Remarks all track the AGM (Coe, 18 and 19 November); the annual return is tracked elsewhere. required AFS is the year end of the audited accounts this year's AGM papers need. A company whose code or name is struck through is no longer a client; blue text marks a client taken on for a one-off service, and staff always leave out clients in red and blue; any other colour, or none, is an active client (Coe, 24 November). excludedTextColours maps the text colours of the code or name, as #RRGGBB, to red or blue: the workbook uses a light blue (#00CCFF) and a plain blue (#0000FF), and both are read as blue.",
   "columns": [
     {
       "field": "code",
@@ -300,6 +300,11 @@
     "Postage",
     "EMAIL"
   ],
+  "excludedTextColours": {
+    "#FF0000": "red",
+    "#00CCFF": "blue",
+    "#0000FF": "blue"
+  },
   "statuses": [
     {
       "match": "^(?:([A-Za-z][A-Za-z .]*?)\\s*-\\s*)?不用處理$",
