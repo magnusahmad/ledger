@@ -72,6 +72,10 @@ const Env = z.object({
   CSA_SQL_CONNECTION: z.string().optional(),
   CSA_MAPPING_FILE: z.string().optional(),
   CSA_RESTORE_STATUS_FILE: z.string().optional(),
+  /** The firm's own client list and, where it keeps AGM tracking in a separate file, that file. What
+   *  kind of files they are is the installation profile's business (Installation.clientList). */
+  CLIENT_LIST_FILE: z.string().optional(),
+  AGM_TRACKER_FILE: z.string().optional(),
   /** UNC path of the share mapped as F:, and the share folder for the status workbook and log. */
   FILING_ROOT: z.string().optional(),
   /** The firm's own naming on its share and its own email wording: set by the installation

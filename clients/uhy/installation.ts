@@ -16,6 +16,12 @@ const uhy: Installation = {
     DISPATCH_TEMPLATE: "clients/uhy/data/dispatch-template.json",
     CSA_MAPPING_FILE: "clients/uhy/data/csa-mapping.json",
   },
+  // The DN workbook and the AGM workbook, read as one client list (src/dn-source.ts). The reader is
+  // loaded only when the list is read, so nothing else pays for it.
+  clientList: (s) => (s.CLIENT_LIST_FILE ? {
+    label: "the DN workbook",
+    read: async (since) => (await import("./src/dn-source")).dnClientList({ dnFile: s.CLIENT_LIST_FILE!, agmFile: s.AGM_TRACKER_FILE ?? null }).read(since),
+  } : null),
 };
 
 export default uhy;

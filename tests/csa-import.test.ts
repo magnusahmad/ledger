@@ -57,6 +57,26 @@ describe("CSA import", () => {
     expect(k).toMatchObject([{ email: "finance@alpha.example", language: "tc", name: "Ms Chan" }]);
   });
 
+  it("CSA's own year end is kept apart from the company's working year end, so a later comparison with the firm's client list still has it", async () => {
+    const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seedFirm(ctx);
+    await importCsa(ctx, sourceFor(tables()), { backupTakenAt: new Date("2026-11-05T02:13:00Z") });
+    const [a] = await ctx.db.select().from(client).orderBy(client.code);
+    // The client list replaced the working year end; the next copy of CSA still says 31 December.
+    await ctx.db.update(client).set({ fyeMonth: 3, fyeDay: 31, jurisdictionData: { ...a.jurisdictionData, clientList: { live: true } } }).where(eq(client.id, a.id));
+    await importCsa(ctx, sourceFor(tables()), { backupTakenAt: new Date("2026-11-06T02:13:00Z") });
+    const [after] = await ctx.db.select().from(client).orderBy(client.code);
+    expect(after.jurisdictionData).toMatchObject({ fromRecords: { fyeMonth: 12, fyeDay: 31 }, clientList: { live: true } });
+  });
+
+  it("the date of a company's last annual return in CSA is kept with the company, and is empty when CSA has none", async () => {
+    const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seedFirm(ctx);
+    const t = tables();
+    t.companies = [{ ...t.companies[0], lastAnnualReturnOn: "2025-11-20" }, ...t.companies.slice(1)];
+    await importCsa(ctx, sourceFor(t), { backupTakenAt: new Date("2026-11-05T02:13:00Z") });
+    const cs = await ctx.db.select().from(client).orderBy(client.code);
+    expect(cs.map((c) => (c.jurisdictionData as { lastAnnualReturnOn?: string | null }).lastAnnualReturnOn)).toEqual(["2025-11-20", null]);
+  });
+
   it("a registered non-Hong Kong company keeps its Hong Kong registration date from CSA, for the NN3 deadline", async () => {
     const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seedFirm(ctx);
     const t = tables();

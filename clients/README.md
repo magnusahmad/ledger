@@ -12,6 +12,8 @@ Take the first that fits.
 2. **Client code.** A reader, script or check only this client needs. Put it in `clients/<id>/src/` or `ops/`, with its tests in `clients/<id>/tests/`. It may import the core (`@/...`); the core may not import it.
 3. **Core change.** Anything a second client would want. Build it in `src/` and switch it per installation with a setting. If the core needs something from the client at run time, add an interface in the core and give it an adapter (see `src/annual/records.ts`).
 
+The profile can also hand the core an adapter directly: `clientList` in `installation.ts` supplies the firm's own client list (`src/annual/client-list.ts`) from client code, loaded only when it is read.
+
 A fork or long-lived client branch is an exception: it needs a written date for merging back.
 
 ## Folder layout

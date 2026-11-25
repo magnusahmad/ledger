@@ -35,6 +35,29 @@ describe("Windows installer", () => {
       expect(read(f), f).toMatch(/-ExecutionPolicy Bypass -File/);
   });
 
+  // On the first installation the installer could be started from the copy it had made of itself,
+  // where "the bundle" resolves to the drive's root and the mirror copy would take the whole drive.
+  it("refuses to run unless its source is a release bundle, before it stops a service or copies a file", () => {
+    const ps = code("deploy/windows/install.ps1");
+    const guard = ps.search(/Test-Path \(Join-Path \$Source 'package\.json'\)[\s\S]{0,200}throw/);
+    expect(guard).toBeGreaterThan(-1);
+    expect(ps).toMatch(/Test-Path \(Join-Path \$Source 'deploy\\windows\\install\.ps1'\)/);
+    expect(guard).toBeLessThan(ps.indexOf("Stop-Service"));
+    expect(guard).toBeLessThan(ps.indexOf("robocopy"));
+  });
+
+  it("refuses to install from the installed copy onto itself", () => {
+    expect(code("deploy/windows/install.ps1")).toMatch(/-ieq \(Join-Path \$Root 'app'\)[\s\S]{0,120}throw/);
+  });
+
+  // Windows PowerShell 5.1 starts a "UTF8" file with a byte-order mark, which other readers of the
+  // status file may not expect.
+  it("the CSA restore writes its status file without a byte-order mark", () => {
+    const ps = code("clients/uhy/ops/csa-restore.ps1");
+    expect(ps).toMatch(/\[IO\.File\]::WriteAllText\(\$StatusFile,[^\n]*UTF8Encoding \$false/);
+    expect(ps).not.toMatch(/Set-Content[^\n]*\$StatusFile/);
+  });
+
   it("the scheduled CSA restore points at the script where the installer puts it", () => {
     expect(code("clients/uhy/ops/register-csa-restore.ps1")).toMatch(/C:\\Clerk\\app\\clients\\uhy\\ops\\csa-restore\.ps1/);
   });

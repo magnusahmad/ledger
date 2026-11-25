@@ -6,6 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { loadConfig } from "@/lib/config";
 import { enabledModules, productionProblems } from "@/lib/modules";
+import { clientListFromConfig } from "@/annual/runtime";
 
 const root = path.resolve(__dirname, "../../..");
 const envExample = () => Object.fromEntries(readFileSync(path.join(root, "deploy/windows/env.production.example"), "utf8").split("\n")
@@ -18,6 +19,16 @@ describe("UHY-ASK installation", () => {
     const c = loadConfig({ INSTALLATION_PROFILE: "uhy" });
     expect([...enabledModules(c)]).toEqual(["annual"]);
     expect(c).toMatchObject({ FIRM_ID: "firm_uhy", FIRM_EMAIL_DOMAINS: "uhy-ask.com" });
+  });
+
+  it("reads the DN workbook as the firm's client list once the machine says where its copy is, and nothing before then", () => {
+    expect(clientListFromConfig(loadConfig({ INSTALLATION_PROFILE: "uhy" }))).toBeNull();
+    const src = clientListFromConfig(loadConfig({ INSTALLATION_PROFILE: "uhy", CLIENT_LIST_FILE: "C:\\Clerk\\sources\\dn\\dn.xlsx" }));
+    expect(src?.label).toBe("the DN workbook");
+  });
+
+  it("an installation that names no profile has no client list", () => {
+    expect(clientListFromConfig(loadConfig({ CLIENT_LIST_FILE: "/tmp/list.xlsx" }))).toBeNull();
   });
 
   it("uses UHY's own filing rules and dispatch template, kept in its client folder", () => {

@@ -14,6 +14,8 @@ export const CsaCompanyZ = z.object({
   csaId: str, code: optStr, nameEn: str, nameZh: optStr, brNumber: optStr, companyNumber: optStr,
   incorporatedOn: optDay, registeredOn: optDay, fyeMonth: num.nullable().default(null), fyeDay: num.nullable().default(null),
   registeredOffice: optStr, companyType: z.enum(["private", "public", "guarantee", "non_hk"]).default("private"),
+  /** The date the company's last annual return was made up to, where CSA holds it. */
+  lastAnnualReturnOn: optDay.default(null),
 });
 export const CsaOfficerZ = z.object({
   csaId: str, companyCsaId: str, role: z.enum(["director", "alternate", "secretary"]), kind: z.enum(["individual", "corporate"]),

@@ -7,15 +7,19 @@
 //   npx tsx clients/uhy/ops/sources.ts discover-access "C:\Clerk\sources\access\Clients.accdb"
 //   npx tsx clients/uhy/ops/sources.ts discover-access "C:\Clerk\private\clients-export.xlsx"
 //   npx tsx clients/uhy/ops/sources.ts check-dn "\\SERVER\...\DN 2025.xlsx" [--sheet 2026]
+//   npx tsx clients/uhy/ops/sources.ts compare-dn "C:\Clerk\sources\dn\DN.xlsx" --with "C:\Clerk\sources\dn\AGM.xlsx"
 //
 // Results are written to --out (default private/uhy/discovery, git-ignored).
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { discoverWorkbook, readDnWorkbook } from "../src/dn";
+import { compareDn } from "../src/dn-compare";
 import { describeAccess, findAccessCopy, openAccess } from "../src/access";
 
 const [cmd, file, ...rest] = process.argv.slice(2);
 const opt = (k: string) => { const i = rest.indexOf(`--${k}`); return i >= 0 ? rest[i + 1] : undefined; };
+// --visible-only: take nothing from hidden columns (the AGM workbook's are out of step with its companies).
+const visibleOnly = rest.includes("--visible-only");
 const outDir = opt("out") ?? path.join("private", "uhy", "discovery");
 
 async function save(name: string, data: unknown) {
@@ -27,7 +31,7 @@ async function save(name: string, data: unknown) {
 const base = (f: string) => f.split(/[\\/]/).pop()!.replace(/\.[^.]+$/, "");
 
 async function main() {
-  if (!cmd || !file) { console.error("Usage: sources.ts discover-dn|discover-access|check-dn <file or folder> [--sheet name] [--max-age-days n] [--out dir]"); process.exit(2); }
+  if (!cmd || !file) { console.error("Usage: sources.ts discover-dn|discover-access|check-dn|compare-dn <file or folder> [--with second-workbook] [--visible-only] [--sheet name] [--max-age-days n] [--out dir]"); process.exit(2); }
   if (cmd === "discover-dn" || (cmd === "discover-access" && /\.xlsx?$/i.test(file))) {
     const d = await discoverWorkbook(file);
     for (const s of d.sheets) {
@@ -35,6 +39,8 @@ async function main() {
       const f = s.formatting;
       console.log(`  formatting: ${f.struckCells} struck-through cells (${f.struckRows} whole rows), ${f.hiddenRows} hidden rows, ${f.notes} notes`);
       console.log(`  text colours: ${JSON.stringify(f.fontColours)}; cell colours: ${JSON.stringify(f.fillColours)}`);
+      const hidden = s.columns.filter((c) => c.hidden);
+      console.log(`  hidden columns: ${hidden.length ? hidden.map((c) => `${c.column} "${c.header}" (${c.filled} filled)`).join(", ") : "none"}`);
     }
     await save(`${cmd}-${base(file)}.json`, d);
   } else if (cmd === "discover-access") {
@@ -45,7 +51,7 @@ async function main() {
     for (const t of d) console.log(`${t.table}: ${t.rowCount} rows, ${t.columns.length} columns`);
     await save(`discover-access-${base(file)}.json`, d);
   } else if (cmd === "check-dn") {
-    const r = await readDnWorkbook(file, { sheet: opt("sheet") });
+    const r = await readDnWorkbook(file, { sheet: opt("sheet"), visibleOnly });
     const live = r.rows.filter((x) => !x.excluded);
     const tally = (keys: (string | null)[]) => keys.reduce<Record<string, number>>((a, k) => { if (k) a[k] = (a[k] ?? 0) + 1; return a; }, {});
     const byField: Record<string, { count: number; rows: number[]; errors: string[] }> = {};
@@ -56,22 +62,36 @@ async function main() {
     const summary = {
       sheet: r.sheet, headerRow: r.headerRow, companies: r.rows.length, skippedRows: r.skippedRows,
       missingColumns: r.missingColumns, unknownColumns: r.unknownColumns, duplicateColumns: r.duplicateColumns,
+      hiddenColumns: r.hiddenColumns, hiddenColumnsRead: !visibleOnly,
       struckThrough: r.rows.filter((x) => x.struck).length,
       // Why companies are left out (struck through first, then red or blue text), and the other
       // text colours on the code or name of companies that stay in.
       excluded: tally(r.rows.map((x) => x.excluded)), otherTextColours: tally(live.map((x) => x.textColour)),
+      otherTextColourRows: live.filter((x) => x.textColour).map((x) => `${x.row} (${x.textColour})`),
       // Everything below counts live companies only: not struck through, and not in red or blue.
       live: live.length, withIncorporationDate: live.filter((x) => x.incorporatedOn).length,
       withYearEnd: live.filter((x) => x.yearEnd).length, withAgmMonth: live.filter((x) => x.agmMonth).length,
       withContactEmail: live.filter((x) => x.contactEmails.length).length,
       noAgm: live.reduce<Record<string, number>>((a, x) => { if (x.noAgm) { const k = x.noAgm.where ? `${x.noAgm.status} (${x.noAgm.where})` : x.noAgm.status; a[k] = (a[k] ?? 0) + 1; } return a; }, {}),
       neitherAgmMonthNorStatus: live.filter((x) => !x.agmMonth && !x.noAgm).length,
+      neitherAgmMonthNorStatusRows: live.filter((x) => !x.agmMonth && !x.noAgm).map((x) => x.row).slice(0, 40),
+      agmMonthAndStatus: live.filter((x) => x.agmMonth && x.noAgm).length,
       notesByField: live.reduce<Record<string, number>>((a, x) => { for (const f of Object.keys(x.notes)) a[f] = (a[f] ?? 0) + 1; return a; }, {}),
       duplicateCodes: Object.entries(r.rows.reduce<Record<string, number>>((a, x) => ({ ...a, [x.code]: (a[x.code] ?? 0) + 1 }), {})).filter(([, n]) => n > 1).length,
+      // A code on more than one live row: the rows, so staff can say which one is current.
+      duplicateLiveCodeRows: Object.values(live.reduce<Record<string, number[]>>((a, x) => { (a[x.code] ??= []).push(x.row); return a; }, {})).filter((rows) => rows.length > 1),
       problemsByField: byField,
     };
     console.log(JSON.stringify(summary, null, 2));
     await save(`check-dn-${base(file)}.json`, summary);
+  } else if (cmd === "compare-dn") {
+    // The DN workbook against the copy where AGMs are tracked: counts and row numbers only.
+    const other = opt("with");
+    if (!other) { console.error("compare-dn needs --with <second workbook>"); process.exit(2); }
+    const [first, second] = [await readDnWorkbook(file, { sheet: opt("sheet"), visibleOnly }), await readDnWorkbook(other, { sheet: opt("sheet"), visibleOnly })];
+    const c = { first: base(file), second: base(other), hiddenColumnsRead: !visibleOnly, hiddenInFirst: first.hiddenColumns, hiddenInSecond: second.hiddenColumns, ...compareDn(first.rows, second.rows) };
+    console.log(JSON.stringify(c, null, 2));
+    await save(`compare-dn-${base(file)}.json`, c);
   } else { console.error(`Unknown command ${cmd}`); process.exit(2); }
 }
 // The message and where in the code it happened (code locations only, never cell values).

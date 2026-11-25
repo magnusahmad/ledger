@@ -12,6 +12,12 @@ $ErrorActionPreference = 'Stop'
 function Step($t) { Write-Host "`n== $t" -ForegroundColor Cyan }
 
 Step 'Checking prerequisites'
+# The source must be the unzipped release bundle. Started from anywhere else (for example the copy of
+# these scripts under the install folder), $Source can resolve to a drive's root, and the mirror copy
+# below would take everything on it.
+$Source = (Resolve-Path $Source).Path.TrimEnd('\')
+if (-not (Test-Path (Join-Path $Source 'package.json')) -or -not (Test-Path (Join-Path $Source 'deploy\windows\install.ps1'))) { throw "$Source is not a Clerk release bundle. Run install.ps1 from the unzipped bundle's deploy\windows folder." }
+if ($Source -ieq (Join-Path $Root 'app')) { throw "$Source is the installed copy. Run install.ps1 from the unzipped bundle's deploy\windows folder." }
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node -or -not ((& node --version) -match '^v2[2-9]')) { throw 'Install Node.js 22 LTS first' }
 foreach ($svc in 'postgresql*', 'MSSQL$SQLEXPRESS') { if (-not (Get-Service $svc -ErrorAction SilentlyContinue)) { throw "Service $svc not found; install it first (README.md)" } }

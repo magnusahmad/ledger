@@ -40,12 +40,15 @@ export async function importCsa(ctx: Ctx, src: CsaSource, o: { backupTakenAt: Da
         code: c.code, nameEn: c.nameEn, nameTc: c.nameZh, companyNumber: c.companyNumber, incorporatedOn: c.incorporatedOn,
         fyeMonth: c.fyeMonth, fyeDay: c.fyeDay, regOfficeEn: c.registeredOffice, companyType: c.companyType,
       };
+      // The year end as these records hold it, kept apart from the company's working year end, which
+      // the firm's own client list may replace (src/annual/client-list.ts).
+      const fromRecords = { fyeMonth: c.fyeMonth, fyeDay: c.fyeDay };
       if (prev) {
-        await db.update(clientT).set({ ...fields, jurisdictionData: { ...prev.jurisdictionData, csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn } }).where(eq(clientT.id, prev.id));
+        await db.update(clientT).set({ ...fields, jurisdictionData: { ...prev.jurisdictionData, fromRecords, csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn, lastAnnualReturnOn: c.lastAnnualReturnOn } }).where(eq(clientT.id, prev.id));
         clientOf.set(c.csaId, prev.id);
       } else {
         const id = ctx.ids.next("cl");
-        await db.insert(clientT).values({ id, firmId: ctx.firmId, ...fields, jurisdictionData: { csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn } });
+        await db.insert(clientT).values({ id, firmId: ctx.firmId, ...fields, jurisdictionData: { fromRecords, csa: mark, brNumber: c.brNumber, registeredOn: c.registeredOn, lastAnnualReturnOn: c.lastAnnualReturnOn } });
         clientOf.set(c.csaId, id);
       }
     }

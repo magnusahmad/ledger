@@ -61,6 +61,8 @@ export type DnProblem = { row: number; field: string; header: string; error: str
 export type DnRead = {
   sheet: string; headerRow: number; rows: DnRow[]; skippedRows: number;
   missingColumns: string[]; unknownColumns: string[]; duplicateColumns: string[];
+  /** Headers of the columns the reader knows that are hidden in the sheet. */
+  hiddenColumns: string[];
 };
 
 // ---------- value parsers ----------
@@ -216,7 +218,9 @@ async function load(file: string) {
 
 // ---------- reader ----------
 
-export async function readDnWorkbook(file: string, o: { sheet?: string } = {}): Promise<DnRead> {
+/** visibleOnly: take nothing from hidden columns. Staff sort a sheet by what they can see, so what a
+ *  hidden column holds may no longer be on its own company's row. */
+export async function readDnWorkbook(file: string, o: { sheet?: string; visibleOnly?: boolean } = {}): Promise<DnRead> {
   const wb = await load(file);
   const sheets = o.sheet ? [wb.getWorksheet(o.sheet)].filter(Boolean) as ExcelJS.Worksheet[] : wb.worksheets;
   if (o.sheet && !sheets.length) throw new Error(`The DN workbook has no sheet named "${o.sheet}"`);
@@ -240,6 +244,9 @@ export async function readDnWorkbook(file: string, o: { sheet?: string } = {}): 
     colOf.set(def.field, { col, header });
   });
   const missingColumns = COLUMNS.filter((c) => !c.optional && !colOf.has(c.field)).map((c) => c.field);
+  const hidden = [...colOf].filter(([, at]) => ws.getColumn(at.col).hidden).sort((a, b) => a[1].col - b[1].col);
+  const hiddenColumns = hidden.map(([, at]) => at.header);
+  if (o.visibleOnly) for (const [field] of hidden) colOf.delete(field);
 
   const rows: DnRow[] = [];
   let skippedRows = 0;
@@ -310,7 +317,7 @@ export async function readDnWorkbook(file: string, o: { sheet?: string } = {}): 
     out.noAgm = AGM_BLOCK.map((f) => statuses[f]).find(Boolean) ?? null;
     rows.push(out as DnRow);
   }
-  return { sheet: ws.name, headerRow, rows, skippedRows, missingColumns, unknownColumns, duplicateColumns };
+  return { sheet: ws.name, headerRow, rows, skippedRows, missingColumns, unknownColumns, duplicateColumns, hiddenColumns };
 }
 
 // ---------- discovery ----------
@@ -321,6 +328,8 @@ export type SheetFormatting = {
   /** Rows where every filled cell is struck through. */
   struckRows: number;
   hiddenRows: number; notes: number;
+  /** Letters of the columns that hold something but are hidden in the sheet. */
+  hiddenColumns: string[];
   /** Text and cell colours by "#RRGGBB" (or the workbook's own "theme 4"); plain black text is left out. */
   fontColours: Record<string, number>; fillColours: Record<string, number>;
 };
@@ -328,7 +337,7 @@ export type WorkbookDiscovery = {
   sheets: { name: string; headerRow: number | null; dataRows: number; formatting: SheetFormatting; columns: DiscoveredColumn[] }[];
 };
 /** patterns: the twelve most common patterns of text the reader has no rule for (see valuePattern). */
-export type DiscoveredColumn = { column: string; header: string; filled: number; struck: number; /** Text colours used in this column, by count. */ colours?: Record<string, number>; shapes: Record<string, number>; patterns: Record<string, number> };
+export type DiscoveredColumn = { column: string; header: string; /** The column is hidden in the sheet, so staff do not see it. */ hidden?: true; filled: number; struck: number; /** Text colours used in this column, by count. */ colours?: Record<string, number>; shapes: Record<string, number>; patterns: Record<string, number> };
 
 /** The pattern of a piece of text, never the text: digits become 9, letters A or a, Chinese characters
  *  \u4e2d, and a run of the same kind is written once with "+". "\u6bcf\u5e7412\u670831\u65e5" is "\u4e2d+9+\u4e2d9+\u4e2d"; "N/A" is "A/A". */
@@ -395,7 +404,7 @@ export async function discoverWorkbook(file: string): Promise<WorkbookDiscovery>
       if (!headerRow) for (let r = 1; r <= Math.min(ws.rowCount, 15) && !headerRow; r++) if (ws.getRow(r).actualCellCount >= 3) headerRow = r;
       const columns = new Map<number, DiscoveredColumn>();
       if (headerRow) ws.getRow(headerRow).eachCell((cell, col) => { columns.set(col, { column: letter(col), header: text(raw(cell)), filled: 0, struck: 0, shapes: {}, patterns: {} }); });
-      const formatting: SheetFormatting = { struckCells: 0, struckRows: 0, hiddenRows: 0, notes: 0, fontColours: {}, fillColours: {} };
+      const formatting: SheetFormatting = { struckCells: 0, struckRows: 0, hiddenRows: 0, hiddenColumns: [], notes: 0, fontColours: {}, fillColours: {} };
       const count = (m: Record<string, number>, k: string | null) => { if (k) m[k] = (m[k] ?? 0) + 1; };
       let dataRows = 0;
       for (let r = (headerRow ?? 0) + 1; r <= ws.rowCount; r++) {
@@ -424,6 +433,8 @@ export async function discoverWorkbook(file: string): Promise<WorkbookDiscovery>
         if (row.hidden) formatting.hiddenRows++;
       }
       const top = (m: Record<string, number>) => Object.fromEntries(Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 12));
+      for (const [col, c] of columns) if (ws.getColumn(col).hidden) { c.hidden = true; formatting.hiddenColumns.push(c.column); }
+      formatting.hiddenColumns.sort((a, b) => a.length - b.length || a.localeCompare(b));
       return { name: ws.name, headerRow, dataRows, formatting, columns: [...columns.entries()].sort((a, b) => a[0] - b[0]).map(([, c]) => ({ ...c, patterns: top(c.patterns) })) };
     }),
   };

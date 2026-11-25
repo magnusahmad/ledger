@@ -31,7 +31,7 @@ describe("UHY's CSA mapping", () => {
 
   it("each query returns exactly the columns the importer expects, by name", () => {
     const want: Record<string, string[]> = {
-      companies: ["csaId", "code", "nameEn", "nameZh", "brNumber", "companyNumber", "incorporatedOn", "registeredOn", "fyeMonth", "fyeDay", "registeredOffice", "companyType"],
+      companies: ["csaId", "code", "nameEn", "nameZh", "brNumber", "companyNumber", "incorporatedOn", "registeredOn", "fyeMonth", "fyeDay", "registeredOffice", "companyType", "lastAnnualReturnOn"],
       officers: ["csaId", "companyCsaId", "role", "kind", "nameEn", "nameZh", "correspondenceAddress", "email", "idNumber", "brNumber", "tcspLicence", "appointedOn", "ceasedOn"],
       members: ["csaId", "companyCsaId", "kind", "nameEn", "nameZh", "address", "className", "shares"],
       shareClasses: ["csaId", "companyCsaId", "className", "currency", "issuedShares", "totalAmount", "paidUp"],

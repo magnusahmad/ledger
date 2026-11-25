@@ -10,6 +10,7 @@ import { addDays } from "@/domain/dates";
 import { allPlaybookFiles, getPlaybook } from "@/domain/playbooks";
 import type { PlaybookDef } from "@/domain/playbook-types";
 import { annualReturnDates } from "./dispatch";
+import { leftOutOfClientList } from "./client-list";
 
 /** Overdue periods older than this are left out of a new case list (likely done by hand before the pilot). */
 export const OVERDUE_GRACE_DAYS = 30;
@@ -27,7 +28,10 @@ export async function arPlaybook(ctx: Ctx): Promise<PlaybookDef> {
  * Opens a case for each annual return and AGM due between OVERDUE_GRACE_DAYS ago and `withinDays`
  * ahead. Annual returns are worked out from the playbook rule per year rather than the deadline
  * engine's "last unfiled period", so a new installation without filing history starts on the
- * current cycle instead of last year's.
+ * current cycle instead of last year's. A return the firm's records show as already made (the
+ * company's last annual return is dated on or after that year's anniversary) opens no case, and a
+ * case for it that nobody has started is removed; one staff have worked on is left for them. The
+ * same goes for a company the firm's own client list marks as no longer a client (client-list.ts).
  */
 export async function syncCases(ctx: Ctx, o: { withinDays: number }) {
   const today = ctx.clock.today();
@@ -37,17 +41,34 @@ export async function syncCases(ctx: Ctx, o: { withinDays: number }) {
   const clients = await ctx.db.select().from(clientT).where(eq(clientT.firmId, ctx.firmId));
   const filed = new Set((await ctx.db.select({ c: filing.clientId, k: filing.periodKey }).from(filing).where(eq(filing.firmId, ctx.firmId))).map((f) => `${f.c} ${f.k}`));
   const Y = Number(today.slice(0, 4));
+  const made: { clientId: string; periodKey: string }[] = [];
+  const leftOut = new Set(clients.filter(leftOutOfClientList).map((c) => c.id));
   for (const c of clients) {
+    if (leftOut.has(c.id)) continue;
+    const lastReturn = (c.jurisdictionData as { lastAnnualReturnOn?: string | null }).lastAnnualReturnOn ?? null;
     if (c.jurisdiction !== "HK" || !c.incorporatedOn || c.lifecycle === "prospect" || c.lifecycle === "ceased" || ["not_incorporated", "deregistering", "struck_off"].includes(c.operatingStatus)) continue;
     for (const y of [Y - 1, Y, Y + 1]) {
       if (`${y}${c.incorporatedOn.slice(4)}` <= c.incorporatedOn) continue;
       const d = annualReturnDates({ incorporatedOn: c.incorporatedOn, year: y, playbook: pb });
       const periodKey = `NAR1:${y}`;
+      if (lastReturn && d.madeUpDate <= lastReturn) { made.push({ clientId: c.id, periodKey }); continue; }
       if (d.deadline >= from && d.deadline <= to && !filed.has(`${c.id} ${periodKey}`)) found.push({ clientId: c.id, kind: "AR", periodKey, periodYear: y, dueDate: d.deadline });
     }
   }
   for (const d of await upcomingDeadlines(ctx, { withinDays: o.withinDays, includeCovered: true }))
-    if (d.key === "AGM" && d.periodKey && d.dueDate >= from) found.push({ clientId: d.clientId, kind: "AGM", periodKey: d.periodKey, periodYear: d.periodYear, dueDate: d.dueDate });
+    if (d.key === "AGM" && d.periodKey && d.dueDate >= from && !leftOut.has(d.clientId)) found.push({ clientId: d.clientId, kind: "AGM", periodKey: d.periodKey, periodYear: d.periodYear, dueDate: d.dueDate });
+  if (made.length || leftOut.size) {
+    const open = await ctx.db.select().from(arCase).where(and(eq(arCase.firmId, ctx.firmId), eq(arCase.stage, "due"), isNull(arCase.startedAtStage)));
+    const stale = open.filter((k) => !k.registryCheck && (leftOut.has(k.clientId) || made.some((m) => m.clientId === k.clientId && m.periodKey === k.periodKey))).map((k) => k.id);
+    if (stale.length) {
+      const touched = new Set([
+        ...(await ctx.db.select({ id: arCaseEvent.caseId }).from(arCaseEvent).where(and(eq(arCaseEvent.firmId, ctx.firmId), inArray(arCaseEvent.caseId, stale)))).map((r) => r.id),
+        ...(await ctx.db.select({ id: arReply.caseId }).from(arReply).where(and(eq(arReply.firmId, ctx.firmId), inArray(arReply.caseId, stale)))).map((r) => r.id),
+      ]);
+      const remove = stale.filter((id) => !touched.has(id));
+      if (remove.length) await ctx.db.delete(arCase).where(and(eq(arCase.firmId, ctx.firmId), inArray(arCase.id, remove)));
+    }
+  }
   for (const f of found) {
     await ctx.db.insert(arCase).values({ id: ctx.ids.next("arc"), firmId: ctx.firmId, ...f })
       .onConflictDoNothing({ target: [arCase.firmId, arCase.clientId, arCase.periodKey] });

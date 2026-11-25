@@ -2,13 +2,15 @@
 // source (today the read-only CSA copy), the firm's filing rules and its dispatch template. Missing
 // settings leave that part switched off and visible on the health page rather than falling back to
 // a fake. This is the one file in the module that names a records system.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { Config } from "@/lib/config";
 import { GraphMail } from "@/integrations/mail/graph";
 import { SqlCsaSource, mssqlQuery, type CsaMapping } from "@/integrations/csa/sql-source";
 import { csaRecords } from "@/integrations/csa/records";
 import type { RecordsSource } from "./records";
+import type { ClientListSource } from "./client-list";
+import { installationProfile } from "@/lib/installation";
 import type { AnnualDeps } from "./service";
 import type { CycleDeps } from "./cycle";
 import type { FilingRules } from "./writeback";
@@ -34,19 +36,34 @@ export function annualDeps(c: Config): AnnualDeps {
 /** The installation's records source. CSA's copy is the only one so far; its connection is optional,
  *  so papers can be prepared from the last copy even while the link to it is down. */
 export function recordsFromConfig(c: Config): RecordsSource {
-  const mapping = json<CsaMapping>(c.CSA_MAPPING_FILE);
-  return csaRecords({
-    restoreStatusFile: c.CSA_RESTORE_STATUS_FILE ?? null,
-    open: c.CSA_SQL_CONNECTION && mapping ? async () => { const q = await mssqlQuery(c.CSA_SQL_CONNECTION!); return { source: new SqlCsaSource(q.query, mapping), close: q.close }; } : null,
-  });
+  return csaRecords({ restoreStatusFile: c.CSA_RESTORE_STATUS_FILE ?? null, open: csaOpener(c) });
+}
+
+/** Opens the records copy, or null when this installation has no connection to it. The mapping file
+ *  is read when a copy is opened, not when the worker starts: a file that is not there fails that
+ *  one refresh by name and leaves the last good copy, and the rest of the worker, running. */
+export function csaOpener(c: Config) {
+  const { CSA_SQL_CONNECTION: connection, CSA_MAPPING_FILE: file } = c;
+  if (!connection || !file) return null;
+  return async () => {
+    if (!existsSync(path.resolve(file))) throw new Error(`The records mapping file ${file} does not exist. Copy it to this machine, or correct CSA_MAPPING_FILE.`);
+    const mapping = json<CsaMapping>(file)!;
+    const q = await mssqlQuery(connection);
+    return { source: new SqlCsaSource(q.query, mapping), close: q.close };
+  };
 }
 
 /** Whether this installation can bring in newer records (shown when the worker starts). */
 export const recordsLinked = (c: Config) => !!(c.CSA_SQL_CONNECTION && c.CSA_MAPPING_FILE && c.CSA_RESTORE_STATUS_FILE);
 
+/** The firm's own client list, where the installation's profile supplies one and this machine has its path. */
+export function clientListFromConfig(c: Config): ClientListSource | null {
+  return c.INSTALLATION_PROFILE ? installationProfile(c.INSTALLATION_PROFILE).clientList?.(c as unknown as Record<string, string | undefined>) ?? null : null;
+}
+
 export function cycleDeps(c: Config): CycleDeps {
   return {
-    records: recordsFromConfig(c),
+    records: recordsFromConfig(c), clientList: clientListFromConfig(c),
     mail: graphFromConfig(c), sync: { mailboxes: list(c.PILOT_MAILBOXES), firmDomains: list(c.FIRM_EMAIL_DOMAINS), lookbackDays: c.MAIL_LOOKBACK_DAYS },
     statusDir: c.STATUS_DIR ?? null, withinDays: c.ANNUAL_WINDOW_DAYS, readReplies: c.AR_REPLY_READER === "1",
   };

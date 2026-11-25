@@ -17,7 +17,8 @@ if (-not (Test-Path $DataDir)) { New-Item -ItemType Directory -Path $DataDir | O
 
 function Write-Status($ok, $info) {
   $info.ok = $ok; $info.finishedAt = (Get-Date).ToUniversalTime().ToString('o')
-  ($info | ConvertTo-Json -Compress) | Set-Content -Path $StatusFile -Encoding UTF8
+  # Written without a byte-order mark, which Set-Content -Encoding UTF8 adds on Windows PowerShell 5.1.
+  [IO.File]::WriteAllText($StatusFile, ($info | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding $false))
 }
 function Invoke-Sql($sql, $db = 'master') {
   $c = New-Object System.Data.SqlClient.SqlConnection "Server=$Instance;Database=$db;Integrated Security=True;TrustServerCertificate=True;Application Name=Clerk CSA restore"

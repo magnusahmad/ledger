@@ -28,6 +28,37 @@ describe("annual-return cases", () => {
     expect(cases[0].stage).toBe("due");
   });
 
+  // The firm's records hold the date of each company's last annual return. A new installation has no
+  // filing history of its own, so without this a return made before Clerk arrived shows as overdue.
+  const lastReturn = (ctx: ReturnType<typeof makeCtx>, id: string, on: string) => ctx.db.update(client).set({ jurisdictionData: { lastAnnualReturnOn: on } }).where(eq(client.id, id));
+
+  it("a return the firm's records show as already made for this year opens no case", async () => {
+    // Alpha's 2026 return is made up to 20 November 2026 and due 1 January 2027.
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    await lastReturn(ctx, "cl_a", "2026-11-20");
+    await syncCases(ctx, { withinDays: 60 });
+    expect(await listCases(ctx)).toEqual([]);
+  });
+
+  it("last year's return in the records does not cover this year's", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    await lastReturn(ctx, "cl_a", "2025-11-20");
+    await syncCases(ctx, { withinDays: 60 });
+    expect((await listCases(ctx)).map((c) => `${c.clientCode} ${c.periodKey}`)).toEqual(["A001 NAR1:2026"]);
+  });
+
+  it("a case nobody has started is removed once the records show the return was made, and a case staff have worked on stays", async () => {
+    const ctx = makeCtx({ now: "2026-12-05T02:00:00Z" }); await seed(ctx);
+    await ctx.db.insert(client).values({ id: "cl_c", firmId: ctx.firmId, code: "C003", nameEn: "Gamma Limited", incorporatedOn: "2016-11-25" });
+    await syncCases(ctx, { withinDays: 60 });
+    const worked = (await listCases(ctx)).find((c) => c.clientCode === "C003")!;
+    await recordRegistryCheck(ctx, worked.id, { result: "no_changes" });
+    await lastReturn(ctx, "cl_a", "2026-11-20");
+    await lastReturn(ctx, "cl_c", "2026-11-25");
+    await syncCases(ctx, { withinDays: 60 });
+    expect((await listCases(ctx)).map((c) => c.clientCode)).toEqual(["C003"]);
+  });
+
   it("a case can start at its current stage once, before anything else is recorded", async () => {
     const ctx = makeCtx({ now: "2026-11-05T02:00:00Z" }); await seed(ctx);
     await syncCases(ctx, { withinDays: 60 });

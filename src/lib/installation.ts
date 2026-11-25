@@ -4,6 +4,7 @@
 // overrides them. This file is the only place in src that may import from clients/.
 import { installations } from "../../clients";
 import type { ModuleId } from "./modules";
+import type { ClientListSource } from "../annual/client-list";
 
 export type Installation = {
   /** The client's folder name under clients/. */
@@ -16,6 +17,9 @@ export type Installation = {
   /** Defaults for non-secret settings (src/lib/config.ts), file paths relative to the repository
    *  root. Secrets and machine paths stay in the environment and the secrets store. */
   settings: Record<string, string>;
+  /** The firm's own client list, read beside the records system, where it keeps one. Given the
+   *  installation's settings; returns null when this machine has not been told where the list is. */
+  clientList?: (settings: Record<string, string | undefined>) => ClientListSource | null;
 };
 
 export function installationProfile(id: string, registry: Record<string, Installation> = installations): Installation {

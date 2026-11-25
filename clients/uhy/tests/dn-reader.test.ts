@@ -266,6 +266,29 @@ describe("the real workbook's conventions (23 November)", () => {
     expect(r.rows[0]).toMatchObject({ struck: true, excluded: "struck", textColour: "#FF0000" });
   });
 
+  // The AGM workbook (25 November): staff hid the columns they no longer use, then sorted the sheet,
+  // which moved only the columns they could see. What a hidden column holds now sits against a
+  // different company, so a reading of that workbook takes nothing from hidden columns.
+  const hiddenSheet = (name: string) => sheet(name, (ws) => {
+    add(ws, { CODE: "X851", "Company Name": "Tracked Limited", "AGM (Month)": "May", Done: "done", Sent: "不用處理", "Contact email": "someone@else.example" });
+    ws.getColumn(at("Sent")).hidden = true; ws.getColumn(at("Contact email")).hidden = true;
+  });
+
+  it("read with visible columns only, a hidden column is not read: what it holds is left out, and the column is named", async () => {
+    const r = await readDnWorkbook(await hiddenSheet("real-hidden-skip.xlsx"), { visibleOnly: true });
+    expect(r.hiddenColumns).toEqual(["Sent", "Contact email"]);
+    expect(r.rows[0]).toMatchObject({ agmMonth: 5, agmDone: { tick: "yes", date: null }, agmSent: null, contactEmails: [], noAgm: null });
+    // A hidden column is not a missing one: the sheet still has it.
+    expect(r.missingColumns).not.toContain("agmSent");
+    expect(r.missingColumns).not.toContain("contactEmails");
+  });
+
+  it("read in full, hidden columns are read like any other, and are still named so the reader can be told to skip them", async () => {
+    const r = await readDnWorkbook(await hiddenSheet("real-hidden-read.xlsx"));
+    expect(r.hiddenColumns).toEqual(["Sent", "Contact email"]);
+    expect(r.rows[0]).toMatchObject({ contactEmails: ["someone@else.example"], noAgm: { status: "not_handled", where: null } });
+  });
+
   it("the AGM month is a month name; a status written there means no AGM is handled, and says why", async () => {
     const r = await readDnWorkbook(await sheet("real-month.xlsx", (ws) => {
       add(ws, { CODE: "X811", "Company Name": "A Limited", "AGM (Month)": "September " });
@@ -436,6 +459,19 @@ describe("formatting that carries meaning", () => {
     const col = (h: string) => sheet.columns.find((c) => c.header === h)!;
     expect(col("Remarks").colours).toEqual({ "#FF0000": 2 });
     expect(col("CODE").colours).toBeUndefined();
+  });
+
+  it("says which columns are hidden, since staff no longer see what a hidden column holds", async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("2026");
+    ws.addRow(["CODE", "Company Name", "Done", "Sent", "Contact email"]);
+    ws.addRow(["X501", "Shown Limited", "done", "old note", "a@example.com"]);
+    ws.getColumn(4).hidden = true; ws.getColumn(5).hidden = true;
+    const file = path.join(dir, "dn-hidden-columns.xlsx");
+    await wb.xlsx.writeFile(file);
+    const sheet = (await discoverWorkbook(file)).sheets[0];
+    expect(sheet.formatting.hiddenColumns).toEqual(["D", "E"]);
+    expect(sheet.columns.map((c) => [c.header, c.hidden ?? false])).toEqual([["CODE", false], ["Company Name", false], ["Done", false], ["Sent", true], ["Contact email", true]]);
   });
 
   it("counts the text colours and cell colours in use, leaving out plain black text", async () => {

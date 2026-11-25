@@ -11,10 +11,13 @@ import { syncMailboxes, type MailboxSource, type SyncOptions } from "./mail-sync
 import { writeStatusFiles } from "./writeback";
 import { readPendingReplies } from "./reply-reader";
 import type { RecordsSource } from "./records";
+import { applyClientList, type ClientListSource } from "./client-list";
 
 export type CycleDeps = {
   /** Where the company's current particulars come from (records.ts). */
   records: RecordsSource;
+  /** The firm's own client list, where the installation has one (client-list.ts). */
+  clientList?: ClientListSource | null;
   mail: MailboxSource | null; sync: SyncOptions;
   statusDir: string | null; withinDays: number;
   /** The reply reader (AR_REPLY_READER): off means no email is ever sent to the model. */
@@ -24,7 +27,9 @@ export type CycleDeps = {
 export type Health = {
   lastCycleAt: string; recordsAsAt: string | null; recordsImportedAt: string | null;
   lastMailSyncAt: string | null; lastStatusWriteAt: string | null; lastReplyReadAt?: string | null;
-  errors: Partial<Record<"records" | "cases" | "mail" | "replies" | "status", string>>;
+  /** When the firm's client list was last read and applied. */
+  clientListReadAt?: string | null;
+  errors: Partial<Record<"records" | "clientList" | "cases" | "mail" | "replies" | "status", string>>;
 };
 const KEY = "annual.health";
 
@@ -35,11 +40,18 @@ export async function runAnnualCycle(ctx: Ctx, d: CycleDeps): Promise<Health> {
   const h: Health = { lastCycleAt: ctx.clock.now().toISOString(), recordsAsAt: prev?.recordsAsAt ?? null, recordsImportedAt: prev?.recordsImportedAt ?? null, lastMailSyncAt: prev?.lastMailSyncAt ?? null, lastStatusWriteAt: prev?.lastStatusWriteAt ?? null, lastReplyReadAt: prev?.lastReplyReadAt ?? null, errors: {} };
   const step = async (k: keyof Health["errors"], f: () => Promise<void>) => { try { await f(); } catch (e) { h.errors[k] = (e as Error).message.slice(0, 500); } };
 
+  let newRecords = false;
   await step("records", async () => {
     const r = await d.records.refresh(ctx);
     if (!r) return;
+    newRecords = true;
     h.recordsAsAt = r.asAt;
     h.recordsImportedAt = ctx.clock.now().toISOString();
+  });
+  h.clientListReadAt = prev?.clientListReadAt ?? null;
+  await step("clientList", async () => {
+    if (!d.clientList) return;
+    if (await applyClientList(ctx, d.clientList, { force: newRecords })) h.clientListReadAt = ctx.clock.now().toISOString();
   });
   await step("cases", () => syncCases(ctx, { withinDays: d.withinDays }));
   await step("mail", async () => {
