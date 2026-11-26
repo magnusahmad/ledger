@@ -59,10 +59,41 @@ describe("UHY's two workbooks as one client list", () => {
     expect(problems).toEqual([]);
   });
 
+  // Seen in the real workbook on 26 November: one company billed for three services has three rows
+  // with the same code, each named "<company> - <service>".
+  it("a company with a row per service is one company: its company secretarial row is read, under the company's own name", () => {
+    const { entries, problems } = mergeWorkbooks([
+      row({ row: 3, code: "X301", nameEn: "Harbour Lantern Finance Limited - Money Lender", contactEmails: ["lender@example.com"] }),
+      row({ row: 2, code: "X301", nameEn: "Harbour Lantern Finance Limited - ComSec fee", yearEnd: { month: 12, day: 31 }, contactEmails: ["cosec@example.com"] }),
+      row({ row: 4, code: "X301", nameEn: "Harbour Lantern Finance Limited - Money Service Operation" }),
+    ], []);
+    expect(problems).toEqual([]);
+    expect(entries).toEqual([expect.objectContaining({ code: "X301", nameEn: "Harbour Lantern Finance Limited", live: true, yearEnd: { month: 12, day: 31 }, contactEmails: ["cosec@example.com"] })]);
+  });
+
+  it("where one row is the company alone and another names an extra service, the company's own row is read", () => {
+    const { entries, problems } = mergeWorkbooks([
+      row({ row: 9, code: "X302", nameEn: "Harbour Lantern Capital Limited - Money Lender" }),
+      row({ row: 2, code: "X302", nameEn: "Harbour Lantern Capital Limited", agmMonth: 7 }),
+    ], []);
+    expect(problems).toEqual([]);
+    expect(entries).toEqual([expect.objectContaining({ code: "X302", nameEn: "Harbour Lantern Capital Limited", agmMonth: 7 })]);
+  });
+
+  it("with no company secretarial row among them, the first service row is read", () => {
+    const { entries } = mergeWorkbooks([row({ row: 2, code: "X301", nameEn: "Harbour Lantern Limited - Accounting", agmMonth: 4 }), row({ row: 3, code: "X301", nameEn: "Harbour Lantern Limited - Tax" })], []);
+    expect(entries).toEqual([expect.objectContaining({ nameEn: "Harbour Lantern Limited", agmMonth: 4 })]);
+  });
+
+  it("three current-client rows with one code and different names are reported as three", () => {
+    const { problems } = mergeWorkbooks([row({ row: 2, code: "X101", nameEn: "One Limited" }), row({ row: 3, code: "X101", nameEn: "Two Limited" }), row({ row: 4, code: "X101", nameEn: "Three Limited" })], []);
+    expect(problems).toEqual(["The DN workbook has one client code on rows 2, 3 and 4, all current clients under different names; none was read."]);
+  });
+
   it("a code on two current-client rows is left out and reported by row, because either could be the company", () => {
-    const { entries, problems } = mergeWorkbooks([row({ row: 2, code: "X101" }), row({ row: 3, code: "X101" }), row({ row: 4, code: "X102" })], []);
+    const { entries, problems } = mergeWorkbooks([row({ row: 2, code: "X101", nameEn: "One Limited" }), row({ row: 3, code: "X101", nameEn: "Two Limited" }), row({ row: 4, code: "X102" })], []);
     expect(entries.map((e) => e.code)).toEqual(["X102"]);
-    expect(problems).toEqual(["The DN workbook has one client code on rows 2 and 3, both current clients; neither was read."]);
+    expect(problems).toEqual(["The DN workbook has one client code on rows 2 and 3, both current clients under different names; neither was read."]);
   });
 });
 

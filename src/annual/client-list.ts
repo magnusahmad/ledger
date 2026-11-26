@@ -45,18 +45,39 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 const md = (m: number | null | undefined, d: number | null | undefined) => (m && d ? `${d} ${MONTHS[m - 1]}` : null);
 const key = (code: string | null) => (code ?? "").toUpperCase().replace(/\s+/g, "");
 
+/** Contractions staff use for the long words in company names. */
+const CONTRACTIONS: [RegExp, string][] = [
+  [/\bINT'?L\b\.?/g, "INTERNATIONAL"], [/\bHLDGS?\b\.?/g, "HOLDINGS"], [/\bINV\b\.?/g, "INVESTMENT"], [/\bDEV\b\.?/g, "DEVELOPMENT"],
+  [/\bMGM?T\b\.?/g, "MANAGEMENT"], [/\bTECH\b\.?/g, "TECHNOLOGY"], [/\bENG\b\.?/g, "ENGINEERING"], [/\bTRDG\b\.?/g, "TRADING"],
+  [/\bGRP\b\.?/g, "GROUP"], [/\bENT\b\.?/g, "ENTERPRISE"], [/\bH\.?K\b\.?/g, "HONG KONG"], [/&/g, " AND "],
+];
 /** A name as far as it identifies a company: case, punctuation, the company suffix, a note in brackets
- *  and anything after an asterisk are not part of it. */
-const nameKey = (s: string) => s.normalize("NFKC").toUpperCase().replace(/\*.*$/, "").replace(/\([^)]*\)/g, "")
+ *  and anything after an asterisk are not part of it, and the usual contractions are written out. */
+const nameKey = (s: string) => CONTRACTIONS.reduce((n, [re, to]) => n.replace(re, to), s.normalize("NFKC").toUpperCase().replace(/\*.*$/, "").replace(/\([^)]*\)/g, ""))
   .replace(/\b(LIMITED|LTD|COMPANY|CO|INCORPORATED|INC|CORPORATION|CORP)\b\.?/g, "").replace(/[^A-Z0-9\u3400-\u9fff]+/g, "");
+/** How many single-letter changes turn one text into the other, stopping once it passes `max`. */
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    if (Math.min(...row) > max) return max + 1;
+    prev = row;
+  }
+  return prev[b.length];
+}
 /** Whether two names are the same company's. A shared code is not proof on its own: codes get reused
- *  and mistyped. A list entry with no name cannot be checked and is taken on its code. */
+ *  and mistyped. A list entry with no name cannot be checked and is taken on its code. A long name may
+ *  differ by a typing mistake of a letter or two; a short one may not, since there one letter is
+ *  another company. */
 export function sameCompanyName(a: string | null, b: string | null): boolean {
   if (!a || !b) return true;
   const x = nameKey(a), y = nameKey(b);
   if (!x || !y || x === y) return true;
   const [short, long] = x.length <= y.length ? [x, y] : [y, x];
-  return short.length >= 8 && long.includes(short);
+  if (short.length >= 8 && long.includes(short)) return true;
+  return short.length >= 12 && editDistance(x, y, 2) <= 2;
 }
 
 export const readClientListReport = (ctx: Ctx) => kvGet<ClientListReport>(ctx, KEY);

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { resetDb, makeCtx } from "./helpers";
 import { client, contact, firm } from "@/db/schema";
-import { applyClientList, readClientListReport, type ClientListEntry, type ClientListSource } from "@/annual/client-list";
+import { applyClientList, readClientListReport, sameCompanyName, type ClientListEntry, type ClientListSource } from "@/annual/client-list";
 import { syncCases, listCases } from "@/annual/cases";
 import { runAnnualCycle, type CycleDeps } from "@/annual/cycle";
 import type { RecordsSource } from "@/annual/records";
@@ -193,5 +193,28 @@ describe("the client list in the annual cycle", () => {
     const h = await runAnnualCycle(ctx, deps(null));
     expect(h.errors).toEqual({});
     expect((await listCases(ctx)).length).toBe(2);
+  });
+});
+
+// The name check exists to stop a reused or mistyped code joining two different companies. On the
+// first real run it also rejected six pairs the owner could see were one company: a contraction
+// (INT'L for INTERNATIONAL), LTD for LIMITED, and one typing mistake.
+describe("whether two names are the same company's", () => {
+  it("a usual contraction is the same name", () => {
+    expect(sameCompanyName("Harbour Lantern International Holdings Limited", "HARBOUR LANTERN INT'L HLDGS LTD")).toBe(true);
+    expect(sameCompanyName("Harbour Lantern (Hong Kong) Company Limited", "Harbour Lantern (HK) Co. Ltd")).toBe(true);
+    expect(sameCompanyName("Lantern & Harbour Investment Limited", "Lantern and Harbour Inv. Ltd.")).toBe(true);
+  });
+
+  it("a typing mistake of a letter or two in a long name is the same name", () => {
+    expect(sameCompanyName("Harbour Lantern Trading Limited", "Harbour Lantren Trading Limited")).toBe(true);
+    expect(sameCompanyName("Harbour Lantern Trading Limited", "Harbour Lantern Tradng Limited")).toBe(true);
+  });
+
+  it("a different company is still a different company", () => {
+    expect(sameCompanyName("Alpha Limited", "Zebra Trading Limited")).toBe(false);
+    expect(sameCompanyName("Harbour Lantern Trading Limited", "Harbour Lantern Properties Limited")).toBe(false);
+    // Short names leave no room for a typing mistake: one letter is another company.
+    expect(sameCompanyName("Alta Limited", "Alfa Limited")).toBe(false);
   });
 });

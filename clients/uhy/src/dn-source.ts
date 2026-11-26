@@ -17,8 +17,22 @@ export function mergeWorkbooks(dn: DnRow[], agm: DnRow[]): { entries: ClientList
   const entries: ClientListEntry[] = [];
   for (const [code, rows] of groupBy(dn, (r) => r.code)) {
     const live = rows.filter((r) => !r.excluded);
-    if (live.length > 1) { problems.push(`The DN workbook has one client code on rows ${live.map((r) => r.row).join(" and ")}, both current clients; neither was read.`); continue; }
-    const r = live[0] ?? rows[0];
+    let r = live[0] ?? rows[0];
+    if (live.length > 1) {
+      // One company billed for several services has a row per service, named "<company> - <service>".
+      // Its company secretarial row is the one to read, under the company's own name.
+      // A row with no service after the name is the company itself.
+      const base = (x: DnRow) => (x.nameEn ?? "").replace(/\s+-\s+[^-]*$/, "");
+      const service = (x: DnRow) => (x.nameEn ?? "").slice(base(x).length);
+      if (name(base(live[0])) && live.every((x) => name(base(x)) === name(base(live[0]))) && live.filter((x) => !service(x)).length <= 1) {
+        const pick = live.find((x) => /com\s*sec|secretar/i.test(service(x))) ?? live.find((x) => !service(x)) ?? live[0];
+        r = { ...pick, nameEn: base(pick).trim() };
+      } else {
+        const at = live.map((x) => x.row), list = at.length === 2 ? at.join(" and ") : `${at.slice(0, -1).join(", ")} and ${at[at.length - 1]}`;
+        problems.push(`The DN workbook has one client code on rows ${list}, ${at.length === 2 ? "both" : "all"} current clients under different names; ${at.length === 2 ? "neither" : "none"} was read.`);
+        continue;
+      }
+    }
     // The same company in the AGM workbook: by code where that code is on one row there, otherwise by name.
     const sameCode = agmByCode.get(code) ?? [], sameName = agmByName.get(name(r.nameEn)) ?? [];
     const a = sameCode.length === 1 ? sameCode[0] : sameName.length === 1 ? sameName[0] : sameCode.find((x) => name(x.nameEn) === name(r.nameEn)) ?? null;

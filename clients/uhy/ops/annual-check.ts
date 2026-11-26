@@ -59,12 +59,16 @@ console.log(JSON.stringify({
     leftOutByClientList: tally(clients.filter((c) => data(c).clientList?.live === false), (c) => data(c).clientList!.reason ?? "no reason"),
     noLongerInRecords: clients.filter((c) => data(c).csa?.missingSince).length,
   },
-  clientList: report ? { label: report.label, appliedAt: report.appliedAt, counts: report.counts, problems: report.problems, differencesByKind: tally(report.differences, (d) => d.kind) } : null,
+  clientList: report ? { label: report.label, appliedAt: report.appliedAt, counts: report.counts, problems: report.problems, differencesByKind: tally(report.differences, (d) => d.kind),
+    // The client codes behind each kind of difference, for looking them up by eye. Companies in the
+    // workbook that Clerk does not hold (mostly offshore) are counted above and not listed.
+    codesByKind: Object.fromEntries(["nameMismatch", "yearEnd", "incorporatedOn", "notInList", "leftOut"].map((k) => [k, report.differences.filter((d) => d.kind === k).map((d) => d.kind === "leftOut" ? `${d.code} (${d.list})` : d.code)])) } : null,
   cases: {
     total: cases.length, byKindAndStage: tally(cases, (k) => `${k.kind} ${k.stage}`),
     overdueAnnualReturns: overdueAr.length,
     // For each overdue annual return: the year of the return, and the year of the last return the records hold.
     overdueByPeriodAndLastReturn: tally(overdueAr, (k) => `return ${k.periodYear}, records' last return ${data(byId.get(k.clientId)!).lastAnnualReturnOn?.slice(0, 4) ?? "none"}`),
+    overdueCodes: overdueAr.map((k) => byId.get(k.clientId)!.code).sort(),
     overdueStartedByStaff: overdueAr.filter((k) => k.startedAtStage || k.registryCheck).length,
   },
 }, null, 2));
