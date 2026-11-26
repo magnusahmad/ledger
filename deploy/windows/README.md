@@ -63,6 +63,12 @@ node node_modules\tsx\dist\cli.mjs scripts\user-add.ts --email <ruby's address> 
 ```
 (repeat `user:add` for Coe and Allan; Allan as `approver`).
 
+**Microsoft 365 sign-in.** With `SSO=microsoft` in the settings file, staff sign in with their Microsoft account and need no Clerk password. In the app registration (the same one the mailboxes use) add `https://<this machine's name>/api/auth/microsoft/callback` under Authentication as a Web redirect address; no extra permission is needed beyond sign-in. `APP_URL` must be the https address staff use. Add each person with `user-add.ts` as above; no password is asked for. Keep one account with a password as a fallback, made with `--password`, and reset it if forgotten with:
+
+```
+node node_modules\tsx\dist\cli.mjs scripts\user-password.ts --email <the fallback account's address>
+```
+
 ## 5. CSA copy
 
 1. Copy `clients\uhy\ops\csa-mapping.example.json` to `C:\Clerk\config\csa-mapping.json` and rewrite its queries against the restored copy's real tables (first restore: run `clients\uhy\ops\csa-restore.ps1` by hand, then `csa-schema.sql` on `CSA_Copy`).

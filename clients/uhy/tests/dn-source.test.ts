@@ -36,7 +36,7 @@ describe("UHY's two workbooks as one client list", () => {
       [row({ row: 2, code: "X101", excluded: "struck" }), row({ row: 3, code: "X102" }), row({ row: 4, code: "X103", excluded: "blue" })],
       [row({ row: 2, code: "X101" }), row({ row: 3, code: "X102", excluded: "red" }), row({ row: 4, code: "X103" })],
     );
-    expect(entries.map((e) => [e.code, e.live, e.leftOutReason])).toEqual([["X101", false, "struck"], ["X102", true, null], ["X103", false, "blue"]]);
+    expect(entries.map((e) => [e.code, e.live, e.leftOutReason])).toEqual([["X101", false, "struck through"], ["X102", true, null], ["X103", false, "in blue (one-off service)"]]);
   });
 
   it("a status written in place of AGM tracking is carried as the reason no AGM is handled", () => {

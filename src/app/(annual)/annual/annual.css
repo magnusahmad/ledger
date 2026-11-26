@@ -49,11 +49,22 @@
 .an-stack { display: grid; gap: 10px; justify-items: start; }
 .an-stack form { flex-wrap: wrap; }
 .an-stack .btn { flex: none; }
+.an-wide { max-width: 760px; }
+.an-step h2 .muted { font-weight: 400; margin-left: 4px; }
+.an-diffs { border-top: 1px solid var(--line); }
+.an-diff { display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; gap: 4px 14px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.an-diff:last-child { border-bottom: 0; padding-bottom: 0; }
+.an-code { color: var(--muted); font-variant-numeric: tabular-nums; }
+.an-name { overflow-wrap: anywhere; }
+.an-detail { color: var(--ink2); text-align: right; overflow-wrap: anywhere; }
 .an-login { max-width: 360px; margin: 12vh auto 0; padding: 0 16px; }
 .an-login .an-field input { max-width: none; }
+.an-sso { display: flex; justify-content: center; margin-top: 24px; width: 100%; }
 @media (max-width: 720px) {
   .an-bar { padding: 12px 16px; }
   .an main { padding: 24px 16px 64px; }
   .an-row { grid-template-columns: minmax(0, 1fr) auto; }
   .an-row .an-next { grid-column: 1 / -1; }
+  .an-diff { grid-template-columns: 76px minmax(0, 1fr); }
+  .an-diff .an-detail { grid-column: 2; text-align: left; }
 }

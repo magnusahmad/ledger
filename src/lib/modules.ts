@@ -1,5 +1,6 @@
 // Installation modules (DECISIONS.md #56): one codebase and schema; each installation lists the
 // modules it loads. A switched-off module's pages and API routes answer "not found".
+import { ssoConfig } from "./sso";
 import { loadConfig, type Config } from "./config";
 
 export const MODULE_IDS = ["desk", "annual", "cdd", "mailroom", "signing"] as const;
@@ -54,6 +55,12 @@ export function productionProblems(c: Config): string[] {
   if (c.demoTools) p.push("demo tools are switched on");
   if (c.APP_SECRET === DEFAULT_SECRET) p.push("APP_SECRET is the development default secret");
   if (!c.authRequired) p.push("staff sign-in is switched off");
+  if (c.SSO === "microsoft") {
+    let ready = false;
+    try { ready = !!ssoConfig(c); } catch { ready = false; }
+    if (!ready) p.push("Microsoft sign-in is switched on but the app registration (GRAPH_TENANT_ID, GRAPH_CLIENT_ID and its certificate or secret) is not set up");
+    if (!c.APP_URL.startsWith("https://")) p.push("Microsoft sign-in needs APP_URL to be the https address staff use");
+  }
   if (c.DATABASE_URL === "postgres://localhost/clerk") p.push("DATABASE_URL is the development database");
   if (!c.INSTALLATION_PROFILE) p.push("INSTALLATION_PROFILE is not set, so this installation doesn't say which client it is for");
   try {

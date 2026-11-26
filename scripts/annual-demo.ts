@@ -105,5 +105,20 @@ await review.decideItem(ruby, full.items.find((i) => i.kind === "change")!.id, {
 await review.finishReview(ruby, full.reply.id);
 
 await kvSet(ctx, "annual.health", { lastCycleAt: new Date().toISOString(), recordsAsAt: backup.toISOString(), recordsImportedAt: new Date().toISOString(), lastMailSyncAt: new Date().toISOString(), lastStatusWriteAt: null, errors: {} });
+// What the firm's own client list disagrees with the records on (fictional), for the Differences page.
+await kvSet(ctx, "annual.clientList", {
+  label: "the DN workbook", version: "demo", appliedAt: new Date().toISOString(), build: null,
+  counts: { entries: 12, live: 8, leftOut: 4, matched: 4, yearEndsFilled: 1, contactsAdded: 3 },
+  problems: ["The DN workbook has one client code on rows 14 and 37, both current clients under different names; neither was read."],
+  differences: [
+    { code: "F1009K", nameEn: "Lantern Quay Consultants Limited", kind: "leftOut", records: "current", list: "struck through" },
+    { code: "F1012T", nameEn: "九龍灣物流控股有限公司 Kowloon Bay Logistics (Asia Pacific) Holdings Limited", kind: "leftOut", records: "current", list: "in blue (one-off service)" },
+    { code: "F1003", nameEn: "Kowloon Bay Logistics Holdings Limited", kind: "yearEnd", records: "30 June", list: "31 March" },
+    { code: "F1002", nameEn: "Peak Lantern Design Limited", kind: "incorporatedOn", records: "2024-06-18", list: "2024-06-08" },
+    { code: "F1015", nameEn: "Victoria Ridge Investments Limited", kind: "nameMismatch", records: "Victoria Ridge Investments Limited", list: "Victoria Ridge Property Management Limited" },
+    { code: "F1020UK", nameEn: "Harbour View Trading Limited", kind: "notInList", records: "Harbour View Trading Limited", list: null },
+    { code: "F1031", nameEn: "Offshore Lantern Holdings Inc.", kind: "notInRecords", records: null, list: "Offshore Lantern Holdings Inc." },
+  ],
+});
 console.log(`Seeded ${cs.length} annual-return cases. Sign in as ruby@firm.example / demo password 123`);
 await closePools();

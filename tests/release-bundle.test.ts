@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, "..");
 const tree = [
   "package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "next-env.d.ts", "drizzle.config.ts", "README.md", "AGENTS.md", "CLAUDE.md", ".gitignore", ".env.example", "vitest.config.ts",
   "src/lib/config.ts", "src/db/migrations/0000_init.sql", "public/file.svg", "seed/playbooks/hk.json", "forms/hk-cr/NAR1.pdf", "assets/fonts/x.ttf",
-  "scripts/migrate.ts", "scripts/firm-init.ts", "scripts/user-add.ts", "scripts/build-stamp.mjs", "scripts/release.mjs", "scripts/reset.ts", "scripts/eval-llm.ts",
+  "scripts/migrate.ts", "scripts/firm-init.ts", "scripts/user-add.ts", "scripts/user-password.ts", "scripts/build-stamp.mjs", "scripts/release.mjs", "scripts/reset.ts", "scripts/eval-llm.ts",
   "deploy/windows/install.ps1", "docs/DECISIONS.md", "docs/PRODUCT_SPEC.md", "tests/m1-seed.test.ts", "e2e/demo.spec.ts", "eval/cases.ts", "demos/a.mp4", "prototype/p.html", ".claude/launch.json",
   "clients/README.md", "clients/index.ts",
   "clients/acme/installation.ts", "clients/acme/README.md", "clients/acme/data/rules.json", "clients/acme/src/reader.ts", "clients/acme/ops/restore.ps1", "clients/acme/docs/PILOT.md", "clients/acme/tests/reader.test.ts",
@@ -42,7 +42,7 @@ describe("release bundle contents", () => {
   });
 
   it("only the scripts the installer uses are shipped: no reset, seed or evaluation script reaches a client's machine", () => {
-    expect(plan.include.filter((f) => f.startsWith("scripts/")).sort()).toEqual(["scripts/build-stamp.mjs", "scripts/firm-init.ts", "scripts/migrate.ts", "scripts/user-add.ts"]);
+    expect(plan.include.filter((f) => f.startsWith("scripts/")).sort()).toEqual(["scripts/build-stamp.mjs", "scripts/firm-init.ts", "scripts/migrate.ts", "scripts/user-add.ts", "scripts/user-password.ts"]);
   });
 
   it("the client registry in the bundle lists only that client", () => {
@@ -54,8 +54,8 @@ describe("release bundle contents", () => {
   });
 
   it("the bundle's package.json keeps the packages and only the commands an installation uses: no reset, seed, demo or test command", () => {
-    const pkg = JSON.parse(bundlePackageJson(JSON.stringify({ name: "clerk", version: "0.1.0", dependencies: { next: "16.0.0" }, scripts: { dev: "next dev", build: "next build", prebuild: "node scripts/build-stamp.mjs", start: "next start", test: "vitest run", "db:reset": "tsx scripts/reset.ts", "db:seed": "tsx scripts/seed.ts", "db:migrate": "tsx scripts/migrate.ts", "mailroom:reset": "x", "user:add": "y", "firm:init": "z", "worker:annual": "w" } })));
-    expect(Object.keys(pkg.scripts).sort()).toEqual(["build", "db:migrate", "firm:init", "prebuild", "start", "user:add", "worker:annual"]);
+    const pkg = JSON.parse(bundlePackageJson(JSON.stringify({ name: "clerk", version: "0.1.0", dependencies: { next: "16.0.0" }, scripts: { dev: "next dev", build: "next build", prebuild: "node scripts/build-stamp.mjs", start: "next start", test: "vitest run", "db:reset": "tsx scripts/reset.ts", "db:seed": "tsx scripts/seed.ts", "db:migrate": "tsx scripts/migrate.ts", "mailroom:reset": "x", "user:add": "y", "user:password": "z", "firm:init": "z", "worker:annual": "w" } })));
+    expect(Object.keys(pkg.scripts).sort()).toEqual(["build", "db:migrate", "firm:init", "prebuild", "start", "user:add", "user:password", "worker:annual"]);
     expect(pkg).toMatchObject({ name: "clerk", version: "0.1.0", dependencies: { next: "16.0.0" } });
   });
 

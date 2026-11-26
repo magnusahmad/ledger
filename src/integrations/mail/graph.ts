@@ -34,6 +34,17 @@ function toMeta(m: Record<string, unknown>, folder: string): GraphMessageMeta {
   };
 }
 
+/** The app proving who it is to Microsoft with its certificate, in place of a client secret. */
+export function clientAssertion(auth: GraphAuth, aud: string, nowMs: number): string {
+  if (!("privateKeyPem" in auth)) throw new Error("No certificate configured");
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const iat = Math.floor(nowMs / 1000);
+  const head = b64({ alg: "RS256", typ: "JWT", x5t: Buffer.from(auth.thumbprintHex.replace(/[^0-9a-f]/gi, ""), "hex").toString("base64url") });
+  const body = b64({ aud, iss: auth.clientId, sub: auth.clientId, jti: randomUUID(), nbf: iat - 30, iat, exp: iat + 600 });
+  const sig = createSign("RSA-SHA256").update(`${head}.${body}`).sign(auth.privateKeyPem).toString("base64url");
+  return `${head}.${body}.${sig}`;
+}
+
 export class GraphMail {
   private token: { value: string; expires: number } | null = null;
   private readonly fetch: FetchLike;
@@ -63,15 +74,7 @@ export class GraphMail {
     return j.access_token;
   }
 
-  private assertion(aud: string, nowMs: number): string {
-    if (!("privateKeyPem" in this.auth)) throw new Error("No certificate configured");
-    const b64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
-    const iat = Math.floor(nowMs / 1000);
-    const head = b64({ alg: "RS256", typ: "JWT", x5t: Buffer.from(this.auth.thumbprintHex.replace(/[^0-9a-f]/gi, ""), "hex").toString("base64url") });
-    const body = b64({ aud, iss: this.auth.clientId, sub: this.auth.clientId, jti: randomUUID(), nbf: iat - 30, iat, exp: iat + 600 });
-    const sig = createSign("RSA-SHA256").update(`${head}.${body}`).sign(this.auth.privateKeyPem).toString("base64url");
-    return `${head}.${body}.${sig}`;
-  }
+  private assertion(aud: string, nowMs: number): string { return clientAssertion(this.auth, aud, nowMs); }
 
   private async call<T>(method: string, url: string, body?: unknown, headers: Record<string, string> = {}): Promise<T> {
     if (!url.startsWith(`${GRAPH}/`)) throw new Error("Refusing to call a URL outside Microsoft Graph");

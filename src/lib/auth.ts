@@ -35,10 +35,11 @@ const tokenHash = (t: string) => createHash("sha256").update(t).digest("hex");
 const norm = (e: string) => e.trim().toLowerCase();
 const now = (ctx: Ctx) => ctx.clock.operationalNow?.() ?? ctx.clock.now();
 
-export async function createStaffUser(ctx: Ctx, u: { email: string; name: string; initials: string; password: string; role: Role }) {
-  if (u.password.length < 12) throw new Error("Use a password of at least 12 characters");
+/** Without a password the person can sign in only through the firm's Microsoft 365 (src/lib/sso.ts). */
+export async function createStaffUser(ctx: Ctx, u: { email: string; name: string; initials: string; password?: string; role: Role }) {
+  if (u.password !== undefined && u.password.length < 12) throw new Error("Use a password of at least 12 characters");
   const id = ctx.ids.next("user");
-  const row = { id, firmId: ctx.firmId, email: norm(u.email), name: u.name, initials: u.initials, role: u.role, passwordHash: await hashPassword(u.password) };
+  const row = { id, firmId: ctx.firmId, email: norm(u.email), name: u.name, initials: u.initials, role: u.role, passwordHash: u.password === undefined ? null : await hashPassword(u.password) };
   await ctx.db.insert(appUser).values(row);
   return row;
 }
@@ -60,11 +61,25 @@ export async function signIn(ctx: Ctx, email: string, password: string): Promise
     return { ok: false, error: WRONG };
   }
   await ctx.db.update(appUser).set({ failedLogins: 0, lockedUntil: null }).where(eq(appUser.id, u.id));
-  await ctx.db.delete(appSession).where(and(eq(appSession.userId, u.id), lt(appSession.expiresAt, t)));
+  return startSession(ctx, u.id);
+}
+
+async function startSession(ctx: Ctx, userId: string): Promise<{ ok: true; token: string; expiresAt: Date }> {
+  const t = now(ctx);
+  await ctx.db.delete(appSession).where(and(eq(appSession.userId, userId), lt(appSession.expiresAt, t)));
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(t.getTime() + SESSION_HOURS * 3600_000);
-  await ctx.db.insert(appSession).values({ idHash: tokenHash(token), firmId: ctx.firmId, userId: u.id, expiresAt });
+  await ctx.db.insert(appSession).values({ idHash: tokenHash(token), firmId: ctx.firmId, userId, expiresAt });
   return { ok: true, token, expiresAt };
+}
+
+/** Signs in the member of staff with this email, once something else has proved the email is theirs
+ *  (the firm's Microsoft 365). Clerk's own list still decides who may come in: an email it does not
+ *  hold is refused, and signing in never makes an account. */
+export async function signInAs(ctx: Ctx, email: string): Promise<{ ok: true; token: string; expiresAt: Date } | { ok: false; error: string }> {
+  const u = await ctx.db.query.appUser.findFirst({ where: and(eq(appUser.firmId, ctx.firmId), eq(appUser.email, norm(email))) });
+  if (!u || u.disabled) return { ok: false, error: `${norm(email)} is not set up in Clerk. Ask your administrator to add you.` };
+  return startSession(ctx, u.id);
 }
 
 export async function sessionUser(ctx: Ctx, token: string | null | undefined): Promise<SessionUser | null> {

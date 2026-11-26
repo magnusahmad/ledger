@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { reviewMessage, type ReviewInput } from "../src/review";
 
-const input = (o: Partial<ReviewInput> = {}): ReviewInput => ({ asAt: "2026-11-26", recordsAsAt: "2026-11-25", differences: [], overdue: [], problems: [], suffixes: {}, ...o });
+const input = (o: Partial<ReviewInput> = {}): ReviewInput => ({ asAt: "2026-11-26", recordsAsAt: "2026-11-25", differences: [], overdue: [], noAgmMonth: [], problems: [], suffixes: {}, ...o });
 
 describe("the review list for UHY's staff", () => {
   it("each company appears with its code, its name and what does not line up", () => {
@@ -21,6 +21,12 @@ describe("the review list for UHY's staff", () => {
     expect(m).toContain("C003T  CSA: Gamma Limited / DN workbook: Gamma Trading Limited");
     expect(m).toContain("D004  Delta Limited");
     expect(m).toContain("E005  Epsilon Limited: 2026 return was due 12 October 2026; CSA's last return is dated 31 August 2025");
+  });
+
+  it("current clients with neither an AGM month nor a reason for having none are listed, so staff can fill one in", () => {
+    const m = reviewMessage(input({ noAgmMonth: [{ code: "F006", nameEn: "Zeta Limited" }, { code: "B001", nameEn: "Beta Limited" }] }));
+    expect(m).toMatch(/Current clients with no AGM month \(2\)/);
+    expect(m.indexOf("B001  Beta Limited")).toBeLessThan(m.indexOf("F006  Zeta Limited"));
   });
 
   it("a section with nothing in it is left out, and the sections are numbered in order", () => {

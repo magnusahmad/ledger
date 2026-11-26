@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
 import { resetDb, makeCtx } from "./helpers";
 import { appSession, appUser, firm } from "@/db/schema";
-import { createStaffUser, signIn, sessionUser, signOut, hashPassword, verifyPassword, LOCKOUT_AFTER } from "@/lib/auth";
+import { createStaffUser, signIn, signInAs, setPassword, sessionUser, signOut, hashPassword, verifyPassword, LOCKOUT_AFTER } from "@/lib/auth";
 
 async function seedFirm(ctx: ReturnType<typeof makeCtx>) {
   await ctx.db.insert(firm).values({ id: ctx.firmId, legalName: "Test Firm", invoicePrefix: "T" });
@@ -84,5 +84,50 @@ describe("staff sign-in", () => {
     const ctx = makeCtx(); await seedFirm(ctx);
     await createStaffUser({ ...ctx, firmId: "firm_other" }, { email: "x@other.example", name: "X", initials: "X", password: "a long enough password", role: "staff" });
     expect((await signIn(ctx, "x@other.example", "a long enough password")).ok).toBe(false);
+  });
+});
+
+// Microsoft 365 sign-in (src/lib/sso.ts) proves an email address. Whether that person may use Clerk is
+// still Clerk's list of staff: an account is made by an administrator, never by signing in.
+describe("signing in with a proven email", () => {
+  beforeEach(async () => { await resetDb(); });
+
+  it("an email Clerk holds for a member of staff starts a session as that person, whatever its case", async () => {
+    const ctx = makeCtx(); await seedFirm(ctx);
+    const u = await createStaffUser(ctx, { email: "ruby@firm.example", name: "Ruby", initials: "RL", role: "staff" });
+    const r = await signInAs(ctx, "Ruby@Firm.example");
+    expect(r.ok).toBe(true);
+    expect((await sessionUser(ctx, r.ok ? r.token : null))?.id).toBe(u.id);
+  });
+
+  it("an email Clerk does not hold is refused, and no account is made for it", async () => {
+    const ctx = makeCtx(); await seedFirm(ctx);
+    const r = await signInAs(ctx, "stranger@firm.example");
+    expect(r).toMatchObject({ ok: false, error: expect.stringMatching(/not set up/) });
+    expect(await ctx.db.select().from(appUser)).toEqual([]);
+  });
+
+  it("a member of staff who has been switched off is refused", async () => {
+    const ctx = makeCtx(); await seedFirm(ctx);
+    const u = await createStaffUser(ctx, { email: "ruby@firm.example", name: "Ruby", initials: "RL", role: "staff" });
+    await ctx.db.update(appUser).set({ disabled: true }).where(eq(appUser.id, u.id));
+    expect((await signInAs(ctx, "ruby@firm.example")).ok).toBe(false);
+  });
+
+  it("a member of staff made without a password cannot sign in with one, only through Microsoft", async () => {
+    const ctx = makeCtx(); await seedFirm(ctx);
+    await createStaffUser(ctx, { email: "ruby@firm.example", name: "Ruby", initials: "RL", role: "staff" });
+    expect((await signIn(ctx, "ruby@firm.example", "")).ok).toBe(false);
+    expect((await signIn(ctx, "ruby@firm.example", "any password at all")).ok).toBe(false);
+  });
+
+  it("resetting the fallback account's password lets it in with the new one and signs out its old sessions", async () => {
+    const ctx = makeCtx(); await seedFirm(ctx);
+    const u = await createStaffUser(ctx, { email: "admin@firm.example", name: "Admin", initials: "AD", role: "admin", password: "the first password" });
+    const old = await signIn(ctx, "admin@firm.example", "the first password");
+    await setPassword(ctx, u.id, "the second password");
+    expect(await sessionUser(ctx, old.ok ? old.token : null)).toBeNull();
+    expect((await signIn(ctx, "admin@firm.example", "the first password")).ok).toBe(false);
+    expect((await signIn(ctx, "admin@firm.example", "the second password")).ok).toBe(true);
   });
 });

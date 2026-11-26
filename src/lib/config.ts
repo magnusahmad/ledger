@@ -57,6 +57,8 @@ const Env = z.object({
   MODULES: z.string().optional(),
   /** Staff sign-in. Defaults on in production, off for the single-user development build. */
   AUTH: z.enum(["0", "1"]).optional(),
+  /** microsoft: staff sign in with the firm's Microsoft 365, through the app registration in GRAPH_*. */
+  SSO: z.enum(["microsoft"]).optional(),
   /** Annual module. Team mailboxes read through Microsoft Graph, comma-separated. */
   PILOT_MAILBOXES: z.string().default(""),
   FIRM_EMAIL_DOMAINS: z.string().default(""),

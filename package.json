@@ -33,6 +33,7 @@
     "mailroom:live": "DATABASE_URL=postgres://localhost/clerk_cwc FIRM_ID=firm_cwc STORAGE_DIR=storage/cwccpa MAIL_PROVIDER=fake LLM_MODE=live MAILROOM_REPLAY=0 NEXT_DIST_DIR=.next-mailroom AIRWALLEX_CLIENT_ID= AIRWALLEX_API_KEY= XERO_CLIENT_ID= XERO_CLIENT_SECRET= XERO_CLIENT_BEARER_TOKEN= concurrently -k -n web,mailroom -c blue,green \"next dev -p 3100\" \"tsx watch --env-file-if-exists=.env src/worker/mailroom.ts\"",
     "worker:annual": "tsx --env-file-if-exists=.env src/worker/annual.ts",
     "user:add": "tsx --env-file-if-exists=.env scripts/user-add.ts",
+    "user:password": "tsx --env-file-if-exists=.env scripts/user-password.ts",
     "firm:init": "tsx --env-file-if-exists=.env scripts/firm-init.ts"
   },
   "dependencies": {

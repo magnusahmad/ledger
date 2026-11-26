@@ -11,6 +11,9 @@ import { readDnWorkbook, type DnRow } from "./dn";
 const name = (s: string | null) => (s ?? "").normalize("NFKC").replace(/\s+/g, " ").trim().toLowerCase();
 const groupBy = <T>(rows: T[], k: (r: T) => string) => { const m = new Map<string, T[]>(); for (const r of rows) { const key = k(r); if (key) m.set(key, [...(m.get(key) ?? []), r]); } return m; };
 
+/** How staff mark a company that is no longer a current client, in words for the differences page. */
+const LEFT_OUT = { struck: "struck through", red: "in red", blue: "in blue (one-off service)" } as const;
+
 export function mergeWorkbooks(dn: DnRow[], agm: DnRow[]): { entries: ClientListEntry[]; problems: string[] } {
   const problems: string[] = [];
   const agmByCode = groupBy(agm, (r) => r.code), agmByName = groupBy(agm, (r) => name(r.nameEn));
@@ -38,7 +41,7 @@ export function mergeWorkbooks(dn: DnRow[], agm: DnRow[]): { entries: ClientList
     const a = sameCode.length === 1 ? sameCode[0] : sameName.length === 1 ? sameName[0] : sameCode.find((x) => name(x.nameEn) === name(r.nameEn)) ?? null;
     const noAgm = a?.noAgm ?? r.noAgm;
     entries.push({
-      code, nameEn: r.nameEn, live: !r.excluded, leftOutReason: r.excluded,
+      code, nameEn: r.nameEn, live: !r.excluded, leftOutReason: r.excluded ? LEFT_OUT[r.excluded] : null,
       incorporatedOn: r.incorporatedOn, yearEnd: r.yearEnd, agmMonth: a?.agmMonth ?? r.agmMonth,
       noAgm: noAgm ? (noAgm.where ? `${noAgm.status} (${noAgm.where})` : noAgm.status) : null,
       contactEmails: r.contactEmails,

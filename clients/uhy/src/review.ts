@@ -8,6 +8,8 @@ export type ReviewInput = {
   asAt: string; recordsAsAt: string | null;
   differences: ClientListDifference[];
   overdue: { code: string | null; nameEn: string; periodYear: number; dueDate: string; lastReturnOn: string | null }[];
+  /** Current clients in the workbooks with no AGM month and no status saying why there is none. */
+  noAgmMonth: { code: string; nameEn: string | null }[];
   /** What the workbook reader could not read (repeated codes and the like). */
   problems: string[];
   /** The letters CSA adds after a client code, with how many companies carry each. */
@@ -16,7 +18,9 @@ export type ReviewInput = {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const day = (d: string | null) => (d ? `${Number(d.slice(8, 10))} ${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}` : "none");
-const REASON: Record<string, string> = { struck: "struck through in the DN workbook", red: "in red in the DN workbook", blue: "in blue in the DN workbook (one-off service)" };
+// Reports written by an earlier build hold the short form of the reason.
+const REASON: Record<string, string> = { struck: "struck through in the DN workbook", red: "in red in the DN workbook", blue: "in blue in the DN workbook (one-off service)",
+  "struck through": "struck through in the DN workbook", "in red": "in red in the DN workbook", "in blue (one-off service)": "in blue in the DN workbook (one-off service)" };
 
 export function reviewMessage(i: ReviewInput): string {
   const of = (k: ClientListDifference["kind"]) => i.differences.filter((d) => d.kind === k).sort((a, b) => a.code.localeCompare(b.code));
@@ -33,6 +37,8 @@ export function reviewMessage(i: ReviewInput): string {
       lines: of("nameMismatch").map((d) => `${d.code}  CSA: ${d.records} / DN workbook: ${d.list}`) },
     { title: "Active in CSA, not in the DN workbook at all", ask: "Should each have a row in the DN workbook?",
       lines: of("notInList").map((d) => `${d.code}  ${d.nameEn ?? ""}`) },
+    { title: "Current clients with no AGM month", ask: "The AGM (Month) column is empty for these, with no note such as 不用處理. What should it be?",
+      lines: [...i.noAgmMonth].sort((a, b) => a.code.localeCompare(b.code)).map((r) => `${r.code}  ${r.nameEn ?? ""}`) },
     { title: "Rows of the DN workbook Clerk could not read", ask: "", lines: i.problems },
   ].filter((s) => s.lines.length);
   const letters = Object.entries(i.suffixes).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} (${n})`).join(", ");

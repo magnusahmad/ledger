@@ -14,9 +14,9 @@ import { makeStamp, sameFile } from "./build-stamp.mjs";
 const ROOT_FILES = ["package.json", "package-lock.json", "next.config.ts", "tsconfig.json", "next-env.d.ts", "drizzle.config.ts"];
 const FOLDERS = ["src/", "public/", "seed/", "forms/", "assets/", "deploy/"];
 /** The scripts the installer and its guide run. No reset, seed, demo or evaluation script is shipped. */
-const SCRIPTS = ["scripts/migrate.ts", "scripts/firm-init.ts", "scripts/user-add.ts", "scripts/build-stamp.mjs"];
+const SCRIPTS = ["scripts/migrate.ts", "scripts/firm-init.ts", "scripts/user-add.ts", "scripts/user-password.ts", "scripts/build-stamp.mjs"];
 /** The npm commands an installation uses. Development, demo, reset, seed and test commands are dropped. */
-const COMMANDS = ["prebuild", "build", "build:stamp", "start", "worker:annual", "db:migrate", "firm:init", "user:add"];
+const COMMANDS = ["prebuild", "build", "build:stamp", "start", "worker:annual", "db:migrate", "firm:init", "user:add", "user:password"];
 /** What goes from the client's own folder: its profile and what the installation or its operator uses. */
 const CLIENT_PARTS = ["installation.ts", "data/", "src/", "ops/"];
 
